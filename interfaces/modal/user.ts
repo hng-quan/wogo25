@@ -1,6 +1,6 @@
 export interface User {
-    id: string;
+    id: number;
     phone: string;
-    name: string;
-    email?: string; // operator '?' means this field is optional
+    fullName: string;
+    avatarUrl?: string; // operator '?' means this field is optional
 }
