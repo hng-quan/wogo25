@@ -14,8 +14,15 @@ const Profile = () => {
   const [dialogVisible, setDialogVisible] = useState(false);
 
   const _logout = async () => {
-    // Xử lý đăng xuất
-    await removeItem('user');
+    const removeUser = removeItem('user');
+    const removeAccessToken = removeItem('access_token');
+    const removeRefreshToken = removeItem('refresh_token');
+
+    await removeUser;
+    await removeAccessToken;
+    await removeRefreshToken;
+
+    // Navigate to login screen
     router.replace('/login');
   };
   const settingsOptions = [

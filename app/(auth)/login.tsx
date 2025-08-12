@@ -16,9 +16,13 @@ const LoginScreen = () => {
 
   const stored = async (response: any) => {
     // Save tokens and user information into async storage
-    await setItem('user', JSON.stringify(response.result.user));
-    await setItem('access_token', response.result.accessToken);
-    await setItem('refresh_token', response.result.refreshToken);
+    const setUser = setItem('user', JSON.stringify(response.result.user));
+    const setAccessToken = setItem('access_token', response.result.accessToken);
+    const setRefreshToken = setItem('refresh_token', response.result.refreshToken);
+
+    await setUser;
+    await setAccessToken;
+    await setRefreshToken;
     // Navigate to home screen
     router.replace('/home');
   };
