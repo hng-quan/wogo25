@@ -7,7 +7,7 @@ import { Button, Text, TextInput } from 'react-native-paper';
 import { postAPI } from '../../lib/apiService';
 
 const LoginScreen = () => {
-  const { t } = useTranslation();
+  const {t} = useTranslation();
   const [phoneNumber, setPhoneNumber] = useState('0373644375');
   const [password, setPassword] = useState('');
   const [hidePassword, setHidePassword] = useState(true);
@@ -24,8 +24,11 @@ const LoginScreen = () => {
   };
 
   const _handleLogin = async () => {
-    // call login API
     await postAPI('/auth/login', {phone: phoneNumber, password: password}, stored, setIsLoading, setError);
+  };
+
+  const _navigateToRegister = () => {
+    router.push('/register');
   };
   return (
     <View style={styles.container}>
@@ -46,6 +49,9 @@ const LoginScreen = () => {
       />
       <Button mode='contained' loading={isLoading} onPress={_handleLogin} style={styles.button}>
         {t('Đăng nhập')}
+      </Button>
+      <Button mode='outlined' onPress={_navigateToRegister} style={styles.button}>
+        {t('Tạo tài khoản')}
       </Button>
     </View>
   );
@@ -70,6 +76,6 @@ const styles = StyleSheet.create({
   },
 
   button: {
-    marginTop: 0,
+    marginTop: 12,
   },
 });
