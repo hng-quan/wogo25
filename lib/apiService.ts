@@ -1,11 +1,12 @@
 import axios from 'axios';
+import { t } from 'i18next';
 import Toast from 'react-native-toast-message';
 let isRefreshing = false;
 let refreshSubscribers = [];
 
 const apiClient = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL,
-  timeout: 15000,
+  timeout: 10000,
   headers: {
     'X-Requested-With': 'XMLHttpRequest',
     'Content-Type': 'application/json',
@@ -59,6 +60,7 @@ export const postAPI = async (
       onLoading && onLoading(false);
       onError?.(data);
     }
+    onLoading?.(false);
     return data;
   } catch (error: any) {
     onLoading?.(false);
@@ -122,8 +124,48 @@ const _handleError = (error: any) => {
   if (error.code === 'ERR_NETWORK') {
     Toast.show({
       type: 'error',
-      text1: 'Network Error',
-      text2: 'Please check your internet connection.',
+      text1: t('Lỗi kết nối'),
+      text2: t('Vui lòng kiểm tra kết nối internet của bạn.'),
     });
+    return;
+  }
+};
+
+export const postForm = async (
+  endpoint: any,
+  params = {},
+  onSuccess?: (data: any) => void,
+  onLoading?: (loading: boolean) => void,
+  onError?: (error: any) => void,
+  isShowToast?: boolean,
+): Promise<any | undefined> => {
+  try {
+    onLoading && onLoading(true);
+
+    const response = await apiForm.post(endpoint, params);
+    const data = response.data;
+
+    // Kiểm tra kết quả
+    if (data.result) {
+      onSuccess?.(data);
+    } else {
+      isShowToast &&
+        Toast.show({
+          type: 'error',
+          text1: data.message,
+        });
+      onLoading && onLoading(false);
+      onError?.(data);
+    }
+    return data;
+  } catch (error: any) {
+    onLoading?.(false);
+
+    // Xử lý lỗi
+    const errorData = error.response?.data || error.message;
+    onError?.(errorData);
+    _handleError(error);
+
+    console.log(`Error call api ${endpoint}:`, errorData);
   }
 };
