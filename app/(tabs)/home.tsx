@@ -53,7 +53,7 @@ const PromotionCard = ({ item }: { item: Promotion }) => (
 
 export default function HomeScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView className="flex-1">
       <StatusBar style="dark" />
       <ScrollView showsVerticalScrollIndicator={false}>
         <View className="p-5">

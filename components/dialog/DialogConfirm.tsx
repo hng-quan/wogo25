@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Text } from 'react-native';
-import { Button, Dialog, Portal } from 'react-native-paper';
+import { Button, Dialog, Portal, Text } from 'react-native-paper';
 
 interface DialogConfirmProps {
     isOpen: boolean;

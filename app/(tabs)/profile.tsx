@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import { List } from 'react-native-paper';
-import DialogConfirm from '../../components/ui/DialogConfirm';
-import LanguageModal from '../../components/ui/LanguageModal';
+import DialogConfirm from '../../components/dialog/DialogConfirm';
+import LanguageModal from '../../components/modal/LanguageModal';
 
 // import from '@/'
 const Profile = () => {
