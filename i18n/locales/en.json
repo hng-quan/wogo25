@@ -2,5 +2,10 @@
   "Đăng nhập": "Login",
   "Login Failed! Phone or password is incorrect": "Phone or password is incorrect",
   "Số điện thoại": "Phone number",
-  "Mật khẩu": "Password"
+  "Mật khẩu": "Password",
+  "Chọn ngôn ngữ": "Select Language",
+  "Thanh toán": "Payment",
+  "Ưu đãi": "Offers",
+  "Ngôn ngữ": "Language",
+  "Đăng xuất": "Login"
 }

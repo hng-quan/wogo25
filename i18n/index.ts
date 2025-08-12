@@ -6,7 +6,7 @@ import en from './locales/en.json';
 import vi from './locales/vi.json';
 
 // Lấy ngôn ngữ thiết bị bằng Localization
-const locales = Localization.getLocales();
+export const locales = Localization.getLocales();
 const deviceLanguage = locales[0]?.languageCode || 'en';
 
 i18n.use(initReactI18next).init({
