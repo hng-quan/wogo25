@@ -24,6 +24,7 @@ const Profile = () => {
     {id: 3, title: 'Ngôn ngữ', icon: 'web', onPress: () => setVisible(true)},
     {id: 4, title: 'Đăng xuất', icon: 'logout', onPress: () => setDialogVisible(true)},
   ];
+
   return (
     <View>
       {/* option menu */}
@@ -32,7 +33,7 @@ const Profile = () => {
           <List.Item
             key={option.id}
             title={t(option.title)}
-            description={option.description}
+            // description={option.description}
             left={props => <List.Icon {...props} icon={option.icon} />}
             onPress={option?.onPress}
           />
