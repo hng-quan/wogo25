@@ -13,7 +13,7 @@ const Profile = () => {
   const {t} = useTranslation();
   const [visible, setVisible] = useState(false);
   const [dialogVisible, setDialogVisible] = useState(false);
-  const { role } = useRole();
+  const { role, toggleRole } = useRole();
 
   const _logout = async () => {
     const removeUser = removeItem('user');
@@ -37,7 +37,7 @@ const Profile = () => {
   return (
     <View>
       <View>
-        <Switch value={role === ROLE.WORKER}  />
+        <Switch value={role === ROLE.WORKER} onValueChange={toggleRole}  />
       </View>
       {/* option menu */}
       <View>
