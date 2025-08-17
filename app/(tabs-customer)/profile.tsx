@@ -1,17 +1,19 @@
+import DialogConfirm from '@/components/dialog/DialogConfirm';
+import LanguageModal from '@/components/modal/LanguageModal';
+import { ROLE, useRole } from '@/context/RoleContext';
 import { removeItem } from '@/lib/storage';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
-import { List } from 'react-native-paper';
-import DialogConfirm from '../../components/dialog/DialogConfirm';
-import LanguageModal from '../../components/modal/LanguageModal';
+import { List, Switch } from 'react-native-paper';
 
-// import from '@/'
+
 const Profile = () => {
   const {t} = useTranslation();
   const [visible, setVisible] = useState(false);
   const [dialogVisible, setDialogVisible] = useState(false);
+  const { role } = useRole();
 
   const _logout = async () => {
     const removeUser = removeItem('user');
@@ -34,6 +36,9 @@ const Profile = () => {
 
   return (
     <View>
+      <View>
+        <Switch value={role === ROLE.WORKER}  />
+      </View>
       {/* option menu */}
       <View>
         {settingsOptions.map(option => (

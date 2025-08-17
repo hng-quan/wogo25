@@ -1,10 +1,10 @@
+import { postAPI } from '@/lib/apiService';
 import { setItem } from '@/lib/storage';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text, TextInput } from 'react-native-paper';
-import { postAPI } from '../../lib/apiService';
 
 const LoginScreen = () => {
   const {t} = useTranslation();

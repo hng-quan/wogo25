@@ -1,5 +1,7 @@
+import { RoleProvider } from '@/context/RoleContext';
 import '@/global.css';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import '@/i18n';
 import { getItem } from '@/lib/storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
@@ -10,7 +12,6 @@ import { PaperProvider } from 'react-native-paper';
 import 'react-native-reanimated';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
-import '../i18n';
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
@@ -34,22 +35,23 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <SafeAreaView className='flex flex-1'>
-        <PaperProvider>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            
-            {/* Điều hướng theo trạng thái đăng nhập */}
-            {user ? <Redirect href='/(tabs)/home' /> : <Redirect href='/(auth)/login' />}
+        <RoleProvider>
+          <PaperProvider>
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              {/* Điều hướng theo trạng thái đăng nhập */}
+              {user ? <Redirect href='/(tabs-customer)/home' /> : <Redirect href='/(auth)/login' />}
 
-            {/* Khai báo đầy đủ route */}
-            <Stack screenOptions={{headerShown: false}}>
-              <Stack.Screen name='(tabs)' />
-              <Stack.Screen name='(auth)' />
-            </Stack>
+              {/* Khai báo đầy đủ route */}
+              <Stack screenOptions={{headerShown: false}}>
+                <Stack.Screen name='(tabs-customer)' />
+                <Stack.Screen name='(auth)' />
+              </Stack>
 
-            <Toast />
-            <StatusBar style='auto' />
-          </ThemeProvider>
-        </PaperProvider>
+              <Toast />
+              <StatusBar style='auto' />
+            </ThemeProvider>
+          </PaperProvider>
+        </RoleProvider>
       </SafeAreaView>
     </SafeAreaProvider>
   );
