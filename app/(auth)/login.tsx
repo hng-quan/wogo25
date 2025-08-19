@@ -1,3 +1,4 @@
+import { useRole } from '@/context/RoleContext';
 import { postAPI } from '@/lib/apiService';
 import { setItem } from '@/lib/storage';
 import { router } from 'expo-router';
@@ -13,18 +14,20 @@ const LoginScreen = () => {
   const [hidePassword, setHidePassword] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<any>(null);
+  const {setUser} = useRole();
 
   const stored = async (response: any) => {
     // Save tokens and user information into async storage
-    const setUser = setItem('user', JSON.stringify(response.result.user));
+    const saveUser = setItem('user', JSON.stringify(response.result.user));
     const setAccessToken = setItem('access_token', response.result.accessToken);
     const setRefreshToken = setItem('refresh_token', response.result.refreshToken);
 
-    await setUser;
+    await saveUser;
     await setAccessToken;
     await setRefreshToken;
+    setUser(response.result.user);
     // Navigate to home screen
-    router.replace('/home');
+    router.replace('/(tabs-customer)/home');
   };
 
   const _handleLogin = async () => {

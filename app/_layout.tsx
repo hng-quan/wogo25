@@ -1,36 +1,26 @@
-import { RoleProvider } from '@/context/RoleContext';
+// RootLayout.tsx
+import { ROLE, RoleProvider, useRole } from '@/context/RoleContext';
 import '@/global.css';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import '@/i18n';
-import { getItem } from '@/lib/storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Redirect, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { PaperProvider } from 'react-native-paper';
+import { View } from 'react-native';
+import { ActivityIndicator, PaperProvider } from 'react-native-paper';
 import 'react-native-reanimated';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
-  const [user, setUser] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      const userStored = await getItem('user');
-      setUser(userStored);
-      setIsLoading(false);
-    })();
-  }, []);
-
-  if (!loaded || isLoading) {
-    return null;
-  }
+  if (!loaded) return null;
 
   return (
     <SafeAreaProvider>
@@ -38,15 +28,7 @@ export default function RootLayout() {
         <RoleProvider>
           <PaperProvider>
             <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-              {/* Điều hướng theo trạng thái đăng nhập */}
-              {user ? <Redirect href='/(tabs-customer)/home' /> : <Redirect href='/(auth)/login' />}
-
-              {/* Khai báo đầy đủ route */}
-              <Stack screenOptions={{headerShown: false}}>
-                <Stack.Screen name='(tabs-customer)' />
-                <Stack.Screen name='(auth)' />
-              </Stack>
-
+              <AppNavigator />
               <Toast />
               <StatusBar style='auto' />
             </ThemeProvider>
@@ -56,3 +38,36 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
+
+const AppNavigator = () => {
+  const { user, role, loading } = useRole();
+  const [initialRoute, setInitialRoute] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        setInitialRoute('(auth)');
+      } else if (role === ROLE.WORKER) {
+        setInitialRoute('(tabs-worker)');
+      } else {
+        setInitialRoute('(tabs-customer)');
+      }
+    }
+  }, [loading, user, role]);
+
+  if (loading || !initialRoute) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  return (
+    <Stack screenOptions={{ headerShown: false }} initialRouteName={initialRoute}>
+      <Stack.Screen name="(tabs-customer)"/>
+      <Stack.Screen name="(tabs-worker)" />
+      <Stack.Screen name="(auth)" />
+    </Stack>
+  );
+};

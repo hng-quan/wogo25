@@ -12,3 +12,7 @@ export async function getItem<T>(key: string): Promise<T | null> {
 export const removeItem = async (key: string) => {
   await AsyncStorage.removeItem(key);
 };
+
+export const clearStorage = async () => {
+  await AsyncStorage.clear();
+};

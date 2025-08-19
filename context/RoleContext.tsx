@@ -1,34 +1,46 @@
-import { getItem, setItem } from "@/lib/storage";
-import { createContext, useContext, useEffect, useState } from "react";
+import { getItem, setItem } from '@/lib/storage';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 export const ROLE = {
-    WORKER: true,
-    CUSTOMER: false
-}
+  WORKER: 'worker',
+  CUSTOMER: 'customer',
+};
 const RoleContext = createContext<any>(null);
 
 export const RoleProvider = ({children}: {children: React.ReactNode}) => {
-    const [role, setRole] = useState(ROLE.CUSTOMER);
-    const toggleRole = async () => {
-        setRole(prev => !prev);
-        await setItem('role', !role ? ROLE.WORKER : ROLE.CUSTOMER);
-    }
+  const [user, setUser] = useState<any>(null);
+  const [role, setRole] = useState<any>(ROLE.CUSTOMER);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        (async() => {
-            const roleStored = await getItem('role');
-            if (roleStored) {
-                if (roleStored === ROLE.WORKER) {
-                    setRole(ROLE.WORKER);
-                }
-            }
-        })();
-    }, [])
-    return (
-        <RoleContext.Provider value={{ role, setRole, toggleRole }}>
-            {children}
-        </RoleContext.Provider>
-    )
-}
+  useEffect(() => {
+    (async () => {
+      const userStored = await getItem('user');
+      const roleStored = await getItem('role');
 
-export const useRole = () =>  useContext(RoleContext);
+      if (userStored) setUser(userStored);
+      if (roleStored) setRole(roleStored);
+
+      setLoading(false);
+      console.log('Role context initialized');
+    })();
+  }, []);
+
+  const toggleRole = async () => {
+    const newRole = role === ROLE.WORKER ? ROLE.CUSTOMER : ROLE.WORKER;
+    await setItem('role', newRole);
+    setRole(newRole);
+  };
+
+  const initialValue = () => {
+    setUser(null);
+    setRole(ROLE.CUSTOMER);
+  };
+
+  return (
+    <RoleContext.Provider value={{role, loading, user, setRole, toggleRole, setUser, initialValue}}>
+      {children}
+    </RoleContext.Provider>
+  );
+};
+
+export const useRole = () => useContext(RoleContext);

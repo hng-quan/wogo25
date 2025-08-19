@@ -1,7 +1,7 @@
 import DialogConfirm from '@/components/dialog/DialogConfirm';
 import LanguageModal from '@/components/modal/LanguageModal';
 import { ROLE, useRole } from '@/context/RoleContext';
-import { removeItem } from '@/lib/storage';
+import { clearStorage } from '@/lib/storage';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,19 +13,24 @@ const Profile = () => {
   const {t} = useTranslation();
   const [visible, setVisible] = useState(false);
   const [dialogVisible, setDialogVisible] = useState(false);
-  const { role, toggleRole } = useRole();
+  const { role, toggleRole, initialValue } = useRole();
+  // Thêm hàm handleSwitch để điều hướng khi đổi role
+  const handleSwitch = async () => {
+    await toggleRole();
+    if (role === ROLE.WORKER) {
+      // Đang là worker, chuyển sang customer
+      router.replace('/(tabs-customer)/profile');
+    } else {
+      // Đang là customer, chuyển sang worker
+      router.replace('/(tabs-worker)/profile');
+    }
+  };
 
   const _logout = async () => {
-    const removeUser = removeItem('user');
-    const removeAccessToken = removeItem('access_token');
-    const removeRefreshToken = removeItem('refresh_token');
-
-    await removeUser;
-    await removeAccessToken;
-    await removeRefreshToken;
-
+    await clearStorage();
+    initialValue();
     // Navigate to login screen
-    router.replace('/login');
+    router.replace('/(auth)/login');
   };
   const settingsOptions = [
     {id: 1, title: 'Thanh toán', icon: 'wallet'},
@@ -37,7 +42,7 @@ const Profile = () => {
   return (
     <View>
       <View>
-        <Switch value={role === ROLE.WORKER} onValueChange={toggleRole}  />
+        <Switch value={role === ROLE.WORKER} onValueChange={handleSwitch}  />
       </View>
       {/* option menu */}
       <View>
