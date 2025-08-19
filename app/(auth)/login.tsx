@@ -18,7 +18,7 @@ const LoginScreen = () => {
 
   const stored = async (response: any) => {
     // Save tokens and user information into async storage
-    const saveUser = setItem('user', JSON.stringify(response.result.user));
+    const saveUser = setItem('user', response.result.user);
     const setAccessToken = setItem('access_token', response.result.accessToken);
     const setRefreshToken = setItem('refresh_token', response.result.refreshToken);
 
@@ -27,7 +27,7 @@ const LoginScreen = () => {
     await setRefreshToken;
     setUser(response.result.user);
     // Navigate to home screen
-    router.replace('/(tabs-customer)/home');
+    router.replace('/(tabs-customer)');
   };
 
   const _handleLogin = async () => {

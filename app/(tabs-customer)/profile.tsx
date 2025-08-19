@@ -1,30 +1,31 @@
 import DialogConfirm from '@/components/dialog/DialogConfirm';
+import ProfileContainer from '@/components/layout/ProfileContainer';
 import LanguageModal from '@/components/modal/LanguageModal';
-import { ROLE, useRole } from '@/context/RoleContext';
+import { useRole } from '@/context/RoleContext';
 import { clearStorage } from '@/lib/storage';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
-import { List, Switch } from 'react-native-paper';
+import { List } from 'react-native-paper';
 
 
 const Profile = () => {
   const {t} = useTranslation();
   const [visible, setVisible] = useState(false);
   const [dialogVisible, setDialogVisible] = useState(false);
-  const { role, toggleRole, initialValue } = useRole();
+  const {initialValue } = useRole();
   // Thêm hàm handleSwitch để điều hướng khi đổi role
-  const handleSwitch = async () => {
-    await toggleRole();
-    if (role === ROLE.WORKER) {
-      // Đang là worker, chuyển sang customer
-      router.replace('/(tabs-customer)/profile');
-    } else {
-      // Đang là customer, chuyển sang worker
-      router.replace('/(tabs-worker)/profile');
-    }
-  };
+  // const handleSwitch = async () => {
+  //   await toggleRole();
+  //   if (role === ROLE.WORKER) {
+  //     // Đang là worker, chuyển sang customer
+  //     router.replace('/(tabs-customer)/profile');
+  //   } else {
+  //     // Đang là customer, chuyển sang worker
+  //     router.replace('/(tabs-worker)/profile');
+  //   }
+  // };
 
   const _logout = async () => {
     await clearStorage();
@@ -41,9 +42,10 @@ const Profile = () => {
 
   return (
     <View>
-      <View>
-        <Switch value={role === ROLE.WORKER} onValueChange={handleSwitch}  />
-      </View>
+  
+        {/* <Switch className='ml-auto' value={role === ROLE.WORKER} onValueChange={handleSwitch}  /> */}
+        <ProfileContainer/>
+  
       {/* option menu */}
       <View>
         {settingsOptions.map(option => (

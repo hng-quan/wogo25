@@ -21,7 +21,6 @@ export const RoleProvider = ({children}: {children: React.ReactNode}) => {
       if (roleStored) setRole(roleStored);
 
       setLoading(false);
-      console.log('Role context initialized');
     })();
   }, []);
 
