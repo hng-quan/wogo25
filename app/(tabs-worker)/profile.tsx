@@ -13,7 +13,7 @@ const Profile = () => {
   const {t} = useTranslation();
   const [visible, setVisible] = useState(false);
   const [dialogVisible, setDialogVisible] = useState(false);
-  const {initialValue, user} = useRole();
+  const {initialValue} = useRole();
 
   const _logout = async () => {
     await clearStorage();
