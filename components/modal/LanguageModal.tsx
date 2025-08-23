@@ -39,8 +39,9 @@ export default LanguageModal;
 
 const styles = StyleSheet.create({
   modalContent: {
-    height: '50%',
     width: '90%',
     margin: 'auto',
+    backgroundColor: 'white',
+    borderRadius: 8,
   },
 });

@@ -9,23 +9,11 @@ import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import { List } from 'react-native-paper';
 
-
 const Profile = () => {
   const {t} = useTranslation();
   const [visible, setVisible] = useState(false);
   const [dialogVisible, setDialogVisible] = useState(false);
-  const {initialValue } = useRole();
-  // Thêm hàm handleSwitch để điều hướng khi đổi role
-  // const handleSwitch = async () => {
-  //   await toggleRole();
-  //   if (role === ROLE.WORKER) {
-  //     // Đang là worker, chuyển sang customer
-  //     router.replace('/(tabs-customer)/profile');
-  //   } else {
-  //     // Đang là customer, chuyển sang worker
-  //     router.replace('/(tabs-worker)/profile');
-  //   }
-  // };
+  const {initialValue} = useRole();
 
   const _logout = async () => {
     await clearStorage();
@@ -42,11 +30,7 @@ const Profile = () => {
 
   return (
     <View>
-  
-        {/* <Switch className='ml-auto' value={role === ROLE.WORKER} onValueChange={handleSwitch}  /> */}
-        <ProfileContainer/>
-  
-      {/* option menu */}
+      <ProfileContainer />
       <View>
         {settingsOptions.map(option => (
           <List.Item

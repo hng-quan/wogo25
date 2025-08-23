@@ -1,21 +1,18 @@
 // RootLayout.tsx
 import { ROLE, RoleProvider, useRole } from '@/context/RoleContext';
 import '@/global.css';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import '@/i18n';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
-import { ActivityIndicator, PaperProvider } from 'react-native-paper';
+import { ActivityIndicator, PaperProvider, ThemeProvider } from 'react-native-paper';
 import 'react-native-reanimated';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
@@ -27,7 +24,7 @@ export default function RootLayout() {
       <SafeAreaView className='flex flex-1'>
         <RoleProvider>
           <PaperProvider>
-            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <ThemeProvider>
               <AppNavigator />
               <Toast />
               <StatusBar style='auto' />
