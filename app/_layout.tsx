@@ -37,14 +37,21 @@ export default function RootLayout() {
 }
 
 const AppNavigator = () => {
-  const { user, role, loading } = useRole();
+  const {user, role, loading} = useRole();
   const [initialRoute, setInitialRoute] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('Loading', loading);
+  }, [loading]);
+
+  useEffect(() => {
     if (!loading) {
+      console.log('User in AppNavigator:', user);
+      console.log('Role in AppNavigator:', role);
       if (!user) {
         setInitialRoute('(auth)');
       } else if (role === ROLE.WORKER) {
+        console.log('Navigating to worker tabs');
         setInitialRoute('(tabs-worker)');
       } else {
         setInitialRoute('(tabs-customer)');
@@ -54,17 +61,17 @@ const AppNavigator = () => {
 
   if (loading || !initialRoute) {
     return (
-      <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" />
+      <View className='flex-1 justify-center items-center'>
+        <ActivityIndicator size='large' />
       </View>
     );
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }} initialRouteName={initialRoute}>
-      <Stack.Screen name="(tabs-customer)"/>
-      <Stack.Screen name="(tabs-worker)" />
-      <Stack.Screen name="(auth)" />
+    <Stack screenOptions={{headerShown: false}} initialRouteName={initialRoute}>
+      <Stack.Screen name='(tabs-customer)' />
+      <Stack.Screen name='(tabs-worker)' />
+      <Stack.Screen name='(auth)' />
     </Stack>
   );
 };
