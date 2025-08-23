@@ -55,10 +55,12 @@ const LoginScreen = () => {
         style={styles.input}
       />
       <Button mode='contained' loading={isLoading} onPress={_handleLogin} style={styles.button}>
-        {t('Đăng nhập')}
+        <Text>
+          {t('Đăng nhập')}
+        </Text>
       </Button>
       <Button mode='outlined' onPress={_navigateToRegister} style={styles.button}>
-        {t('Tạo tài khoản')}
+        <Text>{t('Tạo tài khoản')}</Text>
       </Button>
     </View>
   );

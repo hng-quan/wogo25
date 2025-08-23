@@ -56,10 +56,10 @@ const RegisterScreen = () => {
         style={styles.input}
       />
       <Button mode='contained' loading={isLoading} onPress={_handleRegister} style={styles.button}>
-        {t('Đăng ký')}
+        <Text>{t('Đăng ký')}</Text>
       </Button>
       <Button mode='outlined' onPress={_navigateToLogin} style={styles.button}>
-        {t('Đăng nhập')}
+        <Text>{t('Đăng nhập')}</Text>
       </Button>
     </View>
   );
