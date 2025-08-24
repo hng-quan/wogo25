@@ -1,3 +1,4 @@
+import CustomButton from '@/components/button/Button';
 import Appbar from '@/components/layout/Appbar';
 import { AvatarWrapper } from '@/components/layout/ProfileContainer';
 import { ROLE, useRole } from '@/context/RoleContext';
@@ -5,7 +6,7 @@ import { formPutAPI } from '@/lib/apiService';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Card, IconButton, Text } from 'react-native-paper';
+import { Card, IconButton, Modal, Portal, Text, TextInput } from 'react-native-paper';
 
 const ProfileDetail = () => {
   const {user, role} = useRole();
@@ -13,6 +14,7 @@ const ProfileDetail = () => {
   const fullName = user?.fullName || 'No name';
   const phone = user?.phone || 'No phone';
   const [image, setImage] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const pickImage = async () => {
     // No permissions request is necessary for launching the image library
@@ -48,10 +50,6 @@ const ProfileDetail = () => {
     await formPutAPI('/users/update', formData);
   };
 
-  const _onEditFullName = () => {
-    alert('Chức năng đang phát triển');
-  };
-
   const renderStatistics = ({role}: {role: string}) => {
     if (role === ROLE.WORKER) {
       return (
@@ -82,6 +80,37 @@ const ProfileDetail = () => {
     }
   };
 
+  const UpdateModal = ({fullName, isOpen, onClose}: {fullName: string; isOpen: boolean; onClose: () => void}) => {
+    const [newName, setNewName] = useState(fullName);
+    const [loading, setLoading] = useState(false);
+
+    const updateFullName = async (name: string) => {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append('fullName', name);
+      formData.append('isActive', String(true));
+
+      await formPutAPI('/users/update', formData, () => {
+        setLoading(false);
+        onClose();
+      });
+    };
+
+    return (
+      <Portal>
+        <Modal visible={isOpen} onDismiss={onClose} contentContainerStyle={styles.modalContent}>
+          <Text variant='titleMedium'>
+            Cập nhật
+          </Text>
+          <TextInput label={''} value={newName} onChangeText={setNewName} />
+          <CustomButton loading={loading} mode='elevated' onPress={() => updateFullName(newName)}>
+            Lưu thông tin
+          </CustomButton>
+        </Modal>
+      </Portal>
+    );
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -98,13 +127,15 @@ const ProfileDetail = () => {
         <View className='flex-row items-end'>
           <View className='w-9' />
           <Text style={styles.name}>{fullName}</Text>
-          <IconButton icon={'rename-box'} onPress={_onEditFullName} />
+          <IconButton icon={'rename-box'} onPress={() => setIsModalOpen(true)} />
         </View>
         <Text style={styles.phone}>{phone}</Text>
       </View>
 
       {/* Thông tin thống kê */}
       {renderStatistics({role})}
+
+      <UpdateModal fullName={fullName} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </View>
   );
 };
@@ -156,5 +187,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 20,
     marginTop: 20,
+  },
+  modalContent: {
+    width: '90%',
+    // height: 100,
+    gap: 10,
+    padding: 10,
+    margin: 'auto',
+    backgroundColor: 'white',
+    borderRadius: 8,
   },
 });
