@@ -95,7 +95,7 @@ const ProfileDetail = () => {
         updateUser(res.result);
         setLoading(false);
         onClose();
-      });
+      }, setLoading);
     };
 
     return (
