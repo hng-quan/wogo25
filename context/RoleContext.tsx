@@ -36,7 +36,7 @@ export const RoleProvider = ({children}: {children: React.ReactNode}) => {
   };
 
   return (
-    <RoleContext.Provider value={{role, loading, user, setRole, toggleRole, setUser, initialValue}}>
+    <RoleContext.Provider value={{role, loading, user, setRole, toggleRole, setUser, initialValue, setLoading}}>
       {children}
     </RoleContext.Provider>
   );

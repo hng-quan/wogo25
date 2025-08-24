@@ -1,6 +1,7 @@
 import Appbar from '@/components/layout/Appbar';
 import { AvatarWrapper } from '@/components/layout/ProfileContainer';
 import { ROLE, useRole } from '@/context/RoleContext';
+import { formPutAPI } from '@/lib/apiService';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -26,7 +27,29 @@ const ProfileDetail = () => {
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
+      updateAvatar(result);
     }
+  };
+
+  const updateAvatar = async (image: any) => {
+    const filename = image?.assets[0].uri.split('/').pop() || 'avatar.jpg';
+    const ext = filename.split('.').pop();
+    const type = `image/${ext}`;
+
+    const formData = new FormData();
+    formData.append('fullName', fullName);
+    formData.append('isActive', String(true));
+    formData.append('avatar', {
+      uri: image.assets[0].uri,
+      type: type,
+      name: filename,
+    } as any);
+
+    await formPutAPI('/users/update', formData);
+  };
+
+  const _onEditFullName = () => {
+    alert('Chức năng đang phát triển');
   };
 
   const renderStatistics = ({role}: {role: string}) => {
@@ -68,11 +91,15 @@ const ProfileDetail = () => {
         <View className='items-center relative'>
           <AvatarWrapper url={image ?? avatarUrl} size={76} role={role} />
           <View className='absolute -bottom-6'>
-            <IconButton className='bg-white' size={16} icon={'image-edit'} onPress={pickImage}/>
+            <IconButton className='bg-white' size={16} icon={'image-edit'} onPress={pickImage} />
           </View>
         </View>
 
-        <Text style={styles.name}>{fullName}</Text>
+        <View className='flex-row items-end'>
+          <View className='w-9' />
+          <Text style={styles.name}>{fullName}</Text>
+          <IconButton icon={'rename-box'} onPress={_onEditFullName} />
+        </View>
         <Text style={styles.phone}>{phone}</Text>
       </View>
 

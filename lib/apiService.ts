@@ -1,6 +1,7 @@
-import axios from 'axios';
+import axios, { AxiosHeaders, InternalAxiosRequestConfig } from 'axios';
 import { t } from 'i18next';
 import Toast from 'react-native-toast-message';
+import { getItem } from './storage';
 let isRefreshing = false;
 let refreshSubscribers = [];
 
@@ -23,6 +24,25 @@ export let apiForm = axios.create({
   },
 });
 
+const withAuthToken = async (config: InternalAxiosRequestConfig) => {
+  const token = await getItem('access_token');
+  if (token) {
+    if (config.headers instanceof AxiosHeaders) {
+      config.headers.set('Authorization', `Bearer ${token}`);
+    } else {
+      // fallback nếu headers là object thường
+      (config.headers as Record<string, any>)['Authorization'] = `Bearer ${token}`;
+    }
+  }
+  return config;
+};
+apiClient.interceptors.request.use(withAuthToken, error => {
+  return Promise.reject(error);
+});
+apiForm.interceptors.request.use(withAuthToken, error => {
+  return Promise.reject(error);
+});
+
 /**
  * Gửi yêu cầu HTTP POST đến một endpoint API.
  *
@@ -34,7 +54,7 @@ export let apiForm = axios.create({
  * @param isShowToast - Cờ để hiển thị toast thông báo lỗi.
  * @returns Một Promise resolve với dữ liệu phản hồi hoặc undefined nếu có lỗi.
  */
-export const postAPI = async (
+export const jsonPostAPI = async (
   endpoint: any,
   params = {},
   onSuccess?: (data: any) => void,
@@ -131,9 +151,9 @@ const _handleError = (error: any) => {
   }
 };
 
-export const postForm = async (
+export const formPostAPI = async (
   endpoint: any,
-  params = {},
+  formData = {},
   onSuccess?: (data: any) => void,
   onLoading?: (loading: boolean) => void,
   onError?: (error: any) => void,
@@ -142,7 +162,46 @@ export const postForm = async (
   try {
     onLoading && onLoading(true);
 
-    const response = await apiForm.post(endpoint, params);
+    const response = await apiForm.post(endpoint, formData);
+    const data = response.data;
+
+    // Kiểm tra kết quả
+    if (data.result) {
+      onSuccess?.(data);
+    } else {
+      isShowToast &&
+        Toast.show({
+          type: 'error',
+          text1: data.message,
+        });
+      onLoading && onLoading(false);
+      onError?.(data);
+    }
+    return data;
+  } catch (error: any) {
+    onLoading?.(false);
+
+    // Xử lý lỗi
+    const errorData = error.response?.data || error.message;
+    onError?.(errorData);
+    _handleError(error);
+
+    console.log(`Error call api ${endpoint}:`, errorData);
+  }
+};
+
+export const formPutAPI = async (
+  endpoint: any,
+  formData = {},
+  onSuccess?: (data: any) => void,
+  onLoading?: (loading: boolean) => void,
+  onError?: (error: any) => void,
+  isShowToast?: boolean,
+): Promise<any | undefined> => {
+  try {
+    onLoading && onLoading(true);
+
+    const response = await apiForm.put(endpoint, formData);
     const data = response.data;
 
     // Kiểm tra kết quả

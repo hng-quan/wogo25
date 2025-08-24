@@ -19,7 +19,7 @@ const Profile = () => {
     } else {
       router.replace('/(tabs-customer)/profile');
     }
-  }, 100); // 100ms delay
+  }, 50); // 50ms delay
   // Thêm hàm handleSwitch để điều hướng khi đổi role
   const handleSwitch = async () => {
     await toggleRole();
