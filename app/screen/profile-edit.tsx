@@ -9,7 +9,7 @@ import { StyleSheet, View } from 'react-native';
 import { Card, IconButton, Modal, Portal, Text, TextInput } from 'react-native-paper';
 
 const ProfileDetail = () => {
-  const {user, role} = useRole();
+  const {user, role, updateUser} = useRole();
   const avatarUrl = user?.avatarUrl || '';
   const fullName = user?.fullName || 'No name';
   const phone = user?.phone || 'No phone';
@@ -47,7 +47,7 @@ const ProfileDetail = () => {
       name: filename,
     } as any);
 
-    await formPutAPI('/users/update', formData);
+    await formPutAPI('/users/update', formData, (res) => updateUser(res.result));
   };
 
   const renderStatistics = ({role}: {role: string}) => {
@@ -83,6 +83,7 @@ const ProfileDetail = () => {
   const UpdateModal = ({fullName, isOpen, onClose}: {fullName: string; isOpen: boolean; onClose: () => void}) => {
     const [newName, setNewName] = useState(fullName);
     const [loading, setLoading] = useState(false);
+    const {updateUser} = useRole();
 
     const updateFullName = async (name: string) => {
       setLoading(true);
@@ -90,7 +91,8 @@ const ProfileDetail = () => {
       formData.append('fullName', name);
       formData.append('isActive', String(true));
 
-      await formPutAPI('/users/update', formData, () => {
+      await formPutAPI('/users/update', formData, async (res) => {
+        updateUser(res.result);
         setLoading(false);
         onClose();
       });

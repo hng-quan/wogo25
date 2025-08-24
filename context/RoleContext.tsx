@@ -35,8 +35,13 @@ export const RoleProvider = ({children}: {children: React.ReactNode}) => {
     setRole(ROLE.CUSTOMER);
   };
 
+  const updateUser = async (newUser: any) => {
+    setUser(newUser);
+    await setItem('user', newUser);
+  };
+
   return (
-    <RoleContext.Provider value={{role, loading, user, setRole, toggleRole, setUser, initialValue, setLoading}}>
+    <RoleContext.Provider value={{role, loading, user, setRole, toggleRole, setUser, initialValue, setLoading, updateUser}}>
       {children}
     </RoleContext.Provider>
   );
