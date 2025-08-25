@@ -1,14 +1,9 @@
 // hooks/useNavigationHistory.ts
-import { usePathname, useRouter, useSegments } from "expo-router";
+import { useSegments } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 
 export function useNavigationHistory() {
   const segments = useSegments();
-  console.log("Current segments:", segments);
-  const pathName = usePathname();
-  console.log("Current pathname:", pathName);
-  const logrouter = useRouter();
-  console.log("Router object:", logrouter);
   const [history, setHistory] = useState<string[]>([]);
   const prevSegments = useRef<string[]>([]);
 

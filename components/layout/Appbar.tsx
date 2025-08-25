@@ -3,11 +3,18 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { Icon } from 'react-native-paper';
 
-const Appbar = ({title}: {title: string}) => {
+const Appbar = ({title, onBackPress}: {title: string; onBackPress?: () => void}) => {
+  const handleBackPress = () => {
+    if (onBackPress) {
+      onBackPress();
+    } else {
+      router.back();
+    }
+  };
   return (
     <View className='flex-row items-center justify-between p-4 bg-white'>
       {/* Left */}
-      <TouchableOpacity onPress={() => router.back()} className='w-9 items-start'>
+      <TouchableOpacity onPress={handleBackPress} className='w-9 items-start'>
         <Icon source='chevron-left' size={36} />
       </TouchableOpacity>
 

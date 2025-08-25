@@ -4,6 +4,7 @@ import { AvatarWrapper } from '@/components/layout/ProfileContainer';
 import { ROLE, useRole } from '@/context/RoleContext';
 import { formPutAPI } from '@/lib/apiService';
 import * as ImagePicker from 'expo-image-picker';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Card, IconButton, Modal, Portal, Text, TextInput } from 'react-native-paper';
@@ -113,10 +114,18 @@ const ProfileDetail = () => {
     );
   };
 
+  const goBack = () => {
+    if (role === ROLE.WORKER) {
+      router.replace('/(tabs-worker)/profile');
+    } else {
+      router.replace('/(tabs-customer)/profile');
+    }
+  }
+
   return (
     <View style={styles.container}>
       {/* Header */}
-      <Appbar title='Hồ sơ' />
+      <Appbar title='Hồ sơ' onBackPress={goBack} />
       {/* Avatar và Thông tin */}
       <View style={styles.profileContainer}>
         <View className='items-center relative'>
