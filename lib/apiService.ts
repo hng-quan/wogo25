@@ -1,9 +1,10 @@
 import axios, { AxiosHeaders, InternalAxiosRequestConfig } from 'axios';
+import { router } from 'expo-router';
 import { t } from 'i18next';
 import Toast from 'react-native-toast-message';
-import { getItem } from './storage';
+import { getItem, removeItem, setItem } from './storage';
 let isRefreshing = false;
-let refreshSubscribers = [];
+let refreshSubscribers: any[] = [];
 
 const apiClient = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL,
@@ -94,29 +95,79 @@ export const jsonPostAPI = async (
   }
 };
 
-const _refreshToken = async () => {};
+const _refreshToken = async () => {
+  console.log('===========Gọi _refreshToken==========');
+  try {
+    const token = await getItem('refresh_token');
+    console.log('Token from storage', token);
+    if (!token) return null;
 
-const _onRefreshed = (token: string) => {};
+    const response = await axios.post(process.env.EXPO_PUBLIC_API_URL + '/auth/refresh', {
+      accessToken: token,
+    });
+    console.log('New token', response.data.result);
 
-apiClient.interceptors.response.use(
+    const newAccessToken = response.data.result.accessToken;
+    const newRefreshToken = response.data.result.refreshToken;
+
+    if (newAccessToken) {
+      // setAuthToken(newAccessToken);
+      await setItem('access_token', newAccessToken);
+      await setItem('refresh_token', newRefreshToken);
+
+      console.log('Stored new tokens in storage', await getItem('access_token'), await getItem('refresh_token'));
+      console.log('Đã lưu token mới vào storage');
+      return newAccessToken;
+    }
+    return null;
+  } catch (error) {
+    console.log('Error refreshing new token', error);
+    await removeItem('access_token');
+    await removeItem('refresh_token');
+    await removeItem('user');
+    console.log('Removed tokens from storage because error _refreshToken');
+    return null;
+  }
+};
+
+const _onRefreshed = (token: string) => {
+  console.log('============onRefreshed with token', token);
+  console.log('Current refresh subscribers', refreshSubscribers);
+  // Gọi lại tất cả các request đang chờ
+  refreshSubscribers.forEach(callback => {
+    console.log('Calling refresh subscriber with token', token);
+    console.log('Subscriber callback', callback);
+    callback(token);
+  });
+  refreshSubscribers = [];
+};
+
+apiForm.interceptors.response.use(
   response => response,
   async error => {
+    console.log('apiForm error', error);
     const originalRequest = error.config;
     const status = error.response?.status;
 
-    if (status === 403) {
+    console.log('status apiForm', status);
+
+    if (status === 401 && !originalRequest.url.includes('/refresh')) {
+      console.log('Lỗi 401 in ApiForm');
       if (!originalRequest._retry) {
         originalRequest._retry = true;
+
+        console.log('API form Original request', originalRequest);
 
         if (!isRefreshing) {
           isRefreshing = true;
           _refreshToken()
             .then(newToken => {
-              // if (newToken) {
-              //   _onRefreshed(newToken);
-              // } else {
-              //   // window.location.href = '/login';
-              // }
+              if (newToken) {
+                _onRefreshed(newToken);
+              } else {
+                console.log('Chuyển đến trang login do không có token');
+                router.replace('/(auth)/login');
+              }
             })
             .finally(() => {
               isRefreshing = false;
@@ -124,14 +175,67 @@ apiClient.interceptors.response.use(
         }
 
         return new Promise(resolve => {
-          // refreshSubscribers.push(token => {
-          //   if (token) {
-          //     originalRequest.headers['authorization'] = `Bearer ${token}`;
-          //     resolve(apiClient(originalRequest));
-          //   } else {
-          //     resolve(Promise.reject(error));
-          //   }
-          // });
+          console.log('Adding request to refresh subscribers', resolve);
+          refreshSubscribers.push((token: string) => {
+            console.log('Promised with token', token);
+            if (token) {
+              originalRequest.headers['authorization'] = `Bearer ${token}`;
+              resolve(apiForm(originalRequest));
+            } else {
+              resolve(Promise.reject(error));
+            }
+          });
+        });
+      }
+    }
+    _handleError(error);
+    return Promise.reject(error);
+  },
+);
+
+apiClient.interceptors.response.use(
+  response => response,
+  async error => {
+    console.log('apiClient error', error);
+    const originalRequest = error.config;
+    const status = error.response?.status;
+
+    console.log('status apiClient', status);
+
+    if (status === 401 && !originalRequest.url.includes('/refresh')) {
+      console.log('Lỗi 401 in ApiClient');
+      if (!originalRequest._retry) {
+        originalRequest._retry = true;
+
+        console.log('API Client Original request', originalRequest);
+
+        if (!isRefreshing) {
+          isRefreshing = true;
+          _refreshToken()
+            .then(newToken => {
+              if (newToken) {
+                _onRefreshed(newToken);
+              } else {
+                console.log('Chuyển đến trang login do không có token');
+                router.replace('/(auth)/login');
+              }
+            })
+            .finally(() => {
+              isRefreshing = false;
+            });
+        }
+
+        return new Promise(resolve => {
+          console.log('Adding request to refresh subscribers', resolve);
+          refreshSubscribers.push((token: string) => {
+            console.log('Promised with token', token);
+            if (token) {
+              originalRequest.headers['authorization'] = `Bearer ${token}`;
+              resolve(apiClient(originalRequest));
+            } else {
+              resolve(Promise.reject(error));
+            }
+          });
         });
       }
     }
