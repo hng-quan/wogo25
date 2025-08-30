@@ -44,17 +44,7 @@ apiForm.interceptors.request.use(withAuthToken, error => {
   return Promise.reject(error);
 });
 
-/**
- * Gửi yêu cầu HTTP POST đến một endpoint API.
- *
- * @param endpoint - URL của endpoint API.
- * @param params - Dữ liệu sẽ được gửi trong body của yêu cầu.
- * @param onSuccess - Hàm callback được gọi khi yêu cầu thành công.
- * @param onLoading - Hàm callback để xử lý trạng thái loading.
- * @param onError - Hàm callback được gọi khi yêu cầu thất bại.
- * @param isShowToast - Cờ để hiển thị toast thông báo lỗi.
- * @returns Một Promise resolve với dữ liệu phản hồi hoặc undefined nếu có lỗi.
- */
+
 export const jsonPostAPI = async (
   endpoint: any,
   params = {},
@@ -67,6 +57,47 @@ export const jsonPostAPI = async (
     onLoading && onLoading(true);
 
     const response = await apiClient.post(endpoint, params);
+    const data = response.data;
+
+    // Kiểm tra kết quả
+    if (data.result) {
+      onSuccess?.(data);
+    } else {
+      isShowToast &&
+        Toast.show({
+          type: 'error',
+          text1: data.message,
+        });
+      onLoading && onLoading(false);
+      onError?.(data);
+    }
+    onLoading?.(false);
+    return data;
+  } catch (error: any) {
+    onLoading?.(false);
+
+    // Xử lý lỗi
+    const errorData = error.response?.data || error.message;
+    onError?.(errorData);
+    _handleError(error);
+
+    console.log(`Error call api ${endpoint}:`, errorData);
+  }
+};
+
+
+export const jsonGettAPI = async (
+  endpoint: any,
+  params = {},
+  onSuccess?: (data: any) => void,
+  onLoading?: (loading: boolean) => void,
+  onError?: (error: any) => void,
+  isShowToast?: boolean,
+): Promise<any | undefined> => {
+  try {
+    onLoading && onLoading(true);
+
+    const response = await apiClient.get(endpoint, params);
     const data = response.data;
 
     // Kiểm tra kết quả

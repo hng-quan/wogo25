@@ -1,4 +1,4 @@
-import CustomButton from '@/components/button/Button';
+import ButtonCustom from '@/components/button/ButtonCustom';
 import Appbar from '@/components/layout/Appbar';
 import { AvatarWrapper } from '@/components/layout/ProfileContainer';
 import { ROLE, useRole } from '@/context/RoleContext';
@@ -106,9 +106,9 @@ const ProfileDetail = () => {
             Cập nhật
           </Text>
           <TextInput label={''} value={newName} onChangeText={setNewName} />
-          <CustomButton loading={loading} mode='elevated' onPress={() => updateFullName(newName)}>
+          <ButtonCustom loading={loading} mode='elevated' onPress={() => updateFullName(newName)}>
             Lưu thông tin
-          </CustomButton>
+          </ButtonCustom>
         </Modal>
       </Portal>
     );

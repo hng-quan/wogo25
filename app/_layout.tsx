@@ -1,7 +1,6 @@
 // app/_layout.tsx
 import { RoleProvider } from '@/context/RoleContext';
 import '@/global.css';
-import { useNavigationHistory } from '@/hooks/useNavigationHistory';
 import '@/i18n';
 import { useFonts } from 'expo-font';
 import { Slot } from 'expo-router';
@@ -16,7 +15,7 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
-  const history = useNavigationHistory();
+  // const history = useNavigationHistory();
 
   if (!loaded) {
     return (
@@ -38,7 +37,7 @@ export default function RootLayout() {
             <ThemeProvider>
               <Slot />
               {/* Debug */}
-              {history.length > 0 && <>{console.log('📜 History stack:', history)}</>}
+              {/* {history.length > 0 && <>{console.log('📜 History stack:', history)}</>} */}
               <Toast />
               <StatusBar style='auto' />
             </ThemeProvider>

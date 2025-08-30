@@ -3,7 +3,7 @@ import React from 'react';
 import { StyleSheet } from 'react-native';
 import { Button } from 'react-native-paper';
 
-const CustomButton = ({children, ...props}: React.ComponentProps<typeof Button>) => {
+const ButtonCustom = ({children, ...props}: React.ComponentProps<typeof Button>) => {
   const {role} = useRole();
   const buttonColor = role === ROLE.WORKER ? styles.workerButtonColor : styles.customerButtonColor;
   return (
@@ -13,7 +13,7 @@ const CustomButton = ({children, ...props}: React.ComponentProps<typeof Button>)
   );
 };
 
-export default CustomButton;
+export default ButtonCustom;
 
 const styles = StyleSheet.create({
   button: {
