@@ -3,7 +3,7 @@ import Appbar from '@/components/layout/Appbar';
 import { formPostAPI } from '@/lib/apiService';
 import { generateDocumentName } from '@/lib/utils';
 import * as DocumentPicker from 'expo-document-picker';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { Image, ScrollView, Text, View } from 'react-native';
 import { Icon } from 'react-native-paper';
@@ -62,6 +62,7 @@ export default function Index() {
         text2: 'Tệp đã được upload thành công',
       });
       setFiles([]);
+      router.replace('/ppi/doc/success');
     } else {
       Toast.show({
         type: 'error',

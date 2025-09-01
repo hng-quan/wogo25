@@ -1,7 +1,7 @@
 import ButtonCustom from '@/components/button/ButtonCustom';
 import Appbar from '@/components/layout/Appbar';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import { Text } from 'react-native-paper';
@@ -15,7 +15,7 @@ const profesTest = [
 export default function Index() {
   const {t} = useTranslation();
 
-  const [professionalList, setProfessionalList] = useState(profesTest);
+  // const [professionalList, setProfessionalList] = useState(profesTest);
 
   const _goBack = () => {
     router.replace('/(tabs-worker)/profile');
