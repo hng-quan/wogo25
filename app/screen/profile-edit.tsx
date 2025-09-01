@@ -156,7 +156,7 @@ export default ProfileDetail;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    // backgroundColor: '#FFFFFF',
   },
   profileContainer: {
     alignItems: 'center',
