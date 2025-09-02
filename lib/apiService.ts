@@ -1,8 +1,10 @@
+import { getRoleContextRef } from '@/context/RoleContext';
 import axios, { AxiosHeaders, InternalAxiosRequestConfig } from 'axios';
 import { router } from 'expo-router';
 import { t } from 'i18next';
 import Toast from 'react-native-toast-message';
-import { getItem, removeItem, setItem } from './storage';
+import { clearStorage, getItem, setItem } from './storage';
+
 let isRefreshing = false;
 let refreshSubscribers: any[] = [];
 
@@ -44,7 +46,6 @@ apiForm.interceptors.request.use(withAuthToken, error => {
   return Promise.reject(error);
 });
 
-
 export const jsonPostAPI = async (
   endpoint: any,
   params = {},
@@ -84,7 +85,6 @@ export const jsonPostAPI = async (
     console.log(`Error call api ${endpoint}:`, errorData);
   }
 };
-
 
 export const jsonGettAPI = async (
   endpoint: any,
@@ -153,9 +153,6 @@ const _refreshToken = async () => {
     return null;
   } catch (error) {
     console.log('Error refreshing new token', error);
-    await removeItem('access_token');
-    await removeItem('refresh_token');
-    await removeItem('user');
     console.log('Removed tokens from storage because error _refreshToken');
     return null;
   }
@@ -171,6 +168,12 @@ const _onRefreshed = (token: string) => {
     callback(token);
   });
   refreshSubscribers = [];
+};
+
+const navigateToLogin = async () => {
+  await clearStorage();
+  getRoleContextRef()?.initialValue();
+  router.replace('/(auth)/login');
 };
 
 apiForm.interceptors.response.use(
@@ -192,12 +195,12 @@ apiForm.interceptors.response.use(
         if (!isRefreshing) {
           isRefreshing = true;
           _refreshToken()
-            .then(newToken => {
+            .then(async newToken => {
               if (newToken) {
                 _onRefreshed(newToken);
               } else {
                 console.log('Chuyển đến trang login do không có token');
-                router.replace('/(auth)/login');
+                navigateToLogin();
               }
             })
             .finally(() => {
@@ -247,8 +250,7 @@ apiClient.interceptors.response.use(
               if (newToken) {
                 _onRefreshed(newToken);
               } else {
-                console.log('Chuyển đến trang login do không có token');
-                router.replace('/(auth)/login');
+                navigateToLogin();
               }
             })
             .finally(() => {

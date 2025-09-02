@@ -13,7 +13,7 @@ import { Icon, List } from 'react-native-paper';
 export default function AddProfessional() {
   const {t} = useTranslation();
   const [serviceList, setServiceList] = useState<ServiceType[]>([]);
-    const [modalVisible, setModalVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
   // const [pageNum, setPageNum] = useState(1);
   // const [pageSize, setPageSize] = useState(1000);
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,14 +42,21 @@ export default function AddProfessional() {
     router.replace('/ppi');
   };
 
-  const gotoUploadDocument = () => {
-    router.push({
-      pathname: '/ppi/doc',
-      params: {
-        service_id: selectedService?.id, 
-        serviceName: selectedService?.serviceName
-      }
-    });
+  const gotoVerify = (value: any) => {
+    console.log('value:', value);
+    if (value === 'test') {
+      router.push({
+        pathname: '/ppi/quiz',
+      })
+    } else { //license
+      router.push({
+        pathname: '/ppi/doc',
+        params: {
+          service_id: selectedService?.id,
+          serviceName: selectedService?.serviceName,
+        },
+      });
+    }
   };
   return (
     <View>
@@ -81,8 +88,8 @@ export default function AddProfessional() {
       <VerificationMethodModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
-        onConfirm={() => {
-          gotoUploadDocument();
+        onConfirm={value => {
+          gotoVerify(value);
           setModalVisible(false);
         }}
       />

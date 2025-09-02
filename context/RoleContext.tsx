@@ -1,3 +1,4 @@
+import { jsonGettAPI } from '@/lib/apiService';
 import { getItem, setItem } from '@/lib/storage';
 import { createContext, useContext, useEffect, useState } from 'react';
 
@@ -6,6 +7,8 @@ export const ROLE = {
   CUSTOMER: 'customer',
 };
 const RoleContext = createContext<any>(null);
+
+let roleContextRef: any = null;
 
 export const RoleProvider = ({children}: {children: React.ReactNode}) => {
   const [user, setUser] = useState<any>(null);
@@ -16,6 +19,10 @@ export const RoleProvider = ({children}: {children: React.ReactNode}) => {
     (async () => {
       const userStored = await getItem('user');
       const roleStored = await getItem('role');
+
+      if (userStored) {
+        await jsonGettAPI('/users/all');
+      }
 
       if (userStored) setUser(userStored);
       if (roleStored) setRole(roleStored);
@@ -40,6 +47,10 @@ export const RoleProvider = ({children}: {children: React.ReactNode}) => {
     await setItem('user', newUser);
   };
 
+  roleContextRef = {
+    initialValue,
+  }
+
   return (
     <RoleContext.Provider value={{role, loading, user, setRole, toggleRole, setUser, initialValue, setLoading, updateUser}}>
       {children}
@@ -48,3 +59,5 @@ export const RoleProvider = ({children}: {children: React.ReactNode}) => {
 };
 
 export const useRole = () => useContext(RoleContext);
+
+export const getRoleContextRef = () => roleContextRef;

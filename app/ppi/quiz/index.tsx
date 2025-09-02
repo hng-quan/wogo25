@@ -1,10 +1,11 @@
+import Appbar from '@/components/layout/Appbar'
 import React from 'react'
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
 
-export default function index() {
+export default function Index() {
   return (
     <View>
-      <Text>index</Text>
+      <Appbar title='Làm bài kiểm tra' />
     </View>
   )
 }
