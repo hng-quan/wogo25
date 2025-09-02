@@ -1,4 +1,3 @@
-import { getRoleContextRef } from '@/context/RoleContext';
 import axios, { AxiosHeaders, InternalAxiosRequestConfig } from 'axios';
 import { router } from 'expo-router';
 import { t } from 'i18next';
@@ -134,7 +133,7 @@ const _refreshToken = async () => {
     if (!token) return null;
 
     const response = await axios.post(process.env.EXPO_PUBLIC_API_URL + '/auth/refresh', {
-      accessToken: token,
+      refreshToken: token,
     });
     console.log('New token', response.data.result);
 
@@ -172,6 +171,7 @@ const _onRefreshed = (token: string) => {
 
 const navigateToLogin = async () => {
   await clearStorage();
+  const { getRoleContextRef } = await import('@/context/RoleContext');
   getRoleContextRef()?.initialValue();
   router.replace('/(auth)/login');
 };

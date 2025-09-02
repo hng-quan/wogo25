@@ -21,7 +21,8 @@ export const RoleProvider = ({children}: {children: React.ReactNode}) => {
       const roleStored = await getItem('role');
 
       if (userStored) {
-        await jsonGettAPI('/users/all');
+        const res = await jsonGettAPI('/users/my-profile');
+        console.log('Fetched user profile:', res);
       }
 
       if (userStored) setUser(userStored);

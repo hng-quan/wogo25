@@ -33,7 +33,8 @@ export default function AddProfessional() {
     const res = await jsonGettAPI('/services/searchByName', {
       params: params,
     });
-    const childData = res.result.data.flatMap((item: any) => item.childServices);
+    console.log('res', res.result);
+    const childData = res.result.flatMap((item: any) => item.childServices);
     console.log('childData', childData);
     setServiceList(childData);
   };
