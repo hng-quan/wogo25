@@ -47,7 +47,7 @@ export default function Index() {
     formData.append('serviceId', String(service_id));
     formData.append('documentType', 'WORKER_LICENSE');
     formData.append('documentName', generateDocumentName(String(serviceName)));
-
+    
     files.forEach(file => {
       formData.append('files', {
         uri: file.uri,

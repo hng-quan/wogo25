@@ -6,3 +6,9 @@ export interface ServiceType {
   parentId: number;
   active: boolean;
 }
+
+export interface ServiceGroup {
+  parentService: ServiceType;
+  childServices: ServiceType[];
+}
+

@@ -2,7 +2,7 @@ import Appbar from '@/components/layout/Appbar';
 import VerificationMethodModal from '@/components/modal/VerificationMethodModal';
 import SearchCustom from '@/components/search/SearchCustom';
 import useDebounce from '@/hooks/useDebounce';
-import { ServiceType } from '@/interfaces/interfaces';
+import { ServiceGroup, ServiceType } from '@/interfaces/interfaces';
 import { jsonGettAPI } from '@/lib/apiService';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -12,7 +12,7 @@ import { Icon, List } from 'react-native-paper';
 
 export default function AddProfessional() {
   const {t} = useTranslation();
-  const [serviceList, setServiceList] = useState<ServiceType[]>([]);
+  const [serviceList, setServiceList] = useState<ServiceGroup[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   // const [pageNum, setPageNum] = useState(1);
   // const [pageSize, setPageSize] = useState(1000);
@@ -34,9 +34,9 @@ export default function AddProfessional() {
       params: params,
     });
     console.log('res', res.result);
-    const childData = res.result.flatMap((item: any) => item.childServices);
-    console.log('childData', childData);
-    setServiceList(childData);
+    // const childData = res.result.flatMap((item: any) => item.childServices);
+    // console.log('childData', childData);
+    setServiceList(res.result);
   };
 
   const _goBack = () => {
@@ -48,8 +48,12 @@ export default function AddProfessional() {
     if (value === 'test') {
       router.push({
         pathname: '/ppi/quiz',
-      })
-    } else { //license
+        params: {
+          parentServiceId: selectedService?.parentId,
+        },
+      });
+    } else {
+      //license
       router.push({
         pathname: '/ppi/doc',
         params: {
@@ -71,19 +75,23 @@ export default function AddProfessional() {
         <FlatList
           data={serviceList}
           renderItem={({item}) => {
+            const parent = item.parentService;
+            const children = item.childServices;
+            const childNames = children.map((c: any) => c.serviceName).join(', ');
+
             return (
               <List.Item
-                title={item.serviceName}
-                description={item.description}
+                title={parent.serviceName} // hiển thị parent
+                description={childNames || parent.description} // nếu có child thì show child list
                 onPress={() => {
-                  setSelectedService(item);
+                  setSelectedService(parent);
                   setModalVisible(true);
                 }}
-                left={props => <Icon {...props} size={24} source={item?.iconUrl ?? ''} />}
+                left={props => <Icon {...props} size={24} source={parent?.iconUrl ?? ''} />}
               />
             );
           }}
-          keyExtractor={item => item.id.toString()}
+          keyExtractor={item => item.parentService.id.toString()}
         />
       </View>
       <VerificationMethodModal

@@ -1,4 +1,5 @@
 // app/_layout.tsx
+import { NetworkProvider } from '@/context/NetworkContext';
 import { RoleProvider } from '@/context/RoleContext';
 import '@/global.css';
 import '@/i18n';
@@ -32,17 +33,19 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <SafeAreaView className='flex flex-1'>
-        <RoleProvider>
-          <PaperProvider>
-            <ThemeProvider>
-              <Slot />
-              {/* Debug */}
-              {/* {history.length > 0 && <>{console.log('📜 History stack:', history)}</>} */}
-              <Toast />
-              <StatusBar style='auto' />
-            </ThemeProvider>
-          </PaperProvider>
-        </RoleProvider>
+        <NetworkProvider>
+          <RoleProvider>
+            <PaperProvider>
+              <ThemeProvider>
+                <Slot />
+                {/* Debug */}
+                {/* {history.length > 0 && <>{console.log('📜 History stack:', history)}</>} */}
+                <Toast />
+                <StatusBar style='auto' />
+              </ThemeProvider>
+            </PaperProvider>
+          </RoleProvider>
+        </NetworkProvider>
       </SafeAreaView>
     </SafeAreaProvider>
   );

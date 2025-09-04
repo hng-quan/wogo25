@@ -34,7 +34,7 @@ export default function Success() {
         mode="contained"
         onPress={() => router.replace('/ppi')}
       >
-        Quay về trang nghiệp vụ
+        Xem nghiệp vụ
       </ButtonCustom>
     </View>
   );
