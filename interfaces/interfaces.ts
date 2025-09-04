@@ -12,3 +12,19 @@ export interface ServiceGroup {
   childServices: ServiceType[];
 }
 
+export interface QuestionOption {
+  id: number;
+  optionText: string;
+  orderIndex: number;
+  questionId: number;
+}
+
+export interface Question {
+  id: number;
+  questionText: string;
+  questionType: string; // 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE'
+  explanation: string;
+  imageUrl: string | null;
+  questionCategory: any;
+  questionOptions: QuestionOption[];
+}
