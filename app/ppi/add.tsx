@@ -49,8 +49,15 @@ export default function AddProfessional() {
       router.push({
         pathname: '/ppi/quiz',
         params: {
-          parentServiceId: selectedService?.parentId,
+          service_id: selectedService?.id,
+          service_name: selectedService?.serviceName,
         },
+        // pathname: '/ppi/quiz/result',
+        // params: {
+        //   passed: String(true),
+        //   scorePercentage: 80,s
+        //   service_name: selectedService?.serviceName,
+        // }
       });
     } else {
       //license
