@@ -3,6 +3,7 @@ import HelpText from '@/components/text/HelpText';
 import { useRole } from '@/context/RoleContext';
 import { jsonPostAPI } from '@/lib/apiService';
 import { setItem } from '@/lib/storage';
+import { validatePhoneNumber } from '@/lib/utils';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -32,6 +33,17 @@ const LoginScreen = () => {
   };
 
   const _handleLogin = async () => {
+    const phoneError = error?.phoneError ?? null;
+    const passwordError = error?.passwordError ?? null;
+    if (phoneError || passwordError) return;
+    if (phoneNumber.trim() === '' || password.trim() === '') {
+      setError((prev: any) => ({
+        ...prev,
+        phoneError: 'Vui lòng nhập số điện thoại',
+        passwordError: 'Vui lòng nhập mật khẩu',
+      }));
+      return;
+    }
     await jsonPostAPI('/auth/login', {phone: phoneNumber, password: password}, stored, setIsLoading, setError);
   };
 
@@ -39,7 +51,6 @@ const LoginScreen = () => {
     router.push('/register');
   };
   return (
-    // <View style={styles.container}>
     <LinearGradient colors={['#E8F5E9', '#C8E6C9']} style={styles.container}>
       <Text variant='headlineSmall' style={styles.title}>
         {t('Đăng nhập')}
@@ -51,10 +62,16 @@ const LoginScreen = () => {
       <TextInput
         label={t('Số điện thoại')}
         value={phoneNumber}
-        onChangeText={setPhoneNumber}
+        onChangeText={text => {
+          setPhoneNumber(text);
+          setError((prev: any) => ({...prev, phoneError: validatePhoneNumber(text)}));
+        }}
         style={styles.input}
         theme={inputTheme}
       />
+      <HelpText type='error' visible={error !== null} style={styles.errorText}>
+        {t(error?.phoneError)}
+      </HelpText>
       <TextInput
         label={t('Mật khẩu')}
         secureTextEntry={hidePassword}
@@ -66,12 +83,19 @@ const LoginScreen = () => {
           />
         }
         value={password}
-        onChangeText={setPassword}
-        style={[styles.input, {marginTop: 15}]}
+        onChangeText={text => {
+          setPassword(text);
+          setError((prev: any) => ({...prev, passwordError: password.length === 0 ? 'Vui lòng nhập mật khẩu' : null}));
+        }}
+        style={styles.input}
         theme={inputTheme}
       />
-
-      <Text style={styles.forgotPasswordText}>Quên mật khẩu?</Text>
+      {error?.passwordError && (
+        <HelpText type='error' visible={error !== null} style={styles.errorText}>
+          {t(error?.passwordError)}
+        </HelpText>
+      )}
+      <Text style={styles.forgotPasswordText}>{t('Quên mật khẩu?')}</Text>
 
       <ButtonCustom mode='contained' loading={isLoading} onPress={_handleLogin} style={{marginTop: 15}}>
         {t('Đăng nhập')}
@@ -82,12 +106,11 @@ const LoginScreen = () => {
 
       <View style={{alignItems: 'center'}}>
         <Text style={styles.termsText}>
-          <Text style={styles.boldText}>Điều khoản dịch vụ</Text>
+          <Text style={styles.boldText}>{t('Điều khoản dịch vụ')}</Text>
           {''} &amp; {''}
-          <Text style={styles.boldText}>Chính sách bảo mật</Text>
+          <Text style={styles.boldText}>{t('Chính sách bảo mật')}</Text>
         </Text>
       </View>
-      {/* </View> */}
     </LinearGradient>
   );
 };

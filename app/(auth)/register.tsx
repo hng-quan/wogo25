@@ -95,7 +95,7 @@ const RegisterScreen = () => {
       </ButtonCustom>
 
       <Text style={styles.termsText}>
-        Bằng cách nhấn đăng ký, bạn đồng ý với <Text style={styles.boldText}>Điều khoản dịch vụ</Text> & <Text style={styles.boldText}>Chính sách bảo mật</Text>
+        {t('Bằng cách nhấn đăng ký, bạn đồng ý với')} <Text style={styles.boldText}>{t('Điều khoản dịch vụ')}</Text> & <Text style={styles.boldText}>{t('Chính sách bảo mật')}</Text>
       </Text>
     </LinearGradient>
   );
