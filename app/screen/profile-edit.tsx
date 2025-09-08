@@ -6,6 +6,7 @@ import { formPutAPI } from '@/lib/apiService';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import { Card, IconButton, Modal, Portal, Text, TextInput } from 'react-native-paper';
 
@@ -82,9 +83,10 @@ const ProfileDetail = () => {
   };
 
   const UpdateModal = ({fullName, isOpen, onClose}: {fullName: string; isOpen: boolean; onClose: () => void}) => {
+    const {t} = useTranslation();
     const [newName, setNewName] = useState(fullName);
     const [loading, setLoading] = useState(false);
-    const {updateUser} = useRole();
+    const {updateUser, role} = useRole();
 
     const updateFullName = async (name: string) => {
       setLoading(true);
@@ -99,15 +101,16 @@ const ProfileDetail = () => {
       }, setLoading);
     };
 
+    const colorActive = role === ROLE.CUSTOMER ? '#4CAF50' : '#2196F3';
     return (
       <Portal>
         <Modal visible={isOpen} onDismiss={onClose} contentContainerStyle={styles.modalContent}>
           <Text variant='titleMedium'>
-            Cập nhật
+            {t('Cập nhật')}
           </Text>
-          <TextInput label={''} value={newName} onChangeText={setNewName} />
+          <TextInput mode='outlined' outlineColor={colorActive} activeOutlineColor={colorActive} label={''} value={newName} onChangeText={setNewName} />
           <ButtonCustom loading={loading} mode='elevated' onPress={() => updateFullName(newName)}>
-            Lưu thông tin
+            {t('Lưu thông tin')}
           </ButtonCustom>
         </Modal>
       </Portal>
@@ -156,7 +159,7 @@ export default ProfileDetail;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor: '#FFFFFF',
+    backgroundColor: '#F2F2F2',
   },
   profileContainer: {
     alignItems: 'center',

@@ -45,6 +45,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50', // Green 500
   },
   workerButtonColor: {
-    backgroundColor: '#2196F3', // Blue 500
+    backgroundColor: '#1565C0', // Blue 500
   },
 });

@@ -12,7 +12,7 @@ const Appbar = ({title, onBackPress}: {title: string; onBackPress?: () => void})
     }
   };
   return (
-    <View className='flex-row items-center justify-between p-4 bg-white'>
+    <View className='flex-row items-center justify-between p-4 bg-[#F2F2F2]'>
       {/* Left */}
       <TouchableOpacity onPress={handleBackPress} className='w-9 items-start'>
         <Icon source='chevron-left' size={36} />

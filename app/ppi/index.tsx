@@ -3,7 +3,7 @@ import Appbar from '@/components/layout/Appbar';
 import { router } from 'expo-router';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
 const profesTest = [
@@ -25,7 +25,7 @@ export default function Index() {
     router.replace('/ppi/add')
   }
   return (
-    <View>
+    <View style={styles.container}>
       <Appbar title={t('Nghiệp vụ')} onBackPress={_goBack} />
 
       <View className='p-4 gap-4'>
@@ -44,3 +44,10 @@ export default function Index() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F2F2F2',
+  }
+})

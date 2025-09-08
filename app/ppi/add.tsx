@@ -7,7 +7,7 @@ import { jsonGettAPI } from '@/lib/apiService';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { Icon, List } from 'react-native-paper';
 
 export default function AddProfessional() {
@@ -71,7 +71,7 @@ export default function AddProfessional() {
     }
   };
   return (
-    <View>
+    <View style={styles.container}>
       <Appbar title={t('Thêm nghiệp vụ')} onBackPress={_goBack} />
       <View className='p-4 gap-4'>
         <SearchCustom
@@ -112,3 +112,10 @@ export default function AddProfessional() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F2F2F2',
+  }
+})

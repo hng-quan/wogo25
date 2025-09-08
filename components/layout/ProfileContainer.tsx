@@ -35,12 +35,14 @@ const Profile = () => {
       <View className='flex flex-row items-center'>
         <Text className='text-3xl !font-bold'>Tài khoản</Text>
         <View className='flex flex-row items-center ml-auto gap-2'>
-          <Text className={`text-lg !font-bold ${role === ROLE.WORKER ? '!text-blue-500' : '!text-green-500'}`}>
+          <Text variant='headlineSmall' style={[{color: role === ROLE.WORKER ? '#1565C0' : '#4CAF50'}, {
+            fontWeight: 'bold',
+          }]}>
             {t(`${role === ROLE.WORKER ? 'Thợ' : 'Khách'}`)}
           </Text>
           <Switch
             className='ml-auto'
-            theme={{colors: {primary: role === ROLE.WORKER ? 'blue' : 'green'}}}
+            theme={{colors: {primary: role === ROLE.WORKER ? '#1565C0' : '#4CAF50'}}}
             value={role === ROLE.WORKER}
             onValueChange={handleSwitch}
           />
@@ -81,7 +83,7 @@ export const AvatarWrapper = ({
     return (
       <View className={className}>
         <Avatar.Icon
-          style={{backgroundColor: `${role === ROLE.WORKER ? 'blue' : 'green'}`}}
+          style={{backgroundColor: `${role === ROLE.WORKER ? '#1565C0' : '#4CAF50'}`}}
           size={size}
           icon='account'
         />

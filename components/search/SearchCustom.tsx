@@ -24,7 +24,7 @@ export default function SearchCustom({
       style={[
         {
           borderRadius: 12,
-          backgroundColor: '#f1f3f6',
+          backgroundColor: '#FFFFFF',
           elevation: 0, // bỏ shadow
         },
         style,

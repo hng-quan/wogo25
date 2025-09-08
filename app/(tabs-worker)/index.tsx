@@ -38,7 +38,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     padding: 20,
-    backgroundColor: Colors.light.background,
+    backgroundColor: '#F2F2F2',
     flexGrow: 1,
   },
   title: {
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    backgroundColor: 'blue',
+    backgroundColor: '#1565C0',
     paddingVertical: 16,
     marginHorizontal: 6,
     borderRadius: 12,
