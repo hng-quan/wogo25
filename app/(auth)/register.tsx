@@ -29,6 +29,35 @@ const RegisterScreen = () => {
   };
 
   const _handleRegister = async () => {
+    const phoneError = error?.phoneError ?? null;
+    const passwordError = error?.passwordError ?? null;
+    const fullNameError = error?.fullNameError ?? null;
+    if (phoneError || passwordError || fullNameError) return;
+
+    let hasError = false;
+    if (phoneNumber.trim() === '') {
+      setError((prev: any) => ({
+        ...prev,
+        phoneError: 'Vui lòng nhập số điện thoại',
+      }));
+      hasError = true;
+    }
+    if (password.trim() === '') {
+      setError((prev: any) => ({
+        ...prev,
+        passwordError: 'Vui lòng nhập mật khẩu',
+      }));
+      hasError = true;
+    }
+    if (fullName.trim() === '') {
+      setError((prev: any) => ({
+        ...prev,
+        fullNameError: 'Vui lòng nhập họ và tên',
+      }));
+      hasError = true;
+    }
+    if (hasError) return;
+
     const params = {
       phone: phoneNumber,
       password: password,
@@ -52,22 +81,28 @@ const RegisterScreen = () => {
       <TextInput
         label={t('Số điện thoại')}
         value={phoneNumber}
-        onChangeText={setPhoneNumber}
+        onChangeText={text => {
+          setPhoneNumber(text);
+          setError((prev: any) => ({...prev, phoneError: validatePhoneNumber(text)}));
+        }}
         style={styles.input}
         theme={inputTheme}
       />
-      <HelpText type='error' visible={!validatePhoneNumber(phoneNumber)}>
-        Số điện thoại không hợp lệ!
+      <HelpText type='error' visible={error !== null}>
+        {t(error?.phoneError)}
       </HelpText>
       <TextInput
         label={t('Họ và tên')}
         value={fullName}
-        onChangeText={setFullName}
+        onChangeText={text => {
+          setFullName(text);
+          setError((prev: any) => ({...prev, fullNameError: validateFullName(text)}));
+        }}
         style={styles.input}
         theme={inputTheme}
       />
-      <HelpText type='error' visible={!validateFullName(fullName)}>
-        Họ và tên không hợp lệ!
+      <HelpText type='error' visible={error !== null}>
+        {t(error?.fullNameError)}
       </HelpText>
       <TextInput
         label={t('Mật khẩu')}
@@ -80,12 +115,15 @@ const RegisterScreen = () => {
           />
         }
         value={password}
-        onChangeText={setPassword}
+        onChangeText={text => {
+          setPassword(text);
+          setError((prev: any) => ({...prev, passwordError: validatePassword(text)}));
+        }}
         style={styles.input}
         theme={inputTheme}
       />
-      <HelpText type='error' visible={!validatePassword(password)}>
-        Mật khẩu không hợp lệ!
+      <HelpText type='error' visible={error !== null}>
+        {t(error?.passwordError)}
       </HelpText>
       <ButtonCustom mode='contained' loading={isLoading} onPress={_handleRegister} style={{marginTop: 32}}>
         {t('Đăng ký')}
@@ -95,7 +133,8 @@ const RegisterScreen = () => {
       </ButtonCustom>
 
       <Text style={styles.termsText}>
-        {t('Bằng cách nhấn đăng ký, bạn đồng ý với')} <Text style={styles.boldText}>{t('Điều khoản dịch vụ')}</Text> & <Text style={styles.boldText}>{t('Chính sách bảo mật')}</Text>
+        {t('Bằng cách nhấn đăng ký, bạn đồng ý với')} <Text style={styles.boldText}>{t('Điều khoản dịch vụ')}</Text> &{' '}
+        <Text style={styles.boldText}>{t('Chính sách bảo mật')}</Text>
       </Text>
     </LinearGradient>
   );
@@ -136,7 +175,7 @@ const styles = StyleSheet.create({
   boldText: {
     color: '#4CAF50',
     textDecorationLine: 'underline',
-  }
+  },
 });
 
 const inputTheme = {

@@ -36,14 +36,25 @@ const LoginScreen = () => {
     const phoneError = error?.phoneError ?? null;
     const passwordError = error?.passwordError ?? null;
     if (phoneError || passwordError) return;
-    if (phoneNumber.trim() === '' || password.trim() === '') {
+
+    let hasError = false;
+    if (phoneNumber.trim() === '') {
       setError((prev: any) => ({
         ...prev,
         phoneError: 'Vui lòng nhập số điện thoại',
         passwordError: 'Vui lòng nhập mật khẩu',
       }));
-      return;
+      hasError = true;
     }
+    if (password.trim() === '') {
+      setError((prev: any) => ({
+        ...prev,
+        passwordError: 'Vui lòng nhập mật khẩu',
+      }));
+      hasError = true;
+    }
+    if (hasError) return;
+    
     await jsonPostAPI('/auth/login', {phone: phoneNumber, password: password}, stored, setIsLoading, setError);
   };
 
@@ -56,7 +67,7 @@ const LoginScreen = () => {
         {t('Đăng nhập')}
       </Text>
 
-      <HelpText type='error' visible={error !== null} style={styles.errorText}>
+      <HelpText type='error' visible={error !== null}>
         {error ? t(error.message) : null}
       </HelpText>
       <TextInput
@@ -69,7 +80,7 @@ const LoginScreen = () => {
         style={styles.input}
         theme={inputTheme}
       />
-      <HelpText type='error' visible={error !== null} style={styles.errorText}>
+      <HelpText type='error' visible={error !== null}>
         {t(error?.phoneError)}
       </HelpText>
       <TextInput
@@ -91,7 +102,7 @@ const LoginScreen = () => {
         theme={inputTheme}
       />
       {error?.passwordError && (
-        <HelpText type='error' visible={error !== null} style={styles.errorText}>
+        <HelpText type='error' visible={error !== null}>
           {t(error?.passwordError)}
         </HelpText>
       )}
