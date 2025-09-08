@@ -1,16 +1,18 @@
+import ButtonCustom from '@/components/button/ButtonCustom';
+import HelpText from '@/components/text/HelpText';
 import { useRole } from '@/context/RoleContext';
 import { jsonPostAPI } from '@/lib/apiService';
 import { setItem } from '@/lib/storage';
-import { validatePhoneNumber } from '@/lib/utils';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
-import { Button, HelperText, Text, TextInput } from 'react-native-paper';
+import { Text, TextInput } from 'react-native-paper';
 
 const LoginScreen = () => {
   const {t} = useTranslation();
-  const [phoneNumber, setPhoneNumber] = useState('0373644375');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [hidePassword, setHidePassword] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,13 +39,15 @@ const LoginScreen = () => {
     router.push('/register');
   };
   return (
-    <View style={styles.container}>
-      <Text variant='headlineMedium' style={styles.title}>
+    // <View style={styles.container}>
+    <LinearGradient colors={['#E8F5E9', '#C8E6C9']} style={styles.container}>
+      <Text variant='headlineSmall' style={styles.title}>
         {t('Đăng nhập')}
       </Text>
-      <HelperText type="error" visible={error !== null}>
+
+      <HelpText type='error' visible={error !== null} style={styles.errorText}>
         {error ? t(error.message) : null}
-      </HelperText>
+      </HelpText>
       <TextInput
         label={t('Số điện thoại')}
         value={phoneNumber}
@@ -51,9 +55,6 @@ const LoginScreen = () => {
         style={styles.input}
         theme={inputTheme}
       />
-      <HelperText type="error" visible={!validatePhoneNumber(phoneNumber)}>
-        Số điện thoại không hợp lệ!
-      </HelperText>
       <TextInput
         label={t('Mật khẩu')}
         secureTextEntry={hidePassword}
@@ -66,27 +67,28 @@ const LoginScreen = () => {
         }
         value={password}
         onChangeText={setPassword}
-        style={styles.input}
+        style={[styles.input, {marginTop: 15}]}
         theme={inputTheme}
       />
-      <Button
-        mode='contained'
-        loading={isLoading}
-        onPress={_handleLogin}
-        style={styles.button}
-        buttonColor={styles.buttonColor.backgroundColor}
-        textColor={'#FFFFFF'}>
-        <Text>{t('Đăng nhập')}</Text>
-      </Button>
-      <Button
-        mode='outlined'
-        onPress={_navigateToRegister}
-        style={styles.outlinedButton}
-        textColor={styles.outlinedButtonText.color}
-        rippleColor={rippleColor.rippleColor}>
-        <Text>{t('Tạo tài khoản')}</Text>
-      </Button>
-    </View>
+
+      <Text style={styles.forgotPasswordText}>Quên mật khẩu?</Text>
+
+      <ButtonCustom mode='contained' loading={isLoading} onPress={_handleLogin} style={{marginTop: 15}}>
+        {t('Đăng nhập')}
+      </ButtonCustom>
+      <ButtonCustom mode='outlined' onPress={_navigateToRegister} style={{marginTop: 15}}>
+        {t('Tạo tài khoản')}
+      </ButtonCustom>
+
+      <View style={{alignItems: 'center'}}>
+        <Text style={styles.termsText}>
+          <Text style={styles.boldText}>Điều khoản dịch vụ</Text>
+          {''} &amp; {''}
+          <Text style={styles.boldText}>Chính sách bảo mật</Text>
+        </Text>
+      </View>
+      {/* </View> */}
+    </LinearGradient>
   );
 };
 
@@ -99,10 +101,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#E8F5E9',
   },
+
   title: {
     textAlign: 'center',
-    color: '#2E7D32',
+    fontWeight: 'bold',
   },
+
   input: {
     backgroundColor: '#FFFFFF',
   },
@@ -110,33 +114,30 @@ const styles = StyleSheet.create({
   icon: {
     color: '#4CAF50',
   },
-  button: {
-    marginTop: 12,
-    borderRadius: 8,
-  },
-  buttonColor: {
-    backgroundColor: '#4CAF50',
-  },
-  outlinedButton: {
-    marginTop: 12,
-    borderColor: '#4CAF50',
-    borderRadius: 8,
-  },
-  outlinedButtonText: {
-    color: '#2E7D32',
-  },
 
   errorText: {
-    color: '#D32F2F',
+    color: 'red',
+  },
+
+  forgotPasswordText: {
+    textAlign: 'right',
+    color: 'green',
+    paddingVertical: 12,
+  },
+
+  termsText: {
+    fontSize: 12,
+    marginTop: 24,
+  },
+
+  boldText: {
+    color: '#4CAF50',
+    textDecorationLine: 'underline',
   },
 });
 
 const inputTheme = {
   colors: {
     primary: '#4CAF50',
-    onSurfaceVariant: '#1B5E20',
   },
-};
-const rippleColor = {
-  rippleColor: '#A5D6A7',
 };

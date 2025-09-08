@@ -1,15 +1,18 @@
+import ButtonCustom from '@/components/button/ButtonCustom';
+import HelpText from '@/components/text/HelpText';
 import { jsonPostAPI } from '@/lib/apiService';
 import { validateFullName, validatePassword, validatePhoneNumber } from '@/lib/utils';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
-import { Button, HelperText, Text, TextInput } from 'react-native-paper';
+import { StyleSheet } from 'react-native';
+import { Text, TextInput } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 
 const RegisterScreen = () => {
   const {t} = useTranslation();
-  const [phoneNumber, setPhoneNumber] = useState('0373644375');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [hidePassword, setHidePassword] = useState(true);
@@ -17,7 +20,6 @@ const RegisterScreen = () => {
   const [error, setError] = useState<any>(null);
 
   const _onSuccess = (data: any) => {
-    // Xử lý khi đăng ký thành công
     Toast.show({
       type: 'success',
       text1: t('Đăng ký thành công'),
@@ -39,14 +41,14 @@ const RegisterScreen = () => {
     router.back();
   };
   return (
-    <View style={styles.container}>
-      <Text variant='headlineMedium' style={styles.title}>
+    <LinearGradient colors={['#E8F5E9', '#C8E6C9']} style={styles.container}>
+      <Text variant='headlineSmall' style={styles.title}>
         {t('Đăng ký')}
       </Text>
-      {/* <View className='py-1'>{error ? <Text style={{color: 'red'}}>{t(error.message)}</Text> : null}</View> */}
-      <HelperText type='error' visible={error !== null}>
+
+      <HelpText type='error' visible={error !== null}>
         {error ? t(error.message) : null}
-      </HelperText>
+      </HelpText>
       <TextInput
         label={t('Số điện thoại')}
         value={phoneNumber}
@@ -54,9 +56,9 @@ const RegisterScreen = () => {
         style={styles.input}
         theme={inputTheme}
       />
-      <HelperText type='error' visible={!validatePhoneNumber(phoneNumber)}>
+      <HelpText type='error' visible={!validatePhoneNumber(phoneNumber)}>
         Số điện thoại không hợp lệ!
-      </HelperText>
+      </HelpText>
       <TextInput
         label={t('Họ và tên')}
         value={fullName}
@@ -64,9 +66,9 @@ const RegisterScreen = () => {
         style={styles.input}
         theme={inputTheme}
       />
-      <HelperText type='error' visible={!validateFullName(fullName)}>
+      <HelpText type='error' visible={!validateFullName(fullName)}>
         Họ và tên không hợp lệ!
-      </HelperText>
+      </HelpText>
       <TextInput
         label={t('Mật khẩu')}
         secureTextEntry={hidePassword}
@@ -82,26 +84,20 @@ const RegisterScreen = () => {
         style={styles.input}
         theme={inputTheme}
       />
-      <HelperText type='error' visible={!validatePassword(password)}>
+      <HelpText type='error' visible={!validatePassword(password)}>
         Mật khẩu không hợp lệ!
-      </HelperText>
-      <Button
-        mode='contained'
-        loading={isLoading}
-        onPress={_handleRegister}
-        style={styles.button}
-        buttonColor={styles.buttonColor.backgroundColor}
-        rippleColor={rippleColor.rippleColor}>
-        <Text>{t('Đăng ký')}</Text>
-      </Button>
-      <Button
-        mode='outlined'
-        onPress={_navigateToLogin}
-        style={styles.button}
-        textColor={styles.outlinedButtonText.color}>
-        <Text>{t('Đăng nhập')}</Text>
-      </Button>
-    </View>
+      </HelpText>
+      <ButtonCustom mode='contained' loading={isLoading} onPress={_handleRegister} style={{marginTop: 32}}>
+        {t('Đăng ký')}
+      </ButtonCustom>
+      <ButtonCustom mode='outlined' onPress={_navigateToLogin} style={{marginTop: 15}}>
+        {t('Đăng nhập')}
+      </ButtonCustom>
+
+      <Text style={styles.termsText}>
+        Bằng cách nhấn đăng ký, bạn đồng ý với <Text style={styles.boldText}>Điều khoản dịch vụ</Text> & <Text style={styles.boldText}>Chính sách bảo mật</Text>
+      </Text>
+    </LinearGradient>
   );
 };
 
@@ -114,38 +110,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#E8F5E9',
   },
+
   title: {
     textAlign: 'center',
-    // marginBottom: 16,
-    color: '#2E7D32',
+    fontWeight: 'bold',
   },
   input: {
-    // marginBottom: 12,
     backgroundColor: '#FFFFFF',
   },
 
   icon: {
     color: '#4CAF50',
   },
-  button: {
-    marginTop: 12,
-    borderRadius: 8,
-  },
-  buttonColor: {
-    backgroundColor: '#4CAF50',
-  },
-  outlinedButton: {
-    marginTop: 12,
-    borderColor: '#4CAF50',
-    borderRadius: 8,
-  },
-  outlinedButtonText: {
-    color: '#2E7D32',
-  },
 
   errorText: {
     color: '#D32F2F',
   },
+
+  termsText: {
+    textAlign: 'center',
+    fontSize: 12,
+    marginTop: 24,
+  },
+
+  boldText: {
+    color: '#4CAF50',
+    textDecorationLine: 'underline',
+  }
 });
 
 const inputTheme = {
@@ -153,7 +144,4 @@ const inputTheme = {
     primary: '#4CAF50',
     onSurfaceVariant: '#1B5E20',
   },
-};
-const rippleColor = {
-  rippleColor: '#A5D6A7',
 };
