@@ -6,7 +6,7 @@ import { Icon, Text } from 'react-native-paper';
 
 export default function Success() {
   return (
-    <View className="flex-1 items-center justify-center p-6 bg-white">
+    <View className="flex-1 items-center justify-center p-6 bg-[#F2F2F2]">
       {/* Icon check */}
       {/* <Text style={{ fontSize: 64, marginBottom: 16 }}></Text> */}
       <Icon source={'check-circle'} size={108} color='green' />
