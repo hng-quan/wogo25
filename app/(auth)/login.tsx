@@ -70,7 +70,6 @@ const LoginScreen = () => {
 
   const _handleLogin = async () => {
     if (hasErrors()) return;
-    console.log('gọi api')
     await jsonPostAPI('/auth/login', {phone: phoneNumber, password: password}, stored, setIsLoading, setError);
   };
 

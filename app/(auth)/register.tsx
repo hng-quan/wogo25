@@ -4,7 +4,7 @@ import { jsonPostAPI } from '@/lib/apiService';
 import { validateFullName, validatePassword, validatePhoneNumber } from '@/lib/utils';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
@@ -12,9 +12,9 @@ import Toast from 'react-native-toast-message';
 
 const RegisterScreen = () => {
   const {t} = useTranslation();
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState(null as string | null);
+  const [password, setPassword] = useState(null as string | null);
+  const [fullName, setFullName] = useState(null as string | null);
   const [hidePassword, setHidePassword] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<any>(null);
@@ -28,36 +28,56 @@ const RegisterScreen = () => {
     router.back();
   };
 
-  const _handleRegister = async () => {
-    const phoneError = error?.phoneError ?? null;
-    const passwordError = error?.passwordError ?? null;
-    const fullNameError = error?.fullNameError ?? null;
-    if (phoneError || passwordError || fullNameError) return;
+  useEffect(() => {
+    if (phoneNumber !== null) {
+      setError((prev: any) => ({...prev, phoneError: validatePhoneNumber(phoneNumber)}));
+    }
+  }, [phoneNumber]);
 
+  useEffect(() => {
+    if (fullName !== null) {
+      setError((prev: any) => ({...prev, fullNameError: validateFullName(fullName)}));
+    }
+  }, [fullName]);
+
+  useEffect(() => {
+    if (password !== null) {
+      setError((prev: any) => ({...prev, passwordError: validatePassword(password)}));
+    }
+  }, [password]);
+
+  const hasErrors = () => {
     let hasError = false;
-    if (phoneNumber.trim() === '') {
+    if (phoneNumber === null) {
+      hasError = true;
       setError((prev: any) => ({
         ...prev,
-        phoneError: 'Vui lòng nhập số điện thoại',
+        phoneError: validatePhoneNumber(phoneNumber ?? ''),
       }));
-      hasError = true;
     }
-    if (password.trim() === '') {
+    if (fullName === null) {
+      hasError = true;
       setError((prev: any) => ({
         ...prev,
-        passwordError: 'Vui lòng nhập mật khẩu',
+        fullNameError: validateFullName(fullName ?? ''),
       }));
-      hasError = true;
     }
-    if (fullName.trim() === '') {
+    if (password === null) {
+      hasError = true;
       setError((prev: any) => ({
         ...prev,
-        fullNameError: 'Vui lòng nhập họ và tên',
+        passwordError: validatePassword(password ?? ''),
       }));
-      hasError = true;
     }
-    if (hasError) return;
 
+    if (error?.phoneError || error?.passwordError || error?.fullNameError) {
+      hasError = true;
+    }
+    return hasError;
+  };
+
+  const _handleRegister = async () => {
+    if (hasErrors()) return;
     const params = {
       phone: phoneNumber,
       password: password,
@@ -80,10 +100,9 @@ const RegisterScreen = () => {
       </HelpText>
       <TextInput
         label={t('Số điện thoại')}
-        value={phoneNumber}
+        value={phoneNumber ?? ''}
         onChangeText={text => {
           setPhoneNumber(text);
-          setError((prev: any) => ({...prev, phoneError: validatePhoneNumber(text)}));
         }}
         style={styles.input}
         theme={inputTheme}
@@ -93,10 +112,9 @@ const RegisterScreen = () => {
       </HelpText>
       <TextInput
         label={t('Họ và tên')}
-        value={fullName}
+        value={fullName ?? ''}
         onChangeText={text => {
           setFullName(text);
-          setError((prev: any) => ({...prev, fullNameError: validateFullName(text)}));
         }}
         style={styles.input}
         theme={inputTheme}
@@ -114,10 +132,9 @@ const RegisterScreen = () => {
             color={styles.icon.color}
           />
         }
-        value={password}
+        value={password ?? ''}
         onChangeText={text => {
           setPassword(text);
-          setError((prev: any) => ({...prev, passwordError: validatePassword(text)}));
         }}
         style={styles.input}
         theme={inputTheme}
