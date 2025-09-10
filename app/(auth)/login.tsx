@@ -6,19 +6,33 @@ import { setItem } from '@/lib/storage';
 import { validatePhoneNumber } from '@/lib/utils';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 
 const LoginScreen = () => {
   const {t} = useTranslation();
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [password, setPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState(null as string | null);
+  const [password, setPassword] = useState(null as string | null);
   const [hidePassword, setHidePassword] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<any>(null);
   const {setUser} = useRole();
+
+  useEffect(() => {
+    if (phoneNumber !== null) {
+      setError((prev: any) => ({...prev, phoneError: validatePhoneNumber(phoneNumber)}));
+    }
+  }, [phoneNumber]);
+
+  useEffect(() => {
+    if (password !== null && password.length === 0) {
+      setError((prev: any) => ({...prev, passwordError: 'Vui lòng nhập mật khẩu'}));
+    } else if (password !== null && password.length > 0) {
+      setError((prev: any) => ({...prev, passwordError: ''}));
+    }
+  }, [password]);
 
   const stored = async (response: any) => {
     const saveUser = setItem('user', response.result.user);
@@ -32,29 +46,31 @@ const LoginScreen = () => {
     router.replace('/(tabs-customer)');
   };
 
-  const _handleLogin = async () => {
-    const phoneError = error?.phoneError ?? null;
-    const passwordError = error?.passwordError ?? null;
-    if (phoneError || passwordError) return;
-
+  const hasErrors = () => {
     let hasError = false;
-    if (phoneNumber.trim() === '') {
+    if (phoneNumber === null) {
+      hasError = true
       setError((prev: any) => ({
         ...prev,
         phoneError: 'Vui lòng nhập số điện thoại',
-        passwordError: 'Vui lòng nhập mật khẩu',
       }));
-      hasError = true;
     }
-    if (password.trim() === '') {
+    if (password === null) {
+      hasError = true;
       setError((prev: any) => ({
         ...prev,
         passwordError: 'Vui lòng nhập mật khẩu',
       }));
+    }
+    if (error?.phoneError || error?.passwordError) {
       hasError = true;
     }
-    if (hasError) return;
-    
+    return hasError;
+  };
+
+  const _handleLogin = async () => {
+    if (hasErrors()) return;
+    console.log('gọi api')
     await jsonPostAPI('/auth/login', {phone: phoneNumber, password: password}, stored, setIsLoading, setError);
   };
 
@@ -72,10 +88,9 @@ const LoginScreen = () => {
       </HelpText>
       <TextInput
         label={t('Số điện thoại')}
-        value={phoneNumber}
-        onChangeText={text => {
+        value={phoneNumber ?? ''}
+        onChangeText={(text) => {
           setPhoneNumber(text);
-          setError((prev: any) => ({...prev, phoneError: validatePhoneNumber(text)}));
         }}
         style={styles.input}
         theme={inputTheme}
@@ -93,10 +108,9 @@ const LoginScreen = () => {
             color={styles.icon.color}
           />
         }
-        value={password}
+        value={password ?? ''}
         onChangeText={text => {
           setPassword(text);
-          setError((prev: any) => ({...prev, passwordError: password.length === 0 ? 'Vui lòng nhập mật khẩu' : null}));
         }}
         style={styles.input}
         theme={inputTheme}
