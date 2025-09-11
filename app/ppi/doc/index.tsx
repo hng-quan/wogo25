@@ -47,7 +47,7 @@ export default function Index() {
     formData.append('serviceId', String(service_id));
     formData.append('documentType', 'WORKER_LICENSE');
     formData.append('documentName', generateDocumentName(String(serviceName)));
-    
+
     files.forEach(file => {
       formData.append('files', {
         uri: file.uri,
@@ -88,27 +88,37 @@ export default function Index() {
         </ButtonCustom>
 
         {/* Hiển thị preview */}
-        <ScrollView style={{marginVertical: 16}}>
-          {files.map((file, index) => (
-            <View
-              key={index}
-              style={{
-                marginBottom: 12,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}>
-              {file.type.includes('image') ? (
-                <Image source={{uri: file.uri}} style={{width: 100, height: 100, borderRadius: 8}} />
-              ) : (
-                <Text style={{flex: 1}}>📄 {file.name}</Text>
-              )}
-
-              <Text style={{color: 'red', marginLeft: 12}} onPress={() => removeFile(index)}>
-                <Icon source={'trash-can'} size={36} color='red' />
+        <ScrollView style={{marginVertical: 16}}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
+          {files.length === 0 ? (
+            <View className='items-center justify-center'>
+              <Icon source='file-document-outline' size={60} color='#9CA3AF' />
+              <Text className='text-gray-500 mt-2 text-center'>
+                Chưa có tệp nào được chọn.{'\n'}Hãy nhấn nút Chọn tệp upload để bắt đầu.
               </Text>
             </View>
-          ))}
+          ) : (
+            files.map((file, index) => (
+              <View
+                key={index}
+                style={{
+                  marginBottom: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}>
+                {file.type.includes('image') ? (
+                  <Image source={{uri: file.uri}} style={{width: 100, height: 100, borderRadius: 8}} />
+                ) : (
+                  <Text style={{flex: 1}}>📄 {file.name}</Text>
+                )}
+
+                <Text style={{marginLeft: 12}} onPress={() => removeFile(index)}>
+                  <Icon source='trash-can' size={28} color='red' />
+                </Text>
+              </View>
+            ))
+          )}
         </ScrollView>
 
         <ButtonCustom disabled={files.length === 0} mode='contained' onPress={upload}>
