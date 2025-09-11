@@ -79,7 +79,7 @@ export default function Index() {
   };
 
   return (
-    <View className='flex-1'>
+    <View className='flex-1 bg-[#F2F2F2]'>
       <Appbar title='Cập nhật giấy phép lao động' />
 
       <View className='p-4 gap-4 flex-1'>

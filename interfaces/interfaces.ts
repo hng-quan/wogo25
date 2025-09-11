@@ -3,7 +3,7 @@ export interface ServiceType {
   serviceName: string;
   description: string;
   iconUrl: string | null;
-  parentId: number;
+  parentId: number | null;
   active: boolean;
 }
 
@@ -27,4 +27,22 @@ export interface Question {
   imageUrl: string | null;
   questionCategory: any;
   questionOptions: QuestionOption[];
+}
+
+export interface Professional {
+  id: number;
+  totalOrders: number;
+  totalRevenue: number;
+  worker: {
+    id: number;
+    description: string;
+    totalJobs: number;
+    totalReviews: number;
+    averageRating: number;
+  };
+  service: {
+    parentService: ServiceType;
+    childServices: ServiceType[];
+  };
+  active: boolean;
 }
