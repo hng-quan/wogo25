@@ -7,9 +7,9 @@ import { useFonts } from 'expo-font';
 import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { PaperProvider, ThemeProvider } from 'react-native-paper';
-import 'react-native-reanimated';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
+import 'react-native-worklets';
 
 export default function RootLayout() {
   const [loaded] = useFonts({
@@ -18,15 +18,6 @@ export default function RootLayout() {
   // const history = useNavigationHistory();
 
   if (!loaded) {
-    // return (
-    //   <SafeAreaProvider>
-    //     <SafeAreaView className='flex flex-1'>
-    //       <View className='flex-1 justify-center items-center'>
-    //         <ActivityIndicator size='large' />
-    //       </View>
-    //     </SafeAreaView>
-    //   </SafeAreaProvider>
-    // );
     return null;
   }
 
@@ -35,7 +26,7 @@ export default function RootLayout() {
       <SafeAreaView className='flex flex-1'>
         <NetworkProvider>
           <RoleProvider>
-            <PaperProvider>
+            <PaperProvider>             
               <ThemeProvider>
                 <Slot />
                 {/* Debug */}

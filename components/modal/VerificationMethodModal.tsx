@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Modal, Portal, RadioButton, Text } from 'react-native-paper';
 import ButtonCustom from '../button/ButtonCustom';
 
@@ -13,6 +13,7 @@ type Props = {
 export default function VerificationMethodModal({ visible, onClose, onConfirm }: Props) {
   const [value, setValue] = useState<string>('license'); // mặc định chọn "giấy phép"
 
+  if (!visible) return null;
   return (
     <Portal>
       <Modal visible={visible} onDismiss={onClose} contentContainerStyle={styles.modalContent}>
@@ -20,22 +21,22 @@ export default function VerificationMethodModal({ visible, onClose, onConfirm }:
 
         <RadioButton.Group onValueChange={newValue => setValue(newValue)} value={value}>
           {/* Giấy phép */}
-          <TouchableOpacity style={styles.option} onPress={() => setValue('license')}>
+          <Pressable style={styles.option} onPress={() => setValue('license')}>
             <RadioButton value="license" />
             <View style={styles.optionContent}>
               <Text style={styles.optionTitle}>Giấy phép</Text>
               <Text style={styles.optionDesc}>Tải lên giấy phép hành nghề hoặc chứng chỉ hợp lệ</Text>
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
           {/* Bài kiểm tra */}
-          <TouchableOpacity style={styles.option} onPress={() => setValue('test')}>
+          <Pressable style={styles.option} onPress={() => setValue('test')}>
             <RadioButton value="test" />
             <View style={styles.optionContent}>
               <Text style={styles.optionTitle}>Bài kiểm tra</Text>
               <Text style={styles.optionDesc}>Thực hiện bài kiểm tra nghiệp vụ để xác thực</Text>
             </View>
-          </TouchableOpacity>
+          </Pressable>
         </RadioButton.Group>
 
         {/* Icon minh họa (ví dụ như hình em gửi) */}

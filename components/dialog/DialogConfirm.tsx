@@ -9,6 +9,7 @@ interface DialogConfirmProps {
 
 const DialogConfirm = ({isOpen, onClose, onConfirm}: DialogConfirmProps) => {
     const {t} = useTranslation();
+    if (!isOpen) return null;
   return (
     <Portal>
       <Dialog visible={isOpen} onDismiss={onClose}>

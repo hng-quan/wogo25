@@ -82,14 +82,14 @@ export default function Index() {
     <View className='flex-1 bg-[#F2F2F2]'>
       <Appbar title='Cập nhật giấy phép lao động' />
 
-      <View className='p-4 gap-4 flex-1'>
-        <ButtonCustom mode='outlined' onPress={pickDocuments}>
+      <View className='gap-4 flex-1'>
+        <ButtonCustom className='mx-4' mode='outlined' onPress={pickDocuments}>
           Chọn tệp upload
         </ButtonCustom>
 
         {/* Hiển thị preview */}
         <ScrollView style={{marginVertical: 16}}
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
           {files.length === 0 ? (
             <View className='items-center justify-center'>
               <Icon source='file-document-outline' size={60} color='#9CA3AF' />
@@ -102,10 +102,11 @@ export default function Index() {
               <View
                 key={index}
                 style={{
-                  marginBottom: 12,
+                  marginVertical: 6,
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  paddingHorizontal: 12,
                 }}>
                 {file.type.includes('image') ? (
                   <Image source={{uri: file.uri}} style={{width: 100, height: 100, borderRadius: 8}} />
@@ -121,7 +122,7 @@ export default function Index() {
           )}
         </ScrollView>
 
-        <ButtonCustom disabled={files.length === 0} mode='contained' onPress={upload}>
+        <ButtonCustom className='mx-4' disabled={files.length === 0} mode='contained' onPress={upload}>
           Xác nhận & Upload
         </ButtonCustom>
       </View>

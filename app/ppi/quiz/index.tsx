@@ -52,6 +52,7 @@ export default function Index() {
   };
 
   const onSuccess = (data: any) => {
+    console.log('fetchQuestions data:', data);
     if (!data || !data.result || data.result.questions.length === 0) {
       Alert.alert('Thông báo', 'Hệ thống không có câu hỏi nào cho dịch vụ này. Vui lòng quay lại sau.');
       return;
@@ -67,7 +68,9 @@ export default function Index() {
     const params = {
       serviceId: service_id,
     };
-    await jsonPostAPI('/worker-verify/create-test', params, onSuccess);
+    await jsonPostAPI('/worker-verify/create-test', params, onSuccess, () => {}, () => {
+      Alert.alert('Thông báo', 'Hệ thống không có câu hỏi nào cho dịch vụ này. Vui lòng quay lại sau.');
+    });
   };
 
   const formatTime = (sec: number) => {

@@ -1,7 +1,8 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { FlatList, ImageBackground, SafeAreaView, ScrollView, TouchableOpacity, View } from 'react-native';
+import { FlatList, ImageBackground, ScrollView, TouchableOpacity, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const serviceCategories = [
   { id: '1', name: 'Điện', icon: 'lightning-bolt', color: '#FFB300' },

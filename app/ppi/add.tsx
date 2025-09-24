@@ -73,13 +73,16 @@ export default function AddProfessional() {
   return (
     <View style={styles.container}>
       <Appbar title={t('Thêm nghiệp vụ')} onBackPress={_goBack} />
-      <View className='p-4 gap-4'>
-        <SearchCustom
+      <View className='flex-1'>
+        <View className='px-4'>
+          <SearchCustom
           onSearch={query => {
             setSearchQuery(query);
           }}
         />
+        </View>
         <FlatList
+          className='pl-4'
           data={serviceList}
           renderItem={({item}) => {
             const parent = item.parentService;

@@ -21,6 +21,9 @@ const LanguageModal = ({isOpen, onClose}: LanguageModalProps) => {
 
     i18n.changeLanguage(lang);
   };
+
+  if (!isOpen) return null;
+  
   return (
     <Portal>
       <Modal visible={isOpen} onDismiss={onClose} contentContainerStyle={styles.modalContent}>
