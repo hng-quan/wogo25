@@ -1,5 +1,6 @@
 import ChildrenServiceModal from '@/components/modal/ChildrenServiceModal';
 import SearchCustom from '@/components/search/SearchCustom';
+import { ensureLocationEnabled } from '@/hooks/useLocation';
 import { ServiceType } from '@/interfaces/interfaces';
 import { jsonGettAPI } from '@/lib/apiService';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -28,8 +29,12 @@ type Promotion = (typeof promotions)[0];
 // --- Components ---
 const ServiceCategoryItem = ({item, onPress}: {item: ServiceType; onPress: (id: number | string) => void}) => {
   const iconName = item.iconUrl && item.iconUrl.trim() !== '' ? item.iconUrl : 'account-hard-hat';
+  const handlePress =async () => {
+    const enable = await ensureLocationEnabled();
+    if (enable) onPress(item.id);
+  }
   return (
-    <TouchableOpacity className='items-center mr-4 w-20' onPress={() => onPress(item.id)}>
+    <TouchableOpacity className='items-center mr-4 w-20' onPress={handlePress}>
       <View className='w-16 h-16 rounded-2xl items-center justify-center mb-2' style={{backgroundColor: '#4CAF50'}}>
         <MaterialCommunityIcons name={iconName as any} size={32} color='white' />
       </View>
@@ -99,10 +104,11 @@ export default function HomeScreen() {
           </View>
 
           {/* Promotions */}
-          <Text className='text-base !font-bold text-gray-800'>Chiến dịch nổi bật</Text>
+          <Text className='text-base !font-bold text-gray-800 mb-2'>Chiến dịch nổi bật</Text>
           <FlatList
             ref={flatListRef}
             data={promotions}
+            className='mb-4'
             renderItem={({item}) => <PromotionCard item={item} />}
             keyExtractor={item => item.id}
             horizontal
@@ -116,7 +122,7 @@ export default function HomeScreen() {
           />
 
           {/* Service Categories */}
-          <Text className='text-base !font-bold text-gray-800 mb-4'>Nhóm dịch vụ</Text>
+          <Text className='text-base !font-bold text-gray-800 mb-2'>Nhóm dịch vụ</Text>
           <FlatList
             data={serviceList}
             renderItem={({item}) => <ServiceCategoryItem item={item} onPress={openChildrenServiceModal} />}
