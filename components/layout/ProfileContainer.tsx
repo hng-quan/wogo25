@@ -33,9 +33,9 @@ const Profile = () => {
   return (
     <View className='flex px-4 py-2'>
       <View className='flex flex-row items-center'>
-        <Text className='text-3xl !font-bold'>Tài khoản</Text>
+        <Text className='text-2xl !font-bold'>Tài khoản</Text>
         <View className='flex flex-row items-center ml-auto gap-2'>
-          <Text variant='headlineSmall' style={[{color: role === ROLE.WORKER ? '#1565C0' : '#4CAF50'}, {
+          <Text className='text-2xl' style={[{color: role === ROLE.WORKER ? '#1565C0' : '#4CAF50'}, {
             fontWeight: 'bold',
           }]}>
             {t(`${role === ROLE.WORKER ? 'Thợ' : 'Khách'}`)}

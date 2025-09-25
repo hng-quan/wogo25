@@ -5,33 +5,45 @@ import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
 export default function HomeScreen() {
-  const { user } = useRole();
+  const {user} = useRole();
   const name = user?.name || 'Thợ';
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text variant='titleMedium' style={styles.title}>Xin chào, {name}!</Text>
-
-      <View style={styles.row}>
-        <TouchableOpacity style={styles.button}>
-          <Text variant='titleLarge' style={styles.buttonText}>Đơn của tôi</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.button}>
-          <Text variant='titleLarge' style={styles.buttonText}>Ưu đãi</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.banner}>
-        <Text variant='titleMedium' style={styles.bannerText}>
-          Đừng quên cập nhật trạng thái sẵn sàng để nhận đơn mới!
+    <View>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text variant='titleMedium' style={styles.title}>
+          Xin chào, {name}!
         </Text>
-      </View>
 
-      <View style={styles.section}>
-        <Text variant='titleMedium' style={styles.sectionTitle}>Sự kiện nổi bật</Text>
-        {/* Có thể map danh sách sự kiện ở đây nếu có */}
-        <Text variant='bodyMedium' style={styles.eventText}>Hiện chưa có sự kiện nào.</Text>
-      </View>
-    </ScrollView>
+        <View style={styles.row}>
+          <TouchableOpacity style={styles.button}>
+            <Text variant='titleLarge' style={styles.buttonText}>
+              Đơn của tôi
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button}>
+            <Text variant='titleLarge' style={styles.buttonText}>
+              Ưu đãi
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.banner}>
+          <Text variant='titleMedium' style={styles.bannerText}>
+            Đừng quên cập nhật trạng thái sẵn sàng để nhận đơn mới!
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text variant='titleMedium' style={styles.sectionTitle}>
+            Sự kiện nổi bật
+          </Text>
+          {/* Có thể map danh sách sự kiện ở đây nếu có */}
+          <Text variant='bodyMedium' style={styles.eventText}>
+            Hiện chưa có sự kiện nào.
+          </Text>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 

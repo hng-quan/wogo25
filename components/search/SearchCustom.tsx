@@ -5,6 +5,9 @@ export default function SearchCustom({
   placeholder = 'Tìm kiếm...',
   onSearch,
   style,
+  className,
+  editable = true,
+  onPress,
   ...props
 }: SearchCustomProps) {
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -16,8 +19,10 @@ export default function SearchCustom({
 
   return (
     <Searchbar
+      onPress={onPress}
       placeholder={placeholder}
       onChangeText={handleChange}
+      editable={editable}
       value={searchQuery}
       icon="magnify"          // có thể đổi icon
       clearIcon="close"       // icon xoá
@@ -40,4 +45,7 @@ type SearchCustomProps = {
   onSearch?: (query: string) => void;
   style?: object;
   [key: string]: any;
+  className?: string;
+  editable?: boolean;
+  onPress?: () => void;
 };
