@@ -3,7 +3,7 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { Icon } from 'react-native-paper';
 
-const Appbar = ({title, onBackPress}: {title: string; onBackPress?: () => void}) => {
+const Appbar = ({title, onBackPress, className}: {title: string; onBackPress?: () => void; className?: string}) => {
   const handleBackPress = () => {
     if (onBackPress) {
       onBackPress();
@@ -12,7 +12,7 @@ const Appbar = ({title, onBackPress}: {title: string; onBackPress?: () => void})
     }
   };
   return (
-    <View className='flex-row items-center justify-between p-4 bg-[#F2F2F2]'>
+    <View className={`flex-row items-center justify-between p-4 bg-[#F2F2F2] ${className}`}>
       {/* Left */}
       <TouchableOpacity onPress={handleBackPress} className='w-9 items-start'>
         <Icon source='chevron-left' size={36} />

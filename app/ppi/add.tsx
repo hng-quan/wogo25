@@ -33,7 +33,7 @@ export default function AddProfessional() {
     const res = await jsonGettAPI('/services/searchByName', {
       params: params,
     });
-    console.log('res', res.result);
+    // console.log('res', res.result);
     // const childData = res.result.flatMap((item: any) => item.childServices);
     // console.log('childData', childData);
     setServiceList(res.result);
@@ -44,7 +44,7 @@ export default function AddProfessional() {
   };
 
   const gotoVerify = (value: any) => {
-    console.log('value:', value);
+    // console.log('value:', value);
     if (value === 'test') {
       router.push({
         pathname: '/ppi/quiz',

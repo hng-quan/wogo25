@@ -12,9 +12,9 @@ export default function Index() {
   useEffect(() => {
     const handleNavigation = () => {
       if (!loading) {
-        console.log('Loading complete');
-        console.log('User in Index:', user);
-        console.log('Role in Index:', role);
+        // console.log('Loading complete');
+        // console.log('User in Index:', user);
+        // console.log('Role in Index:', role);
 
         if (!user) {
           router.replace('/(auth)/login');
@@ -31,7 +31,7 @@ export default function Index() {
     // Xử lý khi ứng dụng quay lại từ background
     const handleAppStateChange = (nextAppState: string) => {
       if (nextAppState === 'active' && !loading) {
-        console.log('App is active, checking route...');
+        // console.log('App is active, checking route...');
         handleNavigation();
       }
     };

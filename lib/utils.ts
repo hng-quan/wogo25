@@ -1,4 +1,6 @@
 import dayjs from 'dayjs';
+import * as Location from 'expo-location';
+import { Platform } from 'react-native';
 
 export const validatePhoneNumber = (phone: string): string | null => {
   if (phone == null) return null;
@@ -29,3 +31,33 @@ export function generateDocumentName(serviceName: string, prefix = 'WORKER_LICEN
 
   return `${prefix}_${normalizedService}_${date}`;
 }
+
+const formatAddress = (geocode: Location.LocationGeocodedAddress[], coords: {latitude:number, longitude:number}) => {
+  if (!geocode || geocode.length === 0) {
+    return `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`;
+  }
+
+  const g = geocode[0];
+
+  if (Platform.OS === 'android' && g.formattedAddress) {
+    return g.formattedAddress;
+  }
+
+  const parts = [g.name, g.street, g.subregion, g.region, g.country].filter(Boolean);
+  return parts.join(', ');
+};
+
+export const updateAddress = async (
+  coords: {latitude: number; longitude: number},
+  setAddress: (addr: string) => void,
+  setCoords: (c: {latitude: number; longitude: number}) => void
+) => {
+  try {
+    setCoords(coords);
+    const geocode = await Location.reverseGeocodeAsync(coords);
+    const fullAddress = formatAddress(geocode, coords);
+    setAddress(fullAddress);
+  } catch {
+    setAddress('Không thể lấy vị trí');
+  }
+};

@@ -52,7 +52,7 @@ export default function Index() {
   };
 
   const onSuccess = (data: any) => {
-    console.log('fetchQuestions data:', data);
+    // console.log('fetchQuestions data:', data);
     if (!data || !data.result || data.result.questions.length === 0) {
       Alert.alert('Thông báo', 'Hệ thống không có câu hỏi nào cho dịch vụ này. Vui lòng quay lại sau.');
       return;
@@ -105,7 +105,7 @@ export default function Index() {
           selectedOptionIds: optionIds,
         })),
       };
-      console.log('Payload nộp bài:', payload);
+      // console.log('Payload nộp bài:', payload);
       await jsonPostAPI('/worker-verify/complete-test', payload, data => {
         if (data && !options?.skipNavigate) {
           router.replace({

@@ -13,7 +13,7 @@ export default function Index() {
   const {service_id, serviceName} = useLocalSearchParams();
   const [files, setFiles] = useState<any[]>([]);
 
-  console.log('service_id, serviceName', service_id, serviceName);
+  // console.log('service_id, serviceName', service_id, serviceName);
 
   /** chọn file pdf */
   const pickDocuments = async () => {
@@ -27,7 +27,7 @@ export default function Index() {
       multiple: true,
     });
 
-    console.log('DocumentPicker result:', result);
+    // console.log('DocumentPicker result:', result);
 
     if (!result.canceled && result.assets) {
       setFiles(prev => [
