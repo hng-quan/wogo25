@@ -6,7 +6,7 @@ import { jsonGettAPI } from '@/lib/apiService';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { FlatList, ImageBackground, ScrollView, TouchableOpacity, View } from 'react-native';
+import { FlatList, ImageBackground, Pressable, ScrollView, TouchableOpacity, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
 const promotions = [
@@ -16,12 +16,12 @@ const promotions = [
     subtitle: '',
     image: require('../../assets/images/bn1.png'),
   },
-  {
-    id: '2',
-    title: '',
-    subtitle: '',
-    image: require('../../assets/images/bn2.png'),
-  },
+  // {
+  //   id: '2',
+  //   title: '',
+  //   subtitle: '',
+  //   image: require('../../assets/images/bn2.png'),
+  // },
 ];
 
 type Promotion = (typeof promotions)[0];
@@ -29,10 +29,10 @@ type Promotion = (typeof promotions)[0];
 // --- Components ---
 const ServiceCategoryItem = ({item, onPress}: {item: ServiceType; onPress: (id: number | string) => void}) => {
   const iconName = item.iconUrl && item.iconUrl.trim() !== '' ? item.iconUrl : 'account-hard-hat';
-  const handlePress =async () => {
+  const handlePress = async () => {
     const enable = await ensureLocationEnabled();
     if (enable) onPress(item.id);
-  }
+  };
   return (
     <TouchableOpacity className='items-center mr-4 w-20' onPress={handlePress}>
       <View className='w-16 h-16 rounded-2xl items-center justify-center mb-2' style={{backgroundColor: '#4CAF50'}}>
@@ -87,6 +87,11 @@ export default function HomeScreen() {
     setSelectedServiceId(id);
     setIsOpenModal(true);
   };
+
+  const _navigateToSearch = () => {
+    console.log('navigate to search');
+    router.push('/booking/search');
+  };
   return (
     <View className='flex-1'>
       {/* <StatusBar style="dark" /> */}
@@ -100,11 +105,38 @@ export default function HomeScreen() {
             </View>
           </View>
           <View className='my-2'>
-            <SearchCustom editable={false} placeholder='Tìm kiếm dịch vụ...' />
+            <Pressable onPress={_navigateToSearch}>
+              <SearchCustom editable={false} placeholder='Tìm kiếm dịch vụ...' onPress={_navigateToSearch} />
+            </Pressable>
           </View>
 
+          {/* Service Categories */}
+          <Text className='text-base !font-bold text-gray-800 mb-2'>Nhóm dịch vụ</Text>
+          <FlatList
+            data={serviceList}
+            renderItem={({item}) => <ServiceCategoryItem item={item} onPress={openChildrenServiceModal} />}
+            keyExtractor={item => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{paddingBottom: 0}}
+          />
+          <View>
+            <Text variant='titleMedium' className='mb-2'>
+              Quyền lợi
+            </Text>
+
+            <View className='w-full h-48 rounded-2xl overflow-hidden'>
+              <ImageBackground
+                source={require('../../assets/images/quyenloikhach.jpg')}
+                resizeMode='contain'
+                className='flex-1 p-4 justify-end'
+              />
+            </View>
+          </View>
           {/* Promotions */}
-          <Text className='text-base !font-bold text-gray-800 mb-2'>Chiến dịch nổi bật</Text>
+          <Text variant='titleMedium' className='mb-2 mt-4'>
+            Chiến dịch nổi bật
+          </Text>
           <FlatList
             ref={flatListRef}
             data={promotions}
@@ -119,17 +151,6 @@ export default function HomeScreen() {
               offset: 320 * index,
               index,
             })}
-          />
-
-          {/* Service Categories */}
-          <Text className='text-base !font-bold text-gray-800 mb-2'>Nhóm dịch vụ</Text>
-          <FlatList
-            data={serviceList}
-            renderItem={({item}) => <ServiceCategoryItem item={item} onPress={openChildrenServiceModal} />}
-            keyExtractor={item => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{paddingBottom: 10}}
           />
         </View>
       </ScrollView>

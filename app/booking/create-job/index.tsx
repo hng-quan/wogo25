@@ -182,7 +182,7 @@ export default function Index() {
           />
         </View>
 
-        <View style={{bottom: 0, marginTop: 'auto'}}>
+        <View style={{bottom: 0, marginTop: 'auto', paddingVertical: 2}}>
           {/* <Text>{`Thời gian dự kiến hoàn thành: ${duration} phút`}</Text> */}
           <Text style={{textAlign: 'center', fontSize: 16, padding: 8, color: '#b45309'}}>
             Giá tham khảo: {priceSuggestion ? priceSuggestion + ' VND' : 'Đang tải...'}
