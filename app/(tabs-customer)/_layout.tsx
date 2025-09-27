@@ -29,15 +29,23 @@ export default function TabLayout() {
       <Tabs.Screen
         name='index'
         options={{
-          title: 'Home',
+          title: 'Trang chủ',
           tabBarIcon: ({color}) => <IconSymbol size={28} name='house.fill' color={color} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name='activity'
+        options={{
+          title: 'Hoạt động',
+          tabBarIcon: ({color}) => <IconSymbol size={28} name='list.bullet' color={color} />,
         }}
       />
 
       <Tabs.Screen
         name='profile'
         options={{
-          title: 'Profile',
+          title: 'Tài khoản',
           tabBarIcon: ({color}) => <IconSymbol size={28} name='person.fill' color={color} />,
         }}
       />
