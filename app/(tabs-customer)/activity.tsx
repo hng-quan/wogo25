@@ -1,15 +1,34 @@
-import React from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
-import { Chip, Text } from "react-native-paper";
+import { JobRequest } from '@/interfaces/interfaces';
+import { jsonGettAPI } from '@/lib/apiService';
+import { displayDateVN } from '@/lib/utils';
+import React, { useEffect } from 'react';
+import { FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Chip, Text } from 'react-native-paper';
+
+const STATUS = {
+  PENDING: 'PENDING',
+  ACCEPTED: 'ACCEPTED',
+  CANCELLED: 'CANCELLED',
+};
+
+const filters = [
+  {key: 'all', label: 'Tất cả'},
+  {key: STATUS.PENDING, label: 'Đang tìm'},
+  {key: STATUS.ACCEPTED, label: 'Đang tiến hành'},
+];
 
 export default function ActivityScreen() {
-  const [selectedFilter, setSelectedFilter] = React.useState("all");
+  const [selectedFilter, setSelectedFilter] = React.useState<string>('all');
+  const [myJobsRequest, setMyJobsRequest] = React.useState<JobRequest[]>([]);
 
-  const filters = [
-    { key: "all", label: "Tất cả" },
-    { key: "bidding", label: "Đang báo giá" },
-    { key: "progress", label: "Đang tiến hành" },
-  ];
+  useEffect(() => {
+    const fetchMyJobsRequest = async () => {
+      const endpoint = selectedFilter === 'all' ? '/jobs/my-jobRequests/all' : '/jobs/my-jobRequests/' + selectedFilter;
+      const res = await jsonGettAPI(endpoint);
+      setMyJobsRequest(res?.result || []);
+    };
+    fetchMyJobsRequest();
+  }, [selectedFilter]);
 
   const renderEmptyState = (title: string) => (
     <View style={styles.emptySection}>
@@ -17,40 +36,90 @@ export default function ActivityScreen() {
     </View>
   );
 
+  const renderJobCard = ({item}: {item: JobRequest}) => (
+    <TouchableOpacity style={styles.card}>
+      {/* Header: Mã job + Trạng thái */}
+      <View style={styles.cardHeader}>
+        <Text style={styles.jobCode}>#{item.jobRequestCode}</Text>
+        <Text
+          style={[
+            styles.status,
+            item.status === STATUS.PENDING
+              ? styles.statusPending
+              : item.status === STATUS.ACCEPTED
+                ? styles.statusAccepted
+                : styles.statusCancelled,
+          ]}>
+          {item.status === STATUS.PENDING
+            ? 'Đang tìm thợ'
+            : item.status === STATUS.ACCEPTED
+              ? 'Đang tiến hành'
+              : 'Đã hủy'}
+        </Text>
+      </View>
+
+      {/* Nội dung */}
+      <View style={{flexDirection: 'row', justifyContent: 'space-between', gap: 8}}>
+        <View>
+          <Text style={styles.jobTitle} numberOfLines={1} ellipsizeMode='tail'>
+            {item.service.serviceName + ' - ' + item.description}
+          </Text>
+
+          {/* Thời gian */}
+          <View style={styles.row}>
+            <Text style={styles.time}>{displayDateVN(new Date(item.bookingDate))}</Text>
+          </View>
+        </View>
+        <Image source={require('../../assets/images/map.png')} style={{width: 50, height: 50}} />
+      </View>
+
+      {/* Hình ảnh hoặc bản đồ */}
+      {item.files.length > 0 ? (
+        <Image source={{uri: item.files[0].fileUrl}} style={styles.jobImage} />
+      ) : (
+        <View>
+          <Text>Không có hình ảnh</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       {/* Title */}
-      <Text className='text-2xl !font-bold mb-2'>Hoạt động</Text>
+      <Text style={styles.title}>Hoạt động</Text>
 
       {/* Filter Chips */}
       <View style={styles.filterRow}>
-        {filters.map((f) => (
+        {filters.map(f => (
           <Chip
             key={f.key}
-            mode={selectedFilter === f.key ? "flat" : "outlined"}
+            mode={selectedFilter === f.key ? 'flat' : 'outlined'}
             selected={selectedFilter === f.key}
             onPress={() => setSelectedFilter(f.key)}
-            style={[
-              styles.chip,
-              selectedFilter === f.key && styles.chipSelected,
-            ]}
-            textStyle={[
-              styles.chipText,
-              selectedFilter === f.key && styles.chipTextSelected,
-            ]}
-          >
+            style={[styles.chip, selectedFilter === f.key && styles.chipSelected]}
+            textStyle={[styles.chipText, selectedFilter === f.key && styles.chipTextSelected]}>
             {f.label}
           </Chip>
         ))}
       </View>
 
-      {/* Empty State */}
-      {renderEmptyState("Chưa có hoạt động")}
+      {/* Danh sách job */}
+      {myJobsRequest.length === 0 ? (
+        renderEmptyState('Chưa có hoạt động')
+      ) : (
+        <FlatList
+          data={myJobsRequest}
+          renderItem={renderJobCard}
+          keyExtractor={item => item.id.toString()}
+          contentContainerStyle={{paddingBottom: 50}}
+        />
+      )}
 
-      {/* History Section */}
+      {/* Lịch sử */}
       <Text style={styles.sectionTitle}>Lịch sử</Text>
-      {renderEmptyState("Chưa có hoạt động")}
-    </ScrollView>
+      {renderEmptyState('Chưa có hoạt động')}
+    </View>
   );
 }
 
@@ -61,52 +130,108 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
+    fontSize: 24,
+    fontWeight: '700',
     marginTop: 12,
     marginBottom: 12,
   },
   filterRow: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 8,
     marginBottom: 16,
   },
   chip: {
     borderRadius: 20,
-    borderColor: "#ccc",
-    backgroundColor: "#fff",
+    borderColor: '#ccc',
+    backgroundColor: '#fff',
   },
   chipSelected: {
-    // xanh lá
-    backgroundColor: "#4CAF50",
+    backgroundColor: '#4CAF50',
   },
   chipText: {
     fontSize: 12,
-    color: "#444",
+    color: '#444',
   },
   chipTextSelected: {
-    color: "#fff",
-    fontWeight: "600",
+    color: '#fff',
+    fontWeight: '600',
   },
   emptySection: {
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     marginVertical: 20,
-  },
-  emptyImage: {
-    width: 120,
-    height: 120,
-    resizeMode: "contain",
-    marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: "#888",
+    color: '#888',
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: '700',
     marginTop: 20,
     marginBottom: 8,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  jobCode: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+  },
+  status: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  statusPending: {
+    color: '#FF9800',
+  },
+  statusAccepted: {
+    color: '#4CAF50',
+  },
+  statusCancelled: {
+    color: '#F44336',
+  },
+  jobTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  time: {
+    fontSize: 13,
+    color: '#777',
+  },
+  jobImage: {
+    width: '100%',
+    height: 120,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  mapPlaceholder: {
+    backgroundColor: '#EEE',
+    borderRadius: 12,
+    padding: 10,
+    marginTop: 8,
+  },
+  mapText: {
+    fontSize: 12,
+    color: '#555',
   },
 });

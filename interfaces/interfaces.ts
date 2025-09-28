@@ -1,3 +1,5 @@
+import { User } from "./modal/user";
+
 export interface ServiceType {
   id: string | number;
   serviceName: string;
@@ -46,3 +48,28 @@ export interface Professional {
   };
   active: boolean;
 }
+
+export interface FileItem  {
+  id: number | string;
+  fileName: string;
+  fileType: string;
+  fileUrl: string;
+};
+
+export interface JobRequest  {
+  id: number | string;
+  jobRequestCode: string;
+  bookingDate: string; // ISO date string
+  distance: number;
+  description: string;
+  bookingAddress: string;
+  estimatedPriceLower: number;
+  estimatedPriceHigher: number;
+  estimatedDurationMinutes: number;
+  status: 'PENDING' | 'ACCEPTED' | 'CANCELLED';
+  files: FileItem[];
+  user: User;
+  workerQuotes: any[];
+  service: ServiceType;
+  acceptedBy?: any;
+};

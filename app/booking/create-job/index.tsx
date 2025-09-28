@@ -1,7 +1,7 @@
 import ButtonCustom from '@/components/button/ButtonCustom';
 import Appbar from '@/components/layout/Appbar';
 import MapPicker from '@/components/map/MapPicker';
-import { jsonGettAPI } from '@/lib/apiService';
+import { formPostAPI, jsonGettAPI } from '@/lib/apiService';
 import { updateAddress } from '@/lib/utils';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -22,7 +22,7 @@ export default function Index() {
   const [mapVisible, setMapVisible] = useState(false);
   const [priceSuggestion, setPriceSuggestion] = useState<number | null>(null);
   // const [duration, setDuration] = useState<number | null>(null);
-  const [imageList, setImageList] = useState<string[]>([]);
+  const [imageList, setImageList] = useState<any[]>([]);
 
   const onBackPress = () => router.push('/(tabs-customer)');
 
@@ -102,12 +102,42 @@ export default function Index() {
     setImageList(imageList.filter(img => img !== uri));
   };
 
+  const handleCreateJob = async () => {
+    const formData = new FormData();
+    formData.append('serviceId', parentId as string);
+    formData.append('description', description);
+    formData.append('address', address);
+    const bookingDate = date.toISOString().slice(0, 19);
+    formData.append('bookingDate', bookingDate);
+    formData.append('latitudeUser', String(coords?.latitude || ''));
+    formData.append('longitudeUser', String(coords?.longitude || ''));
+    // add files ảnh
+    imageList.forEach((fileUri, index) => {
+      const filename = fileUri.split('/').pop() || `image_${index}.jpg`;
+      const ext = filename.split('.')?.pop().toLowerCase();
+      let mimeType = 'application/octet-stream';
+      if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
+      if (ext === 'png') mimeType = 'image/png';
+      if (ext === 'mp4') mimeType = 'video/mp4';
+      if (ext === 'webp') mimeType = 'image/webp';
+      formData.append('files', {
+        uri: fileUri,
+        name: filename,
+        type: mimeType,
+      } as any)
+    });
+    const res = await formPostAPI('/bookings/create-job', formData);
+    console.log('res', res);
+    // console.log('=== FormData content ===');
+    // for (const pair of formData.entries()) {
+    //   console.log(pair[0], ':', pair[1]);
+    // }
+  };
+
   return (
-  
-      <>
+    <>
       <Appbar title={serviceName as string} onBackPress={onBackPress} />
       <View style={[styles.container]}>
-        
         {/* Nhập vấn đề */}
         <View style={styles.card}>
           <Text style={styles.label}>
@@ -119,6 +149,7 @@ export default function Index() {
             placeholder='Mô tả vấn đề của bạn...'
             multiline
             style={[styles.textInput, {maxHeight: 190, minHeight: 60}]}
+            placeholderTextColor={'#999'}
           />
         </View>
 
@@ -187,7 +218,7 @@ export default function Index() {
           <Text style={{textAlign: 'center', fontSize: 16, padding: 8, color: '#b45309'}}>
             Giá tham khảo: {priceSuggestion ? priceSuggestion + ' VND' : 'Đang tải...'}
           </Text>
-          <ButtonCustom>Tìm thợ</ButtonCustom>
+          <ButtonCustom onPress={handleCreateJob}>Tìm thợ</ButtonCustom>
         </View>
 
         <DateTimePickerModal
@@ -200,12 +231,12 @@ export default function Index() {
 
         {mapVisible && coords && <MapPicker initialCoords={coords} onSelect={handleSelectLocation} />}
       </View>
-      </>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {flex:1, backgroundColor: '#F2F2F2', paddingHorizontal: 16, position: 'relative',},
+  container: {flex: 1, backgroundColor: '#F2F2F2', paddingHorizontal: 16, position: 'relative'},
   card: {backgroundColor: 'white', borderRadius: 4, padding: 12, marginBottom: 12},
   label: {fontWeight: '600', fontSize: 16, marginBottom: 4},
   required: {color: 'red'},
