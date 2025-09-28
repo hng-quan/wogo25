@@ -2,6 +2,7 @@ import Tabs from '@/components/ui/Tabs';
 import { JobRequest } from '@/interfaces/interfaces';
 import { jsonGettAPI } from '@/lib/apiService';
 import { displayDateVN } from '@/lib/utils';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Text } from 'react-native-paper';
@@ -19,8 +20,9 @@ const filters = [
 ];
 
 export default function ActivityScreen() {
+  const { currentTab } = useLocalSearchParams();
   const [myJobsRequest, setMyJobsRequest] = React.useState<JobRequest[]>([]);
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState(currentTab || 'all');
 
   useEffect(() => {
     const fetchMyJobsRequest = async () => {
@@ -37,8 +39,17 @@ export default function ActivityScreen() {
     </View>
   );
 
+  const navigateToFindWorker = () => {
+    router.push({
+        pathname: '/booking/find-worker',
+        params: {
+          currentTab: activeTab
+        }
+    })
+  }
+
   const renderJobCard = ({item}: {item: JobRequest}) => (
-    <TouchableOpacity style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={navigateToFindWorker}>
       {/* Header: Mã job + Trạng thái */}
       <View style={styles.cardHeader}>
         <Text style={styles.jobCode}>#{item.jobRequestCode}</Text>
@@ -91,20 +102,7 @@ export default function ActivityScreen() {
       <Text className='text-2xl !font-bold my-2'>Hoạt động</Text>
 
       {/* Filter Chips */}
-      <Tabs tabs={filters} activeTab={activeTab} onChange={setActiveTab} />
-      {/* <View style={styles.filterRow}>
-        {filters.map(f => (
-          <Chip
-            key={f.key}
-            mode={selectedFilter === f.key ? 'flat' : 'outlined'}
-            selected={selectedFilter === f.key}
-            onPress={() => setSelectedFilter(f.key)}
-            style={[styles.chip, selectedFilter === f.key && styles.chipSelected]}
-            textStyle={[styles.chipText, selectedFilter === f.key && styles.chipTextSelected]}>
-            {f.label}
-          </Chip>
-        ))}
-      </View> */}
+      <Tabs tabs={filters} activeTab={activeTab as any} onChange={setActiveTab} />
 
       {/* Danh sách job */}
       {myJobsRequest.length === 0 ? (

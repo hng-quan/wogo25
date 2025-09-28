@@ -1,9 +1,10 @@
+import Tabs from "@/components/ui/Tabs";
 import React from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { Chip, Text } from "react-native-paper";
+import { Text } from "react-native-paper";
 
 export default function ActivityScreen() {
-  const [selectedFilter, setSelectedFilter] = React.useState("all");
+  const [activeTab, setActiveTab] = React.useState("all");
 
   const filters = [
     { key: "all", label: "Tất cả" },
@@ -23,26 +24,8 @@ export default function ActivityScreen() {
       <Text className='text-2xl !font-bold mb-2'>Hoạt động</Text>
 
       {/* Filter Chips */}
-      <View style={styles.filterRow}>
-        {filters.map((f) => (
-          <Chip
-            key={f.key}
-            mode={selectedFilter === f.key ? "flat" : "outlined"}
-            selected={selectedFilter === f.key}
-            onPress={() => setSelectedFilter(f.key)}
-            style={[
-              styles.chip,
-              selectedFilter === f.key && styles.chipSelected,
-            ]}
-            textStyle={[
-              styles.chipText,
-              selectedFilter === f.key && styles.chipTextSelected,
-            ]}
-          >
-            {f.label}
-          </Chip>
-        ))}
-      </View>
+{/* Filter Chips */}
+      <Tabs tabs={filters} activeTab={activeTab} onChange={setActiveTab} />
 
       {/* Empty State */}
       {renderEmptyState("Chưa có hoạt động")}

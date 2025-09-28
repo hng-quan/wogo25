@@ -2,6 +2,7 @@ import Appbar from '@/components/layout/Appbar';
 import ChildrenServiceModal from '@/components/modal/ChildrenServiceModal';
 import SearchCustom from '@/components/search/SearchCustom';
 import useDebounce from '@/hooks/useDebounce';
+import { ensureLocationEnabled } from '@/hooks/useLocation';
 import { ServiceGroup } from '@/interfaces/interfaces';
 import { jsonGettAPI } from '@/lib/apiService';
 import { router } from 'expo-router';
@@ -39,10 +40,13 @@ const Index = () => {
     router.push('/(tabs-customer)');
   };
 
-  const openChildrenServiceModal = (id: number | string) => {
+  const openChildrenServiceModal = async(id: number | string) => {
+    const enable = await ensureLocationEnabled();
+    if (!enable) return;
     setSelectedServiceId(id as any);
     setIsOpenModal(true);
   };
+
 
   return (
     <>

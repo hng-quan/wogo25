@@ -1,0 +1,173 @@
+import ButtonCustom from '@/components/button/ButtonCustom';
+import Appbar from '@/components/layout/Appbar';
+import { MaterialIcons } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
+import { Modal, Portal, Text } from 'react-native-paper';
+
+const mockWorkers = [
+  {
+    id: '1',
+    name: 'ĐINH HOÀI DƯƠNG',
+    distance: 9.4,
+    orders: 21,
+    completionRate: 47,
+    price: 300000,
+    warranty: '30 ngày',
+    rating: 5.0,
+    avatar: 'https://placekitten.com/100/100',
+  },
+  {
+    id: '2',
+    name: 'NGUYỄN TRƯỜNG THOẠI',
+    distance: 8.5,
+    orders: 0,
+    completionRate: 0,
+    price: 200000,
+    warranty: '90 ngày',
+    rating: 5.0,
+    avatar: 'https://placekitten.com/120/120',
+  },
+];
+
+export default function Index() {
+  const {currentTab} = useLocalSearchParams();
+  const [region, setRegion] = useState({
+    latitude: 10.8142,
+    longitude: 106.6438,
+    latitudeDelta: 0.02,
+    longitudeDelta: 0.02,
+  });
+  const [isOpen, setIsOpen] = useState(false);
+
+
+  const onBackPress = () => {
+    router.push({
+      pathname: '/(tabs-customer)/activity',
+      params: {currentTab: currentTab || 'all'},
+    });
+  };
+
+  const InfoDetailModal = ({visible, onClose} : {visible: boolean, onClose: () => void}) => {
+    const {t} = useTranslation();
+    return (
+        <Portal>
+            <Modal
+        visible={visible}
+        onDismiss={onClose}
+        contentContainerStyle={{
+          width: '90%',
+          margin: 'auto',
+          backgroundColor: 'white',
+          borderRadius: 8,
+          padding: 12,
+        }}>
+          <View>
+            <Text variant='titleMedium'>{t('Thông tin tìm thợ')}</Text>
+          </View>
+
+        <View>
+            <Text>description</Text>
+            <Text>Time</Text>
+            <Text>Địa chỉ</Text>
+        </View>
+        <ButtonCustom style={{backgroundColor: '#f44336', marginTop: 12}} onPress={onClose}>
+            Hủy đặt
+        </ButtonCustom>
+      </Modal>
+        </Portal>
+    )
+  }
+
+  const renderWorker = ({item}: any) => (
+    <View style={styles.workerCard}>
+      <Image source={{uri: item.avatar}} style={styles.avatar} />
+      <View style={{flex: 1}}>
+        <Text style={styles.workerName}>{item.name}</Text>
+        <Text style={styles.workerMeta}>
+          📍 {item.distance}km • {item.orders} đơn ({item.completionRate}%)
+        </Text>
+        <Text style={styles.workerPrice}>{item.price.toLocaleString()}đ</Text>
+        <Text style={styles.workerWarranty}>Bảo hành {item.warranty}</Text>
+      </View>
+      <TouchableOpacity style={styles.chatButton}>
+        <MaterialIcons name='chat' size={20} color='#fff' />
+      </TouchableOpacity>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      <Appbar title='Đang tìm thợ' onBackPress={onBackPress} />
+
+      {/* Bản đồ */}
+      <MapView style={styles.map} region={region}>
+        <Marker coordinate={{latitude: region.latitude, longitude: region.longitude}} />
+      </MapView>
+
+      {/* Giá tham khảo */}
+      <View style={styles.priceContainer}>
+        <View>
+          <Text style={styles.priceLabel}>Giá tham khảo</Text>
+          <Text style={styles.priceRange}>80,000 - 200,000đ</Text>
+        </View>
+        <TouchableOpacity>
+          <Text style={[styles.priceLabel, {color: '#22c55e'}]} onPress={() => setIsOpen(true)}>Chi tiết</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Danh sách thợ */}
+      <FlatList
+        data={mockWorkers}
+        keyExtractor={item => item.id}
+        renderItem={renderWorker}
+        contentContainerStyle={{paddingBottom: 16}}
+      />
+
+      <InfoDetailModal visible={isOpen} onClose={() => setIsOpen(false)} />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {flex: 1, backgroundColor: '#F5F5F5'},
+  map: {height: 200},
+  priceContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderColor: '#eee',
+  },
+  priceLabel: {fontSize: 14, color: '#777'},
+  priceRange: {fontSize: 16, fontWeight: 'bold', color: '#22c55e'},
+  workerCard: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    marginHorizontal: 12,
+    marginTop: 10,
+    borderRadius: 12,
+    padding: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+    alignItems: 'center',
+  },
+  avatar: {width: 50, height: 50, borderRadius: 25, marginRight: 10},
+  workerName: {fontWeight: 'bold', fontSize: 16},
+  workerMeta: {fontSize: 12, color: '#555'},
+  workerPrice: {color: '#16a34a', fontWeight: 'bold'},
+  workerWarranty: {fontSize: 12, color: '#777'},
+  chatButton: {
+    backgroundColor: '#facc15',
+    padding: 6,
+    borderRadius: 20,
+    marginLeft: 8,
+  },
+});

@@ -1,7 +1,7 @@
 import Tabs from '@/components/ui/Tabs';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const mockNotices = [
   {
@@ -43,7 +43,7 @@ export default function Notice() {
   const filteredNotices = activeTab === 'all' ? mockNotices : mockNotices.filter(n => n.type === activeTab);
 
   const renderItem = ({item}: any) => (
-    <View style={styles.noticeItem}>
+    <TouchableOpacity style={styles.noticeItem}>
       <View style={styles.iconContainer}>
         <MaterialIcons name='notifications' size={20} color='#facc15' />
       </View>
@@ -52,7 +52,7 @@ export default function Notice() {
         <Text style={styles.content}>{item.content}</Text>
       </View>
       {item.unread && <View style={styles.dot} />}
-    </View>
+    </TouchableOpacity>
   );
 
   return (

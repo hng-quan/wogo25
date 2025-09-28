@@ -21,7 +21,7 @@ export default function Index() {
   const [coords, setCoords] = useState<{latitude: number; longitude: number} | null>(null);
   const [mapVisible, setMapVisible] = useState(false);
   const [priceSuggestion, setPriceSuggestion] = useState<number | null>(null);
-  // const [duration, setDuration] = useState<number | null>(null);
+  const [duration, setDuration] = useState<number | null>(null);
   const [imageList, setImageList] = useState<any[]>([]);
 
   const onBackPress = () => router.push('/(tabs-customer)');
@@ -55,7 +55,7 @@ export default function Index() {
     const onSuccess = (res: any) => {
       const priceAround = res.result?.estimatedPriceLower + ' - ' + res.result?.estimatedPriceHigher;
       setPriceSuggestion(priceAround as any);
-      // setDuration(res.result?.estimatedDurationMinutes);
+      setDuration(res.result?.estimatedDurationMinutes);
     };
     await jsonGettAPI('/services/suggestions/' + parentId, {}, onSuccess);
   };
@@ -124,7 +124,7 @@ export default function Index() {
         uri: fileUri,
         name: filename,
         type: mimeType,
-      } as any)
+      } as any);
     });
     const res = await formPostAPI('/bookings/create-job', formData);
     console.log('res', res);
@@ -215,9 +215,19 @@ export default function Index() {
 
         <View style={{bottom: 0, marginTop: 'auto', paddingVertical: 2}}>
           {/* <Text>{`Thời gian dự kiến hoàn thành: ${duration} phút`}</Text> */}
-          <Text style={{textAlign: 'center', fontSize: 16, padding: 8, color: '#b45309'}}>
-            Giá tham khảo: {priceSuggestion ? priceSuggestion + ' VND' : 'Đang tải...'}
-          </Text>
+          {/* Giá tham khảo */}
+          <View style={styles.priceContainer}>
+            <View>
+              <Text style={styles.priceLabel}>Giá tham khảo</Text>
+              <Text style={styles.priceRange}>{priceSuggestion ? priceSuggestion + ' đ' : 'Đang tải...'}</Text>
+            </View>
+            <View>
+              <Text style={styles.priceLabel}>Thời gian xử lý</Text>
+              <Text style={{fontSize: 15, fontWeight: 'bold', color: '#fbbf24'}}>
+                {duration ? duration + ' phút' : 'Đang tải...'}
+              </Text>
+            </View>
+          </View>
           <ButtonCustom onPress={handleCreateJob}>Tìm thợ</ButtonCustom>
         </View>
 
@@ -277,4 +287,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
   },
+  priceContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 12,
+    paddingVertical: 12,
+  },
+  priceLabel: {fontSize: 14, color: '#777'},
+  priceRange: {fontSize: 16, fontWeight: 'bold', color: '#22c55e'},
 });
