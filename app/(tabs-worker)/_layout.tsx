@@ -41,7 +41,15 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
         }}
       />
-  
+
+      <Tabs.Screen
+        name='find-job'
+        options={{
+          title: 'Tìm việc',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="briefcase.fill" color={color} />,
+        }}
+      />
+
       <Tabs.Screen
         name="profile"
         options={{
