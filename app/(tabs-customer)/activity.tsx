@@ -1,9 +1,10 @@
+import Tabs from '@/components/ui/Tabs';
 import { JobRequest } from '@/interfaces/interfaces';
 import { jsonGettAPI } from '@/lib/apiService';
 import { displayDateVN } from '@/lib/utils';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Chip, Text } from 'react-native-paper';
+import { Text } from 'react-native-paper';
 
 const STATUS = {
   PENDING: 'PENDING',
@@ -18,17 +19,17 @@ const filters = [
 ];
 
 export default function ActivityScreen() {
-  const [selectedFilter, setSelectedFilter] = React.useState<string>('all');
   const [myJobsRequest, setMyJobsRequest] = React.useState<JobRequest[]>([]);
+  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     const fetchMyJobsRequest = async () => {
-      const endpoint = selectedFilter === 'all' ? '/jobs/my-jobRequests/all' : '/jobs/my-jobRequests/' + selectedFilter;
+      const endpoint = activeTab === 'all' ? '/jobs/my-jobRequests/all' : '/jobs/my-jobRequests/' + activeTab;
       const res = await jsonGettAPI(endpoint);
       setMyJobsRequest(res?.result || []);
     };
     fetchMyJobsRequest();
-  }, [selectedFilter]);
+  }, [activeTab]);
 
   const renderEmptyState = (title: string) => (
     <View style={styles.emptySection}>
@@ -87,10 +88,11 @@ export default function ActivityScreen() {
   return (
     <View style={styles.container}>
       {/* Title */}
-      <Text style={styles.title}>Hoạt động</Text>
+      <Text className='text-2xl !font-bold my-2'>Hoạt động</Text>
 
       {/* Filter Chips */}
-      <View style={styles.filterRow}>
+      <Tabs tabs={filters} activeTab={activeTab} onChange={setActiveTab} />
+      {/* <View style={styles.filterRow}>
         {filters.map(f => (
           <Chip
             key={f.key}
@@ -102,7 +104,7 @@ export default function ActivityScreen() {
             {f.label}
           </Chip>
         ))}
-      </View>
+      </View> */}
 
       {/* Danh sách job */}
       {myJobsRequest.length === 0 ? (
@@ -128,12 +130,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F2F2F2',
     paddingHorizontal: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginTop: 12,
-    marginBottom: 12,
   },
   filterRow: {
     flexDirection: 'row',
