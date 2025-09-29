@@ -15,7 +15,7 @@ type TabsProps = {
 
 export default function Tabs({tabs, activeTab, onChange}: TabsProps) {
   const {role} = useRole();
-  const bgColor = role === 'WORKER' ? styles.tabActiveYellow : styles.tabActiveGreen;
+  const bgColor = role === 'worker' ? styles.tabActiveBlue : styles.tabActiveGreen;
   return (
     <View style={styles.tabs}>
       {tabs.map(tab => (
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
   tabActiveGreen: {
     backgroundColor: '#4CAF50',
   },
-  tabActiveYellow: {
+  tabActiveBlue: {
     backgroundColor: '#1565C0',
   },
   tabText: {

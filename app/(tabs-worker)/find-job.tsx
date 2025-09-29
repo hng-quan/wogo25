@@ -1,4 +1,5 @@
-import React, { useRef, useState } from 'react';
+import { jsonGettAPI, jsonPostAPI } from '@/lib/apiService';
+import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, PanResponder, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
@@ -13,7 +14,47 @@ export default function FindJob() {
 
   const translateY = useRef(new Animated.Value(CLOSED_Y)).current;
   const lastOffset = useRef(CLOSED_Y);
-  const [isSearching, setIsSearching] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
+  const [jobList, setJobList] = useState<any[]>([]);
+  const [isSavedAddress, setIsSavedAddress] = useState<boolean>(false);
+
+  // Lưu địa chỉ của thợ khi bắt đầu tìm việc
+  useEffect(() => {
+    const saveAddress = async () => {
+      try {
+        const params = {
+          latitude: 10.8320282,
+          longitude: 106.6901678,
+          role: 'WORKER',
+        };
+        const res = await jsonPostAPI('/addresses/save-or-update', params);
+        setIsSavedAddress(true);
+        console.log('save address res', res);
+      } catch (error) {
+        console.log('save address error', error);
+      }
+    };
+    if (!isSearching) {
+      setIsSavedAddress(false);
+      return;
+    }
+    saveAddress();
+  }, [isSearching]);
+
+  useEffect(() => {
+    const fetchJobsAvailable = async () => {
+      const res = await jsonGettAPI('/bookings/job-available', {});
+      if (res?.result) {
+        setJobList(res.result);
+      }
+    };
+    if (!isSavedAddress) return;
+    fetchJobsAvailable();
+  }, [isSavedAddress]);
+
+  useEffect(() => {
+    console.log('jobList', jobList);
+  }, [jobList]);
 
   const panResponder = useRef(
     PanResponder.create({

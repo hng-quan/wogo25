@@ -6,8 +6,8 @@ module.exports = function (api) {
       'nativewind/babel',
     ],
     plugins: [
-      // 'react-native-worklets/plugin',
-      'react-native-reanimated/plugin', // 👈 phải luôn nằm cuối cùng
+      'react-native-worklets/plugin',
+      // 'react-native-reanimated/plugin',
     ],
     env: {
       production: {

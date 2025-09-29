@@ -108,6 +108,7 @@ export default function Index() {
     formData.append('description', description);
     formData.append('address', address);
     const bookingDate = date.toISOString().slice(0, 19);
+    console.log('bookingDate', bookingDate);
     formData.append('bookingDate', bookingDate);
     formData.append('latitudeUser', String(coords?.latitude || ''));
     formData.append('longitudeUser', String(coords?.longitude || ''));
