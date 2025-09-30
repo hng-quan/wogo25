@@ -12,7 +12,7 @@ import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TextInput, Toucha
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 
 export default function Index() {
-  const {serviceName, parentId} = useLocalSearchParams();
+  const {serviceName, parentId, serviceId} = useLocalSearchParams();
   const [description, setDescription] = useState('');
   const [address, setAddress] = useState<string>('');
   const [loadingAddress, setLoadingAddress] = useState(true);
@@ -104,7 +104,8 @@ export default function Index() {
 
   const handleCreateJob = async () => {
     const formData = new FormData();
-    formData.append('serviceId', parentId as string);
+    // formData.append('serviceId', parentId as string);
+    formData.append('serviceId', serviceId as string);
     formData.append('description', description);
     formData.append('address', address);
     const bookingDate = date.toISOString().slice(0, 19);
@@ -129,10 +130,6 @@ export default function Index() {
     });
     const res = await formPostAPI('/bookings/create-job', formData);
     console.log('res', res);
-    // console.log('=== FormData content ===');
-    // for (const pair of formData.entries()) {
-    //   console.log(pair[0], ':', pair[1]);
-    // }
   };
 
   return (
@@ -220,12 +217,12 @@ export default function Index() {
           <View style={styles.priceContainer}>
             <View>
               <Text style={styles.priceLabel}>Giá tham khảo</Text>
-              <Text style={styles.priceRange}>{priceSuggestion ? priceSuggestion + ' đ' : 'Đang tải...'}</Text>
+              <Text style={styles.priceRange}>{priceSuggestion ? priceSuggestion + ' đ' : 'Chưa xác định'}</Text>
             </View>
             <View>
               <Text style={styles.priceLabel}>Thời gian xử lý</Text>
               <Text style={{fontSize: 15, fontWeight: 'bold', color: '#fbbf24'}}>
-                {duration ? duration + ' phút' : 'Đang tải...'}
+                {duration ? duration + ' phút' : 'Chưa xác định'}
               </Text>
             </View>
           </View>

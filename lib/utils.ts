@@ -75,3 +75,5 @@ export function displayDateVN(date: Date = new Date()): string {
     hour12: false,
   });
 }
+
+

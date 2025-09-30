@@ -16,12 +16,12 @@ const promotions = [
     subtitle: '',
     image: require('../../assets/images/bn1.png'),
   },
-  // {
-  //   id: '2',
-  //   title: '',
-  //   subtitle: '',
-  //   image: require('../../assets/images/bn2.png'),
-  // },
+  {
+    id: '2',
+    title: '',
+    subtitle: '',
+    image: require('../../assets/images/bn1.png'),
+  },
 ];
 
 type Promotion = (typeof promotions)[0];
@@ -44,7 +44,7 @@ const ServiceCategoryItem = ({item, onPress}: {item: ServiceType; onPress: (id: 
 };
 
 const PromotionCard = ({item}: {item: Promotion}) => (
-  <TouchableOpacity className='w-[320px] h-48 rounded-2xl overflow-hidden mr-4'>
+  <TouchableOpacity className='w-[350px] h-48 rounded-2xl overflow-hidden mr-4'>
     <ImageBackground source={item.image} resizeMode='cover' className='flex-1 p-4 justify-end'>
       <View className='absolute top-0 left-0 right-0 bottom-0 bg-black/10' />
       <Text className='text-white text-lg font-bold'>{item.title}</Text>
@@ -159,6 +159,7 @@ export default function HomeScreen() {
         visible={isOpenModal}
         onClose={() => setIsOpenModal(false)}
         onSelect={service => {
+          console.log('Selected service:', service);
           router.push({
             pathname: '/booking/create-job',
             params: {
