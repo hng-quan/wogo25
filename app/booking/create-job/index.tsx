@@ -8,8 +8,15 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+
+
+const STATUS = {
+  PENDING: 'PENDING',
+  ACCEPTED: 'ACCEPTED',
+  CANCELLED: 'CANCELLED',
+};
 
 export default function Index() {
   const {serviceName, parentId, serviceId} = useLocalSearchParams();
@@ -128,9 +135,26 @@ export default function Index() {
         type: mimeType,
       } as any);
     });
-    const res = await formPostAPI('/bookings/create-job', formData);
-    console.log('res', res);
+    const res = await formPostAPI('/bookings/create-job', formData, () => {}, () => {}, handleError);
+    // console.log('res', res);
+    if (res?.result) {
+      router.push({
+       pathname: '/booking/job-request-detail',
+        params: {
+          currentTab: STATUS.PENDING,
+          jobRequestCode: res.result.jobRequestCode
+        }
+      })
+    }
   };
+
+  const handleError = (error: any) => {
+    let message = undefined;
+     if (error?.message === 'You have an existing pending job request for this service') {
+      message = 'Vui lòng không tạo yêu cầu mới cho cùng 1 dịch vụ khi vẫn còn yêu cầu đang chờ xử lý.';
+     }
+    Alert.alert('Thông báo', message || error?.message || 'Đã có lỗi xảy ra. Vui lòng thử lại sau.');
+  }
 
   return (
     <>
