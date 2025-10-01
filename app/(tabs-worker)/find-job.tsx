@@ -5,6 +5,7 @@ import { Colors } from '@/lib/common';
 import { calculateDistance } from '@/lib/location-helper';
 import { displayDateVN } from '@/lib/utils';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -139,14 +140,14 @@ export default function FindJob() {
         </TouchableOpacity>
 
         <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>
-          <Text style={styles.title}>{jobList.length} việc phù hợp</Text>
-          <FindingStatus text='Đang tìm việc...' size={24} color='#6200ee' loading={isSearching} />
+          <FindingStatus size={24} color='#6200ee' loading={isSearching} />
+          <Text style={styles.title}>{jobList.length} công việc phù hợp</Text>
         </View>
 
         <FlatList
           data={jobList}
           keyExtractor={item => item.id.toString()}
-          ItemSeparatorComponent={() => <View style={{height: 10}} />}
+          ItemSeparatorComponent={() => <View style={{height: 12}} />}
           renderItem={({item}) => {
             const customerCoords = {
               latitude: item.latitude,
@@ -156,46 +157,61 @@ export default function FindJob() {
 
             return (
               <View style={styles.jobCard}>
-                {/* Hình ảnh */}
-                {item.files && item.files.length > 0 && item.files[0]?.fileUrl ? (
-                  <Image source={{uri: item.files[0].fileUrl}} style={styles.jobImage} />
-                ) : (
-                  <View style={[styles.jobImage, styles.noImage]}>
-                    <MaterialCommunityIcons name='image-off' size={28} color='#999' />
-                    <Text style={styles.noImageText}>Không có ảnh</Text>
+                {/* Hình ảnh hoặc placeholder */}
+                <View style={{flexDirection: 'column', alignItems: 'center'}}>
+                  {item.files?.length > 0 && item.files[0]?.fileUrl ? (
+                    <Image source={{uri: item.files[0].fileUrl}} style={styles.jobImage} />
+                  ) : (
+                    <View style={[styles.jobImage, styles.noImage]}>
+                      <MaterialCommunityIcons name='image-off' size={52} color='#999' />
+                    </View>
+                  )}
+
+                  {/* Khoảng cách */}
+                  <View style={[styles.rowCenter, {marginTop: 'auto'}]}>
+                    <MaterialCommunityIcons name='map-marker-distance' size={16} color='#1565C0' />
+                    <Text style={styles.jobText}>{distance}</Text>
                   </View>
-                )}
+                </View>
 
                 {/* Nội dung */}
                 <View style={styles.jobInfo}>
+                  {/* Tiêu đề dịch vụ + ngày */}
                   <Text style={styles.jobTitle}>{item.service.serviceName}</Text>
-                  <Text style={styles.jobText}>{displayDateVN(item.bookingDate)}</Text>
+                  {/* Description (1 dòng) */}
+                  <Text style={styles.jobDesc} numberOfLines={1} ellipsizeMode='tail'>
+                    {item.description}
+                  </Text>
+
+                  {/* Address (1 dòng) */}
+                  {/* <Text style={styles.jobAddress} numberOfLines={1} ellipsizeMode='tail'>
+                    {item.bookingAddress}
+                  </Text> */}
 
                   {/* Hàng ngang: khoảng cách - giá tiền */}
                   <View style={styles.rowBetween}>
                     <View style={styles.rowCenter}>
-                      <MaterialCommunityIcons name='map-marker' size={16} color='#4caf50' />
-                      <Text style={styles.jobText}>{distance}</Text>
-                    </View>
-                    <View style={styles.rowCenter}>
-                      <MaterialIcons name='attach-money' size={16} color='#4caf50' />
+                      <MaterialIcons name='attach-money' size={16} color='#1565C0' />
                       <Text style={styles.jobPrice}>
                         {item.estimatedPriceLower} - {item.estimatedPriceHigher} đ
                       </Text>
                     </View>
                   </View>
-
-                  {/* Description (1 dòng, 3 chấm) */}
-                  <Text style={styles.jobText} numberOfLines={1} ellipsizeMode='tail'>
-                    {item.description}
-                  </Text>
-
-                  {/* Address (1 dòng, 3 chấm) */}
-                  <Text style={styles.jobText} numberOfLines={1} ellipsizeMode='tail'>
-                    {item.bookingAddress}
-                  </Text>
-
-                  <Text style={styles.jobText}>Ước tính: {item.estimatedDurationMinutes} phút</Text>
+                  {/* Ước tính */}
+                  <View style={[{flexDirection: 'row', gap: 4}, {alignItems: 'center'}]}>
+                    <MaterialCommunityIcons name='clock-outline' size={16} color='#999' />
+                    <Text style={styles.jobEstimate}>Ước tính: {item.estimatedDurationMinutes} phút</Text>
+                  </View>
+                </View>
+                <View style={styles.ratingWrapper}>
+                  <LinearGradient
+                    colors={['#00c6ff', '#0072ff']} // vàng → cam
+                    start={{x: 0, y: 0}}
+                    end={{x: 1, y: 1}}
+                    style={styles.ratingBox}>
+                    <Text style={styles.ratingText}>{displayDateVN(item.bookingDate)}</Text>
+                    <MaterialCommunityIcons name='star' size={14} color='#fff' />
+                  </LinearGradient>
                 </View>
               </View>
             );
@@ -225,7 +241,26 @@ export default function FindJob() {
 
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#fafafa'},
-
+  ratingWrapper: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    borderBottomLeftRadius: 12,
+    borderTopRightRadius: 12,
+    overflow: 'hidden', // bắt buộc để gradient bo góc
+  },
+  ratingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 1,
+  },
+  ratingText: {
+    color: '#fff',
+    fontWeight: '600',
+    marginRight: 2,
+    fontSize: 12,
+  },
   drawer: {
     position: 'absolute',
     left: 0,
@@ -251,53 +286,10 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
     color: '#333',
   },
-
-  jobCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start', // giữ text canh trên cùng
-    padding: 12,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    shadowOpacity: 0.08,
-    shadowOffset: {width: 0, height: 2},
-    shadowRadius: 4,
-    elevation: 4,
-  },
-
-  jobImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 8,
-  },
-
-  jobInfo: {
-    flex: 1,
-    marginLeft: 12, // khoảng cách giữa ảnh và text
-  },
-
-  jobTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#222',
-    marginBottom: 2,
-  },
-
-  jobPrice: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#4caf50',
-  },
-
-  jobText: {
-    fontSize: 13,
-    color: '#555',
-    marginTop: 2,
-  },
-
   toggleContainer: {
     position: 'absolute',
     top: 48,
@@ -316,28 +308,84 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  jobCard: {
+    flexDirection: 'row',
+    padding: 12,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: {width: 0, height: 2},
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  jobImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+  },
+  jobInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  jobTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#222',
+  },
+  jobDate: {
+    position: 'absolute',
+    fontStyle: 'italic',
+    top: 0,
+    right: 0,
+    fontSize: 12,
+    color: '#55555',
+    padding: 4,
+    borderTopEndRadius: 12,
+    borderBottomStartRadius: 12,
+    backgroundColor: 'rgba(21, 101, 192, 0.1)',
+    overflow: 'hidden',
+  },
+  jobPrice: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1565C0',
+  },
+  jobText: {
+    fontSize: 13,
+    color: '#555',
+  },
+  jobDesc: {
+    fontSize: 13,
+    color: '#444',
+  },
+  jobAddress: {
+    fontSize: 12,
+    color: '#777',
+  },
+  jobEstimate: {
+    fontSize: 12,
+    color: '#555',
+  },
   rowBetween: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginVertical: 4,
   },
-
   rowCenter: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-
   noImage: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   noImageText: {
-    fontSize: 8,
+    fontSize: 10,
     color: '#999',
-    marginTop: 2,
+    marginTop: 4,
   },
 });
