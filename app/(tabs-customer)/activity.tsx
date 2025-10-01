@@ -14,7 +14,7 @@ const STATUS = {
 };
 
 const filters = [
-  {key: 'all', label: 'Tất cả'},
+  {key: 'ALL', label: 'Tất cả'},
   {key: STATUS.PENDING, label: 'Đang tìm'},
   {key: STATUS.ACCEPTED, label: 'Đang tiến hành'},
 ];
@@ -22,11 +22,11 @@ const filters = [
 export default function ActivityScreen() {
   const { currentTab } = useLocalSearchParams();
   const [myJobsRequest, setMyJobsRequest] = React.useState<JobRequest[]>([]);
-  const [activeTab, setActiveTab] = useState(currentTab || 'all');
+  const [activeTab, setActiveTab] = useState(currentTab || 'ALL');
 
   useEffect(() => {
     const fetchMyJobsRequest = async () => {
-      const endpoint = activeTab === 'all' ? '/jobs/my-jobRequests/all' : '/jobs/my-jobRequests/' + activeTab;
+      const endpoint = activeTab === 'ALL' ? '/jobs/my-jobRequests/ALL' : '/jobs/my-jobRequests/' + activeTab;
       const res = await jsonGettAPI(endpoint);
       setMyJobsRequest(res?.result || []);
     };
@@ -44,7 +44,9 @@ export default function ActivityScreen() {
         pathname: '/booking/job-request-detail',
         params: {
           currentTab: activeTab,
-          jobRequestCode: item.jobRequestCode
+          jobRequestCode: item.jobRequestCode,
+          latitude: item.latitude,
+          longitude: item.longitude
         }
     })
   }

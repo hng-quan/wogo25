@@ -59,7 +59,9 @@ export interface FileItem  {
 export interface JobRequest  {
   id: number | string;
   jobRequestCode: string;
-  bookingDate: string; // ISO date string
+  bookingDate: string; // ISO date string,
+  latitude: number;
+  longitude: number;
   distance: number;
   description: string;
   bookingAddress: string;

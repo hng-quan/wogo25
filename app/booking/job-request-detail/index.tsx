@@ -37,15 +37,26 @@ const mockWorkers = [
 ];
 
 export default function Index() {
-  const {currentTab, jobRequestCode} = useLocalSearchParams();
+  const {currentTab, jobRequestCode, latitude, longitude} = useLocalSearchParams();
   const [region, setRegion] = useState({
-    latitude: 10.8142,
-    longitude: 106.6438,
-    latitudeDelta: 0.02,
-    longitudeDelta: 0.02,
+    latitude: 0,
+    longitude: 0,
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01,
   });
   const [isOpen, setIsOpen] = useState(false);
   const [jobRequest, setJobRequest] = useState<any>(null);
+
+  useEffect(() => {
+    // console.log('Params:', {currentTab, jobRequestCode, latitude, longitude});
+    if (!latitude || !longitude) return;
+    setRegion({
+      latitude: parseFloat(latitude as string),
+      longitude: parseFloat(longitude as string),
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    });
+  }, [latitude, longitude]);
 
   useEffect(() => {
     if (!jobRequestCode) return;

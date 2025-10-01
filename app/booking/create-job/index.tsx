@@ -8,9 +8,18 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
-
 
 const STATUS = {
   PENDING: 'PENDING',
@@ -30,6 +39,7 @@ export default function Index() {
   const [priceSuggestion, setPriceSuggestion] = useState<number | null>(null);
   const [duration, setDuration] = useState<number | null>(null);
   const [imageList, setImageList] = useState<any[]>([]);
+  const [submitting, setSubmitting] = useState(false);
 
   const onBackPress = () => router.push('/(tabs-customer)');
 
@@ -110,51 +120,67 @@ export default function Index() {
   };
 
   const handleCreateJob = async () => {
-    const formData = new FormData();
-    // formData.append('serviceId', parentId as string);
-    formData.append('serviceId', serviceId as string);
-    formData.append('description', description);
-    formData.append('address', address);
-    const bookingDate = date.toISOString().slice(0, 19);
-    console.log('bookingDate', bookingDate);
-    formData.append('bookingDate', bookingDate);
-    formData.append('latitudeUser', String(coords?.latitude || ''));
-    formData.append('longitudeUser', String(coords?.longitude || ''));
-    // add files ảnh
-    imageList.forEach((fileUri, index) => {
-      const filename = fileUri.split('/').pop() || `image_${index}.jpg`;
-      const ext = filename.split('.')?.pop().toLowerCase();
-      let mimeType = 'application/octet-stream';
-      if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
-      if (ext === 'png') mimeType = 'image/png';
-      if (ext === 'mp4') mimeType = 'video/mp4';
-      if (ext === 'webp') mimeType = 'image/webp';
-      formData.append('files', {
-        uri: fileUri,
-        name: filename,
-        type: mimeType,
-      } as any);
-    });
-    const res = await formPostAPI('/bookings/create-job', formData, () => {}, () => {}, handleError);
-    // console.log('res', res);
-    if (res?.result) {
-      router.push({
-       pathname: '/booking/job-request-detail',
-        params: {
-          currentTab: STATUS.PENDING,
-          jobRequestCode: res.result.jobRequestCode
-        }
-      })
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const formData = new FormData();
+      // formData.append('serviceId', parentId as string);
+      formData.append('serviceId', serviceId as string);
+      formData.append('description', description);
+      formData.append('address', address);
+      const bookingDate = date.toISOString().slice(0, 19);
+      console.log('bookingDate', bookingDate);
+      formData.append('bookingDate', bookingDate);
+      formData.append('latitudeUser', String(coords?.latitude || ''));
+      formData.append('longitudeUser', String(coords?.longitude || ''));
+      // add files ảnh
+      imageList.forEach((fileUri, index) => {
+        const filename = fileUri.split('/').pop() || `image_${index}.jpg`;
+        const ext = filename.split('.')?.pop().toLowerCase();
+        let mimeType = 'application/octet-stream';
+        if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
+        if (ext === 'png') mimeType = 'image/png';
+        if (ext === 'mp4') mimeType = 'video/mp4';
+        if (ext === 'webp') mimeType = 'image/webp';
+        formData.append('files', {
+          uri: fileUri,
+          name: filename,
+          type: mimeType,
+        } as any);
+      });
+      const res = await formPostAPI(
+        '/bookings/create-job',
+        formData,
+        () => {},
+        () => {},
+        handleError,
+      );
+      // console.log('res', res);
+      if (res?.result) {
+        router.push({
+          pathname: '/booking/job-request-detail',
+          params: {
+            currentTab: STATUS.PENDING,
+            jobRequestCode: res.result.jobRequestCode,
+            latitude: res.result.latitude,
+            longitude: res.result.longitude,
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Error creating job:', error);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleError = (error: any) => {
     let message = undefined;
-     if (error?.message === 'You have an existing pending job request for this service') {
+    if (error?.message === 'You have an existing pending job request for this service') {
       message = 'Vui lòng không tạo yêu cầu mới cho cùng 1 dịch vụ khi vẫn còn yêu cầu đang chờ xử lý.';
-     }
+    }
     Alert.alert('Thông báo', message || error?.message || 'Đã có lỗi xảy ra. Vui lòng thử lại sau.');
-  }
+  };
 
   return (
     <>
@@ -250,7 +276,9 @@ export default function Index() {
               </Text>
             </View>
           </View>
-          <ButtonCustom onPress={handleCreateJob}>Tìm thợ</ButtonCustom>
+          <ButtonCustom onPress={handleCreateJob} loading={submitting} disabled={submitting}>
+            Tìm thợ
+          </ButtonCustom>
         </View>
 
         <DateTimePickerModal
