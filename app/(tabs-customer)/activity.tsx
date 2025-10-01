@@ -46,7 +46,8 @@ export default function ActivityScreen() {
           currentTab: activeTab,
           jobRequestCode: item.jobRequestCode,
           latitude: item.latitude,
-          longitude: item.longitude
+          longitude: item.longitude,
+          serviceId: item.service.id,
         }
     })
   }

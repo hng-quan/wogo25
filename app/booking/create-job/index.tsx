@@ -164,6 +164,7 @@ export default function Index() {
             jobRequestCode: res.result.jobRequestCode,
             latitude: res.result.latitude,
             longitude: res.result.longitude,
+            serviceId: res.result.service.id,
           },
         });
       }

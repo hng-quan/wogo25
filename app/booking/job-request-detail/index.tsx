@@ -1,6 +1,7 @@
 import ButtonCustom from '@/components/button/ButtonCustom';
 import Appbar from '@/components/layout/Appbar';
 import FindingStatus from '@/components/ui/FindingStatus';
+import { useSocket } from '@/context/SocketContext';
 import { jsonGettAPI } from '@/lib/apiService';
 import { Colors } from '@/lib/common';
 import { displayDateVN } from '@/lib/utils';
@@ -38,7 +39,8 @@ const mockWorkers = [
 ];
 
 export default function Index() {
-  const {currentTab, jobRequestCode, latitude, longitude} = useLocalSearchParams();
+  const {currentTab, jobRequestCode, latitude, longitude, serviceId} = useLocalSearchParams();
+  const {connected, subscribe} = useSocket();
   const [region, setRegion] = useState({
     latitude: 0,
     longitude: 0,
@@ -49,7 +51,19 @@ export default function Index() {
   const [jobRequest, setJobRequest] = useState<any>(null);
 
   useEffect(() => {
-    // console.log('Params:', {currentTab, jobRequestCode, latitude, longitude});
+    console.log('Socket connected:', connected);
+    if (!connected) return;
+    const topic = `/topic/send-quote/${serviceId}`;
+    const subscription = subscribe(topic, message => {
+        console.log('Received message:', message.body);
+    })
+    return () => {
+      console.log('Unsubscribing from topic:', topic);
+      subscription?.unsubscribe();
+    }
+  }, [serviceId]);
+
+  useEffect(() => {
     if (!latitude || !longitude) return;
     setRegion({
       latitude: parseFloat(latitude as string),

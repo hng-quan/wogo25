@@ -4,7 +4,7 @@ import { ActivityIndicator } from 'react-native-paper';
 
 type FindingStatusProps = {
   text?: string;
-  size?: number; // px
+  size?: number;
   color?: string;
   className?: string;
   loading?: boolean;
