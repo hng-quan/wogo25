@@ -32,7 +32,7 @@ const mockWorkers = [
     price: 200000,
     warranty: '90 ngày',
     rating: 5.0,
-    avatar: 'https://placekitten.com/120/120',
+    // avatar: 'https://placekitten.com/120/120',
   },
 ];
 
@@ -131,22 +131,31 @@ export default function Index() {
     );
   };
 
-  const renderWorker = ({item}: any) => (
-    <View style={styles.workerCard}>
-      <Image source={{uri: item.avatar}} style={styles.avatar} />
-      <View style={{flex: 1}}>
-        <Text style={styles.workerName}>{item.name}</Text>
-        <Text style={styles.workerMeta}>
-          📍 {item.distance}km • {item.orders} đơn ({item.completionRate}%)
-        </Text>
-        <Text style={styles.workerPrice}>{item.price.toLocaleString()}đ</Text>
-        <Text style={styles.workerWarranty}>Bảo hành {item.warranty}</Text>
-      </View>
-      <TouchableOpacity style={styles.chatButton}>
-        <MaterialIcons name='chat' size={20} color='#fff' />
+  const renderWorker = ({item}: any) => {
+    const onPress = () => {
+      alert('Show thông tin chi tiết thợ');
+    };
+    return (
+      <TouchableOpacity style={styles.workerCard} onPress={onPress}>
+        {item.avatar ? (
+          <Image source={{uri: item.avatar}} style={styles.avatar} />
+        ) : (
+          <MaterialIcons name='person' size={32} color='#888' />
+        )}
+        <View style={{flex: 1}}>
+          <Text style={styles.workerName}>{item.name}</Text>
+          <Text style={styles.workerMeta}>
+            📍 {item.distance}km • {item.orders} đơn ({item.completionRate}%)
+          </Text>
+          <Text style={styles.workerPrice}>{item.price.toLocaleString()}đ</Text>
+          <Text style={styles.workerWarranty}>Bảo hành {item.warranty}</Text>
+        </View>
+        <TouchableOpacity style={styles.chatButton}>
+          <MaterialIcons name='chat' size={20} color='#fff' />
+        </TouchableOpacity>
       </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -157,17 +166,24 @@ export default function Index() {
         <Marker coordinate={{latitude: region.latitude, longitude: region.longitude}} />
       </MapView>
 
+      <View style={styles.priceContainer}>
+        <Text style={styles.title}>{mockWorkers.length} thợ đã báo giá</Text>
+        <View>
+          <TouchableOpacity>
+            <Text style={[styles.priceLabel, {color: '#22c55e'}]} onPress={() => setIsOpen(true)}>
+              Chi tiết
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
       {/* Giá tham khảo */}
       <View style={styles.priceContainer}>
         <View>
           <Text style={styles.priceLabel}>Giá tham khảo</Text>
-          <Text style={styles.priceRange}>80,000 - 200,000đ</Text>
-        </View>
-        <TouchableOpacity>
-          <Text style={[styles.priceLabel, {color: '#22c55e'}]} onPress={() => setIsOpen(true)}>
-            Chi tiết
+          <Text style={styles.priceRange}>
+            {jobRequest?.estimatedPriceLower} - {jobRequest?.estimatedPriceHigher} đ
           </Text>
-        </TouchableOpacity>
+        </View>
       </View>
 
       {/* Danh sách thợ */}
@@ -220,5 +236,10 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 20,
     marginLeft: 8,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#333',
   },
 });
