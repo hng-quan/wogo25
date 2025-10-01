@@ -4,7 +4,7 @@ import { jsonGettAPI, jsonPostAPI } from '@/lib/apiService';
 import { Colors } from '@/lib/common';
 import { calculateDistance } from '@/lib/location-helper';
 import { displayDateVN } from '@/lib/utils';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -178,7 +178,7 @@ export default function FindJob() {
                       <Text style={styles.jobText}>{distance}</Text>
                     </View>
                     <View style={styles.rowCenter}>
-                      <MaterialCommunityIcons name='cash' size={16} color='#4caf50' />
+                      <MaterialIcons name='attach-money' size={16} color='#4caf50' />
                       <Text style={styles.jobPrice}>
                         {item.estimatedPriceLower} - {item.estimatedPriceHigher} đ
                       </Text>

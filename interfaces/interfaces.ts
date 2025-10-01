@@ -56,6 +56,27 @@ export interface FileItem  {
   fileUrl: string;
 };
 
+export interface WorkerQuote {
+  id: number;
+  quotedPrice: number;         // giá thợ báo
+  distanceToJob: number;       // khoảng cách từ thợ -> job
+  worker: {
+    id: number;
+    description: string;
+    totalJobs: number;
+    totalReviews: number;
+    averageRating: number;
+    user: {
+      id: number;
+      phone: string;
+      fullName: string;
+      avatarUrl: string | null;
+    };
+  };
+}
+
+
+
 export interface JobRequest  {
   id: number | string;
   jobRequestCode: string;
@@ -71,7 +92,7 @@ export interface JobRequest  {
   status: 'PENDING' | 'ACCEPTED' | 'CANCELLED';
   files: FileItem[];
   user: User;
-  workerQuotes: any[];
+  workerQuotes: WorkerQuote[];
   service: ServiceType;
   acceptedBy?: any;
 };

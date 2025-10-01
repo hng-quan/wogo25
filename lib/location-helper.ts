@@ -55,3 +55,7 @@ export function formatDistance(distanceKm: number): string {
   return `${distanceKm.toFixed(1)} km`; // bạn có thể đổi thành .toFixed(2) nếu muốn chi tiết hơn
 }
 
+export function metersToKm(meters: number, fractionDigits: number = 2): string {
+  const km = meters / 1000;
+  return `${km.toFixed(fractionDigits)} km`;
+}

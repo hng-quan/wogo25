@@ -2,41 +2,19 @@ import ButtonCustom from '@/components/button/ButtonCustom';
 import Appbar from '@/components/layout/Appbar';
 import FindingStatus from '@/components/ui/FindingStatus';
 import { useSocket } from '@/context/SocketContext';
+import { WorkerQuote } from '@/interfaces/interfaces';
 import { jsonGettAPI } from '@/lib/apiService';
 import { Colors } from '@/lib/common';
-import { displayDateVN } from '@/lib/utils';
-import { MaterialIcons } from '@expo/vector-icons';
+import { formatDistance } from '@/lib/location-helper';
+import { displayDateVN, formatPrice } from '@/lib/utils';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { Modal, Portal, Text } from 'react-native-paper';
-
-const mockWorkers = [
-  {
-    id: '1',
-    name: 'ĐINH HOÀI DƯƠNG',
-    distance: 9.4,
-    orders: 21,
-    completionRate: 47,
-    price: 300000,
-    warranty: '30 ngày',
-    rating: 5.0,
-    avatar: 'https://placekitten.com/100/100',
-  },
-  {
-    id: '2',
-    name: 'NGUYỄN TRƯỜNG THOẠI',
-    distance: 8.5,
-    orders: 0,
-    completionRate: 0,
-    price: 200000,
-    warranty: '90 ngày',
-    rating: 5.0,
-    // avatar: 'https://placekitten.com/120/120',
-  },
-];
 
 export default function Index() {
   const {currentTab, jobRequestCode, latitude, longitude, serviceId} = useLocalSearchParams();
@@ -51,16 +29,19 @@ export default function Index() {
   const [jobRequest, setJobRequest] = useState<any>(null);
 
   useEffect(() => {
-    console.log('Socket connected:', connected);
+    // console.log('Socket connected:', connected);
     if (!connected) return;
     const topic = `/topic/send-quote/${serviceId}`;
     const subscription = subscribe(topic, message => {
-        console.log('Received message:', message.body);
-    })
+      // console.log('Received message:', message.body);
+      if (message.body) {
+        fetchJobRequestByCode(jobRequestCode as string);
+      }
+    });
     return () => {
       console.log('Unsubscribing from topic:', topic);
       subscription?.unsubscribe();
-    }
+    };
   }, [serviceId]);
 
   useEffect(() => {
@@ -146,28 +127,65 @@ export default function Index() {
     );
   };
 
-  const renderWorker = ({item}: any) => {
+  const renderWorker = ({item}: {item: WorkerQuote}) => {
     const onPress = () => {
-      alert('Show thông tin chi tiết thợ');
+      alert(`Chi tiết thợ: ${item?.worker?.user?.fullName}`);
     };
+
     return (
       <TouchableOpacity style={styles.workerCard} onPress={onPress}>
-        {item.avatar ? (
-          <Image source={{uri: item.avatar}} style={styles.avatar} />
-        ) : (
-          <MaterialIcons name='person' size={32} color='#888' />
-        )}
-        <View style={{flex: 1}}>
-          <Text style={styles.workerName}>{item.name}</Text>
-          <Text style={styles.workerMeta}>
-            📍 {item.distance}km • {item.orders} đơn ({item.completionRate}%)
-          </Text>
-          <Text style={styles.workerPrice}>{item.price.toLocaleString()}đ</Text>
-          <Text style={styles.workerWarranty}>Bảo hành {item.warranty}</Text>
+        {/* Avatar + Distance */}
+        <View style={styles.avatarBox}>
+          {item?.worker?.user?.avatarUrl ? (
+            <Image source={{uri: item?.worker?.user?.avatarUrl}} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <MaterialIcons name='person' size={32} color='#888' />
+            </View>
+          )}
+          <Text style={styles.distanceText}>{formatDistance(item.distanceToJob)}</Text>
         </View>
+
+        {/* Info */}
+        <View style={{flex: 1, gap: 4}}>
+          {/* Tên + rating */}
+          <View style={styles.rowBetween}>
+            <Text style={styles.workerName}>{item?.worker?.user?.fullName || 'Ẩn danh'}</Text>
+          </View>
+
+          {/* Giá báo */}
+          <View style={{flexDirection: 'row', alignItems: 'center'}}>
+            {/* icon tiền */}
+            <MaterialIcons name='attach-money' size={16} color='#4caf50' />
+            <Text style={styles.workerPrice}>{formatPrice(item?.quotedPrice)} đ</Text>
+          </View>
+
+          {/* Đánh giá hoặc bảo hành */}
+
+          <View style={{flexDirection: 'row', alignItems: 'center', gap: 4}}>
+            <Text style={[styles.workerWarranty, {marginRight: 'auto'}]}>
+              {item?.worker?.totalJobs} đơn • {item?.worker?.totalReviews} đánh giá
+            </Text>
+            {/* icon bảo hành */}
+            <MaterialIcons name='verified' size={16} color='#4caf50' />
+            <Text style={styles.workerWarranty}>Bảo hành 7 ngày</Text>
+          </View>
+        </View>
+
+        {/* Nút chat */}
         <TouchableOpacity style={styles.chatButton}>
           <MaterialIcons name='chat' size={20} color='#fff' />
         </TouchableOpacity>
+        <View style={styles.ratingWrapper}>
+          <LinearGradient
+            colors={['#fbbf24', '#f97316']} // vàng → cam
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 1}}
+            style={styles.ratingBox}>
+            <Text style={styles.ratingText}>{item?.worker?.averageRating?.toFixed(1)}</Text>
+            <MaterialCommunityIcons name='star' size={14} color='#fff' />
+          </LinearGradient>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -182,7 +200,7 @@ export default function Index() {
       </MapView>
 
       <View style={styles.priceContainer}>
-        <Text style={styles.title}>{mockWorkers.length} thợ đã báo giá</Text>
+        <Text style={styles.title}>{jobRequest?.workerQuotes.length} thợ đã báo giá</Text>
         <View>
           <TouchableOpacity>
             <Text style={[styles.priceLabel, {color: '#22c55e'}]} onPress={() => setIsOpen(true)}>
@@ -203,9 +221,10 @@ export default function Index() {
 
       {/* Danh sách thợ */}
       <FlatList
-        data={mockWorkers}
-        keyExtractor={item => item.id}
+        data={jobRequest?.workerQuotes || []}
+        keyExtractor={(item, idx) => item.id?.toString() || idx.toString()}
         renderItem={renderWorker}
+        ListEmptyComponent={() => <FindingStatus text='Chưa có thợ báo giá...' size={40} />}
         contentContainerStyle={{paddingBottom: 16}}
       />
 
@@ -247,9 +266,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatar: {width: 50, height: 50, borderRadius: 25, marginRight: 10},
-  workerName: {fontWeight: 'bold', fontSize: 16},
+  workerName: {fontWeight: 'bold', fontSize: 15},
   workerMeta: {fontSize: 12, color: '#555'},
-  workerPrice: {color: '#16a34a', fontWeight: 'bold'},
+  workerPrice: {color: '#16a34a', fontWeight: 'bold', fontSize: 16},
   workerWarranty: {fontSize: 12, color: '#777'},
   chatButton: {
     backgroundColor: '#facc15',
@@ -261,5 +280,48 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#333',
+  },
+  rowBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  avatarPlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
+    backgroundColor: '#eee',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarBox: {
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  distanceText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  ratingWrapper: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    borderBottomLeftRadius: 12,
+    borderTopRightRadius: 12,
+    overflow: 'hidden', // bắt buộc để gradient bo góc
+  },
+  ratingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 1,
+  },
+  ratingText: {
+    color: '#fff',
+    fontWeight: '600',
+    marginRight: 2,
+    fontSize: 12
   },
 });
