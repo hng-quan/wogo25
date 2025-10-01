@@ -1,8 +1,11 @@
 import ButtonCustom from '@/components/button/ButtonCustom';
 import Appbar from '@/components/layout/Appbar';
+import { jsonGettAPI } from '@/lib/apiService';
+import { Colors } from '@/lib/common';
+import { displayDateVN } from '@/lib/utils';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
@@ -34,7 +37,7 @@ const mockWorkers = [
 ];
 
 export default function Index() {
-  const {currentTab} = useLocalSearchParams();
+  const {currentTab, jobRequestCode} = useLocalSearchParams();
   const [region, setRegion] = useState({
     latitude: 10.8142,
     longitude: 106.6438,
@@ -42,7 +45,23 @@ export default function Index() {
     longitudeDelta: 0.02,
   });
   const [isOpen, setIsOpen] = useState(false);
+  const [jobRequest, setJobRequest] = useState<any>(null);
 
+  useEffect(() => {
+    if (!jobRequestCode) return;
+    fetchJobRequestByCode(jobRequestCode as string);
+  }, [jobRequestCode]);
+
+  const fetchJobRequestByCode = async (code: string) => {
+    try {
+      const res = await jsonGettAPI('/jobs/getByJobRequestCode/' + code);
+      if (res?.result) {
+        setJobRequest(res.result || null);
+      }
+    } catch (error) {
+      console.error('Error fetching job request:', error);
+    }
+  };
 
   const onBackPress = () => {
     router.push({
@@ -51,36 +70,55 @@ export default function Index() {
     });
   };
 
-  const InfoDetailModal = ({visible, onClose} : {visible: boolean, onClose: () => void}) => {
+  const InfoDetailModal = ({
+    visible,
+    onClose,
+    jobRequest,
+  }: {
+    visible: boolean;
+    onClose: () => void;
+    jobRequest: any;
+  }) => {
     const {t} = useTranslation();
     return (
-        <Portal>
-            <Modal
-        visible={visible}
-        onDismiss={onClose}
-        contentContainerStyle={{
-          width: '90%',
-          margin: 'auto',
-          backgroundColor: 'white',
-          borderRadius: 8,
-          padding: 12,
-        }}>
+      <Portal>
+        <Modal
+          visible={visible}
+          onDismiss={onClose}
+          contentContainerStyle={{
+            width: '90%',
+            margin: 'auto',
+            backgroundColor: 'white',
+            borderRadius: 8,
+            padding: 12,
+          }}>
           <View>
             <Text variant='titleMedium'>{t('Thông tin tìm thợ')}</Text>
           </View>
 
-        <View>
-            <Text>description</Text>
-            <Text>Time</Text>
-            <Text>Địa chỉ</Text>
-        </View>
-        <ButtonCustom style={{backgroundColor: '#f44336', marginTop: 12}} onPress={onClose}>
+          <View style={{marginTop: 12, gap: 8}}>
+            <View style={{flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, marginBottom: 4}}>
+              <Text>{jobRequest?.service.serviceName}</Text>
+              <Text style={{color: Colors.secondary}}>{displayDateVN(jobRequest?.bookingDate)}</Text>
+            </View>
+            <Text numberOfLines={2} ellipsizeMode='tail'>
+              {jobRequest?.description}
+            </Text>
+
+            <View style={{flexDirection: 'row', alignItems: 'center', gap: 4}}>
+              <MaterialIcons name='location-on' size={20} color={Colors.secondary} />
+              <Text style={{flex: 1}} numberOfLines={2} ellipsizeMode='tail'>
+                {jobRequest?.bookingAddress}
+              </Text>
+            </View>
+          </View>
+          <ButtonCustom style={{backgroundColor: '#f44336', marginTop: 12}} onPress={onClose}>
             Hủy đặt
-        </ButtonCustom>
-      </Modal>
-        </Portal>
-    )
-  }
+          </ButtonCustom>
+        </Modal>
+      </Portal>
+    );
+  };
 
   const renderWorker = ({item}: any) => (
     <View style={styles.workerCard}>
@@ -115,7 +153,9 @@ export default function Index() {
           <Text style={styles.priceRange}>80,000 - 200,000đ</Text>
         </View>
         <TouchableOpacity>
-          <Text style={[styles.priceLabel, {color: '#22c55e'}]} onPress={() => setIsOpen(true)}>Chi tiết</Text>
+          <Text style={[styles.priceLabel, {color: '#22c55e'}]} onPress={() => setIsOpen(true)}>
+            Chi tiết
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -127,7 +167,7 @@ export default function Index() {
         contentContainerStyle={{paddingBottom: 16}}
       />
 
-      <InfoDetailModal visible={isOpen} onClose={() => setIsOpen(false)} />
+      <InfoDetailModal visible={isOpen} onClose={() => setIsOpen(false)} jobRequest={jobRequest} />
     </View>
   );
 }

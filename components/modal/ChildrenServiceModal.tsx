@@ -41,14 +41,15 @@ export default function ChildrenServiceModal({
           margin: 'auto',
           backgroundColor: 'white',
           borderRadius: 8,
-            height: '50%',
+          height: 'auto',
+          maxHeight: '40%',
         }}>
         <List.Subheader>
           <Text variant='titleMedium'>{t('Chọn dịch vụ')}</Text>
         </List.Subheader>
 
         {childrenServiceList.length === 0 ? (
-          <Text style={{textAlign: 'center', marginTop: 20}}>Không có dịch vụ nào</Text>
+          <Text style={{textAlign: 'center', padding: 12}}>Không có dịch vụ nào</Text>
         ) : (
           <FlatList
             data={childrenServiceList}

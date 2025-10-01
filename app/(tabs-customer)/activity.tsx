@@ -39,17 +39,18 @@ export default function ActivityScreen() {
     </View>
   );
 
-  const navigateToFindWorker = () => {
+  const navigateToFindWorker = (item: JobRequest) => {
     router.push({
-        pathname: '/booking/find-worker',
+        pathname: '/booking/job-request-detail',
         params: {
-          currentTab: activeTab
+          currentTab: activeTab,
+          jobRequestCode: item.jobRequestCode
         }
     })
   }
 
   const renderJobCard = ({item}: {item: JobRequest}) => (
-    <TouchableOpacity style={styles.card} onPress={navigateToFindWorker}>
+    <TouchableOpacity style={styles.card} onPress={() => navigateToFindWorker(item)}>
       {/* Header: Mã job + Trạng thái */}
       <View style={styles.cardHeader}>
         <Text style={styles.jobCode}>#{item.jobRequestCode}</Text>
