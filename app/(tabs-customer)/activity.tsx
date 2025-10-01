@@ -20,7 +20,7 @@ const filters = [
 ];
 
 export default function ActivityScreen() {
-  const { currentTab } = useLocalSearchParams();
+  const {currentTab} = useLocalSearchParams();
   const [myJobsRequest, setMyJobsRequest] = React.useState<JobRequest[]>([]);
   const [activeTab, setActiveTab] = useState(currentTab || 'ALL');
 
@@ -41,22 +41,25 @@ export default function ActivityScreen() {
 
   const navigateToFindWorker = (item: JobRequest) => {
     router.push({
-        pathname: '/booking/job-request-detail',
-        params: {
-          currentTab: activeTab,
-          jobRequestCode: item.jobRequestCode,
-          latitude: item.latitude,
-          longitude: item.longitude,
-          serviceId: item.service.id,
-        }
-    })
-  }
+      pathname: '/booking/job-request-detail',
+      params: {
+        currentTab: activeTab,
+        jobRequestCode: item.jobRequestCode,
+        latitude: item.latitude,
+        longitude: item.longitude,
+        serviceId: item.service.id,
+      },
+    });
+  };
 
   const renderJobCard = ({item}: {item: JobRequest}) => (
     <TouchableOpacity style={styles.card} onPress={() => navigateToFindWorker(item)}>
       {/* Header: Mã job + Trạng thái */}
       <View style={styles.cardHeader}>
-        <Text style={styles.jobCode}>#{item.jobRequestCode}</Text>
+        <View style={[styles.row, {gap: 8}]}>
+          <Text style={styles.jobCode}>#{item.jobRequestCode}</Text>
+          <Text style={styles.priceLabel}>{item.workerQuotes.length} báo giá</Text>
+        </View>
         <Text
           style={[
             styles.status,
@@ -81,7 +84,7 @@ export default function ActivityScreen() {
             {item.service.serviceName + ' - ' + item.description}
           </Text>
 
-          {/* Thời gian */}
+          {/* Thời gian + số lượng báo giá */}
           <View style={styles.row}>
             <Text style={styles.time}>{displayDateVN(new Date(item.bookingDate))}</Text>
           </View>
@@ -232,4 +235,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#555',
   },
+  priceLabel: {fontSize: 14, color: '#2196F3', fontWeight: 'bold'},
 });

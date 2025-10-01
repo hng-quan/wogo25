@@ -200,7 +200,8 @@ export default function Index() {
       </MapView>
 
       <View style={styles.priceContainer}>
-        <Text style={styles.title}>{jobRequest?.workerQuotes.length} thợ đã báo giá</Text>
+        {/* Finding status */}
+        <FindingStatus size={24} text={`${jobRequest?.workerQuotes.length} thợ đã báo giá`} loading={connected} />
         <View>
           <TouchableOpacity>
             <Text style={[styles.priceLabel, {color: '#22c55e'}]} onPress={() => setIsOpen(true)}>
@@ -224,15 +225,8 @@ export default function Index() {
         data={jobRequest?.workerQuotes || []}
         keyExtractor={(item, idx) => item.id?.toString() || idx.toString()}
         renderItem={renderWorker}
-        ListEmptyComponent={() => <FindingStatus text='Chưa có thợ báo giá...' size={40} />}
-        contentContainerStyle={{paddingBottom: 16}}
+        contentContainerStyle={{flex: 1, paddingBottom: 16}}
       />
-
-      {/* Finding status */}
-      <View style={[{flex: 1, alignItems: 'center'}]}>
-        <FindingStatus text='Đang chờ báo giá...' size={52} className='flex-col items-center' />
-      </View>
-
       <InfoDetailModal visible={isOpen} onClose={() => setIsOpen(false)} jobRequest={jobRequest} />
     </View>
   );
@@ -322,6 +316,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     marginRight: 2,
-    fontSize: 12
+    fontSize: 12,
   },
 });
