@@ -1,6 +1,7 @@
 // app/_layout.tsx
 import { NetworkProvider } from '@/context/NetworkContext';
-import { RoleProvider } from '@/context/RoleContext';
+import { RoleProvider, useRole } from '@/context/RoleContext';
+import { SocketProvider } from '@/context/SocketContext';
 import '@/global.css';
 import '@/i18n';
 import { useFonts } from 'expo-font';
@@ -11,24 +12,38 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import 'react-native-worklets';
 
+function AppContent() {
+  const {user} = useRole();
+
+  if (!user) {
+    // chưa login thì chưa cần connect socket
+    return <Slot />;
+  }
+
+  return (
+    <SocketProvider userId={user.id}>
+      <Slot />
+    </SocketProvider>
+  );
+}
+
 export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
   // const history = useNavigationHistory();
 
-  if (!loaded) {
-    return null;
-  }
+  if (!loaded) return null;
 
   return (
     <SafeAreaProvider>
       <SafeAreaView className='flex flex-1'>
         <NetworkProvider>
           <RoleProvider>
-            <PaperProvider>             
+            <PaperProvider>
               <ThemeProvider>
-                <Slot />
+                <AppContent />
+                {/* <Slot /> */}
                 {/* Debug */}
                 {/* {history.length > 0 && <>{console.log('📜 History stack:', history)}</>} */}
                 <Toast />

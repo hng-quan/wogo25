@@ -1,3 +1,4 @@
+import FindingStatus from '@/components/ui/FindingStatus';
 import { useSafeCurrentLocation } from '@/hooks/useCurrentLocation';
 import { jsonGettAPI, jsonPostAPI } from '@/lib/apiService';
 import { Colors } from '@/lib/common';
@@ -137,7 +138,10 @@ export default function FindJob() {
           <View style={styles.drawerHandle} />
         </TouchableOpacity>
 
-        <Text style={styles.title}>{jobList.length} việc phù hợp</Text>
+        <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>
+          <Text style={styles.title}>{jobList.length} việc phù hợp</Text>
+          <FindingStatus text='Đang tìm việc...' size={24} color='#6200ee' loading={isSearching} />
+        </View>
 
         <FlatList
           data={jobList}
@@ -249,7 +253,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '700',
-    marginBottom: 12,
     color: '#333',
   },
 

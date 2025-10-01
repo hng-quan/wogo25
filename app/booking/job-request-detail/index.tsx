@@ -1,5 +1,6 @@
 import ButtonCustom from '@/components/button/ButtonCustom';
 import Appbar from '@/components/layout/Appbar';
+import FindingStatus from '@/components/ui/FindingStatus';
 import { jsonGettAPI } from '@/lib/apiService';
 import { Colors } from '@/lib/common';
 import { displayDateVN } from '@/lib/utils';
@@ -193,6 +194,11 @@ export default function Index() {
         renderItem={renderWorker}
         contentContainerStyle={{paddingBottom: 16}}
       />
+
+      {/* Finding status */}
+      <View style={[{flex: 1, alignItems: 'center'}]}>
+        <FindingStatus text='Đang chờ báo giá...' size={52} className='flex-col items-center' />
+      </View>
 
       <InfoDetailModal visible={isOpen} onClose={() => setIsOpen(false)} jobRequest={jobRequest} />
     </View>
