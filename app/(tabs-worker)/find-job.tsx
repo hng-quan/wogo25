@@ -210,7 +210,7 @@ export default function FindJob() {
                     end={{x: 1, y: 1}}
                     style={styles.ratingBox}>
                     <Text style={styles.ratingText}>{displayDateVN(item.bookingDate)}</Text>
-                    <MaterialCommunityIcons name='star' size={14} color='#fff' />
+                    {/* <MaterialCommunityIcons name='star' size={14} color='#fff' /> */}
                   </LinearGradient>
                 </View>
               </View>

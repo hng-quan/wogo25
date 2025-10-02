@@ -41,8 +41,6 @@ export default function ChildrenServiceModal({
           margin: 'auto',
           backgroundColor: 'white',
           borderRadius: 8,
-          height: 'auto',
-          maxHeight: '40%',
         }}>
         <List.Subheader>
           <Text variant='titleMedium'>{t('Chọn dịch vụ')}</Text>
