@@ -1,7 +1,9 @@
 // app/_layout.tsx
+import { toastConfig } from '@/components/dialog/ToastConfig';
 import { NetworkProvider } from '@/context/NetworkContext';
 import { RoleProvider, useRole } from '@/context/RoleContext';
 import { SocketProvider } from '@/context/SocketContext';
+import { StatusFindJobProvider } from '@/context/StatusFindJobContext';
 import '@/global.css';
 import '@/i18n';
 import { useFonts } from 'expo-font';
@@ -22,7 +24,9 @@ function AppContent() {
 
   return (
     <SocketProvider userId={user.id}>
-      <Slot />
+      <StatusFindJobProvider>
+        <Slot />
+      </StatusFindJobProvider>
     </SocketProvider>
   );
 }
@@ -46,7 +50,8 @@ export default function RootLayout() {
                 {/* <Slot /> */}
                 {/* Debug */}
                 {/* {history.length > 0 && <>{console.log('📜 History stack:', history)}</>} */}
-                <Toast />
+                {/* <Toast /> */}
+                <Toast config={toastConfig} topOffset={0} />
                 <StatusBar style='auto' />
               </ThemeProvider>
             </PaperProvider>

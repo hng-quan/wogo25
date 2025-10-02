@@ -1,4 +1,5 @@
 import FindingStatus from '@/components/ui/FindingStatus';
+import { useStatusFindJob } from '@/context/StatusFindJobContext';
 import { useSafeCurrentLocation } from '@/hooks/useCurrentLocation';
 import { jsonGettAPI, jsonPostAPI } from '@/lib/apiService';
 import { Colors } from '@/lib/common';
@@ -6,6 +7,7 @@ import { calculateDistance } from '@/lib/location-helper';
 import { displayDateVN } from '@/lib/utils';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -36,7 +38,19 @@ export default function FindJob() {
   const [jobList, setJobList] = useState<any[]>([]);
   const [isSavedAddress, setIsSavedAddress] = useState<boolean>(false);
   const workerCoords = useSafeCurrentLocation();
+  const {setFinding, setShowAlert, jobTrigger} = useStatusFindJob();
+  // const {connected, subscribe} = useSocket();
 
+  useFocusEffect(
+    React.useCallback(() => {
+      setShowAlert(false);
+      return () => {
+        setShowAlert(true);
+      };
+    }, [setShowAlert]),
+  );
+
+  
   // Lưu địa chỉ của thợ
   useEffect(() => {
     const saveAddress = async () => {
@@ -59,19 +73,25 @@ export default function FindJob() {
       return;
     }
     saveAddress();
+    
   }, [isSearching]);
 
   // Lấy danh sách job
+  const fetchJobsAvailable = async () => {
+    const res = await jsonGettAPI('/bookings/job-available', {});
+    if (res?.result) {
+      setJobList(res.result);
+    }
+  };
   useEffect(() => {
-    const fetchJobsAvailable = async () => {
-      const res = await jsonGettAPI('/bookings/job-available', {});
-      if (res?.result) {
-        setJobList(res.result);
-      }
-    };
     if (!isSavedAddress) return;
     fetchJobsAvailable();
   }, [isSavedAddress]);
+
+  useEffect(() => {
+    if (!isSavedAddress) return;
+    fetchJobsAvailable();
+  }, [jobTrigger]);
 
   // PanResponder cho drawer
   const panResponder = useRef(
@@ -231,7 +251,10 @@ export default function FindJob() {
         </Text>
         <Switch
           value={isSearching}
-          onValueChange={setIsSearching}
+          onValueChange={value => {
+            setIsSearching(value);
+            setFinding(value);
+          }}
           theme={{colors: {primary: isSearching ? Colors.primary : '#777'}}}
         />
       </View>
