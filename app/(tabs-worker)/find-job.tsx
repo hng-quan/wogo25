@@ -198,10 +198,13 @@ export default function FindJob() {
                 <View style={styles.jobInfo}>
                   {/* Tiêu đề dịch vụ + ngày */}
                   <Text style={styles.jobTitle}>{item.service.serviceName}</Text>
-                  {/* Description (1 dòng) */}
-                  <Text style={styles.jobDesc} numberOfLines={1} ellipsizeMode='tail'>
-                    {item.description}
-                  </Text>
+
+                  {/* Ước tính */}
+                  <View style={[{flexDirection: 'row', gap: 4}, {alignItems: 'center'}]}>
+                    <MaterialCommunityIcons name='clock-outline' size={16} color='#999' />
+                    <Text style={styles.jobEstimate}>Ước tính: {item.estimatedDurationMinutes} phút</Text>
+                  </View>
+                  
 
                   {/* Address (1 dòng) */}
                   {/* <Text style={styles.jobAddress} numberOfLines={1} ellipsizeMode='tail'>
@@ -217,11 +220,10 @@ export default function FindJob() {
                       </Text>
                     </View>
                   </View>
-                  {/* Ước tính */}
-                  <View style={[{flexDirection: 'row', gap: 4}, {alignItems: 'center'}]}>
-                    <MaterialCommunityIcons name='clock-outline' size={16} color='#999' />
-                    <Text style={styles.jobEstimate}>Ước tính: {item.estimatedDurationMinutes} phút</Text>
-                  </View>
+                  {/* Description (1 dòng) */}
+                  <Text style={styles.jobDesc} numberOfLines={1} ellipsizeMode='tail'>
+                    {item.description}
+                  </Text>
                 </View>
                 <View style={styles.ratingWrapper}>
                   <LinearGradient
@@ -370,7 +372,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   jobPrice: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
     color: '#1565C0',
   },
