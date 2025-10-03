@@ -34,11 +34,11 @@ export default function FindJob() {
 
   const translateY = useRef(new Animated.Value(CLOSED_Y)).current;
   const lastOffset = useRef(CLOSED_Y);
-  const [isSearching, setIsSearching] = useState(false);
   const [jobList, setJobList] = useState<any[]>([]);
   const [isSavedAddress, setIsSavedAddress] = useState<boolean>(false);
   const workerCoords = useSafeCurrentLocation();
-  const {setFinding, setShowAlert, jobTrigger} = useStatusFindJob();
+  const {setFinding, setShowAlert, jobTrigger, finding} = useStatusFindJob();
+  const [isSearching, setIsSearching] = useState(finding);
   // const {connected, subscribe} = useSocket();
 
   useFocusEffect(

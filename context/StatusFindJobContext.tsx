@@ -4,6 +4,7 @@ import { IMessage, StompSubscription } from '@stomp/stompjs';
 import { router } from 'expo-router';
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import Toast from 'react-native-toast-message';
+import { useRole } from './RoleContext';
 import { useSocket } from './SocketContext';
 
 type Service = {id: number; serviceName: string};
@@ -27,6 +28,7 @@ export const StatusFindJobProvider: React.FC<{children: React.ReactNode}> = ({ch
   const [jobTrigger, setJobTrigger] = useState(0);
   const subscriptionsRef = useRef<StompSubscription[]>([]);
   const showAlertRef = useRef(showAlert);
+  const {role} = useRole();
 
   const toggleAlert = () => setShowAlert(prev => !prev);
 
@@ -35,13 +37,16 @@ export const StatusFindJobProvider: React.FC<{children: React.ReactNode}> = ({ch
     // console.log('showAlert =:', showAlert);
   }, [showAlert]);
 
-//   useEffect(() => {
-//     console.log('connected =:', connected);
-//   }, [connected]);
+  useEffect(() => {
+    console.log('role', role);
+  }, [role]);
+  //   useEffect(() => {
+  //     console.log('connected =:', connected);
+  //   }, [connected]);
 
-//   useEffect(() => {
-//     console.log('finding =:', finding);
-//   }, [finding]);
+  //   useEffect(() => {
+  //     console.log('finding =:', finding);
+  //   }, [finding]);
 
   const toggleFinding = async () => {
     setFinding(prev => !prev);
@@ -53,6 +58,12 @@ export const StatusFindJobProvider: React.FC<{children: React.ReactNode}> = ({ch
       return;
     }
     if (!connected) return;
+
+    // 🔒 chỉ worker mới lắng nghe
+    if (role !== 'worker') {
+      console.log('👤 Role hiện tại không phải worker, bỏ qua subscribe.');
+      return;
+    }
 
     const subscribeServices = async () => {
       try {
@@ -67,9 +78,7 @@ export const StatusFindJobProvider: React.FC<{children: React.ReactNode}> = ({ch
             });
           }
           if (item.service.childServices?.length) {
-            item.service.childServices.forEach((c: any) =>
-              services.push({id: c.id, serviceName: c.serviceName}),
-            );
+            item.service.childServices.forEach((c: any) => services.push({id: c.id, serviceName: c.serviceName}));
           }
         });
 
@@ -106,10 +115,11 @@ export const StatusFindJobProvider: React.FC<{children: React.ReactNode}> = ({ch
     subscribeServices();
 
     return () => {
+      console.log('🧹 Hủy tất cả subscription khi tắt tìm việc hoặc ngắt kết nối');
       subscriptionsRef.current.forEach(sub => sub.unsubscribe());
       subscriptionsRef.current = [];
     };
-  }, [finding, connected]); // không cần showAlert ở đây nữa
+  }, [finding, connected, role]);
 
   return (
     <StatusFindJobContext.Provider
