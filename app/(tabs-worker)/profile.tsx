@@ -40,7 +40,9 @@ const Profile = () => {
           <List.Item
             key={option.id}
             title={t(option.title)}
-            left={props => <List.Icon {...props} icon={option.icon} />}
+            left={props => 
+            <List.Icon {...props} icon={option.icon} />
+          }
             onPress={option?.onPress}
           />
         ))}

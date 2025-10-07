@@ -7,7 +7,7 @@ import { calculateDistance } from '@/lib/location-helper';
 import { displayDateVN } from '@/lib/utils';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -21,15 +21,15 @@ import {
   View,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { Switch } from 'react-native-paper';
+import { ActivityIndicator, Switch } from 'react-native-paper';
 
 const {height} = Dimensions.get('window');
 const TABBAR_HEIGHT = 70; // chỉnh theo tabbar app bạn
 const BOTTOM_PADDING = 16; // chừa thêm khoảng cách nhỏ cho đẹp
 
 export default function FindJob() {
-  const drawerHeight = height * 0.75;
-  const CLOSED_Y = drawerHeight - 80;
+  const drawerHeight = height * 0.70;
+  const CLOSED_Y = drawerHeight - 70;
   const OPEN_Y = height * 0.15;
 
   const translateY = useRef(new Animated.Value(CLOSED_Y)).current;
@@ -39,7 +39,17 @@ export default function FindJob() {
   const workerCoords = useSafeCurrentLocation();
   const {setFinding, setShowAlert, jobTrigger, finding} = useStatusFindJob();
   const [isSearching, setIsSearching] = useState(finding);
-  // const {connected, subscribe} = useSocket();
+  const savingRef = React.useRef(false);
+
+  // helper
+  const isValidCoords = (c: any) => {
+    if (!c) return false;
+    const {latitude, longitude} = c;
+    if (typeof latitude !== 'number' || typeof longitude !== 'number') return false;
+    // tránh trường hợp mặc định 0,0 (hầu như không phải vị trí thật của user)
+    const nearZero = Math.abs(latitude) < 1e-6 && Math.abs(longitude) < 1e-6;
+    return !nearZero;
+  };
 
   useFocusEffect(
     React.useCallback(() => {
@@ -50,14 +60,26 @@ export default function FindJob() {
     }, [setShowAlert]),
   );
 
-  
-  // Lưu địa chỉ của thợ
+  // effect: chờ coords hợp lệ rồi mới save
   useEffect(() => {
-    const saveAddress = async () => {
+    if (!isSearching) {
+      setIsSavedAddress(false);
+      setJobList([]);
+      return;
+    }
+
+    if (!isValidCoords(workerCoords)) {
+      console.log('⏳ Chờ vị trí load xong trước khi lưu địa chỉ...');
+      return; // chờ workerCoords thay đổi
+    }
+
+    const doSave = async () => {
+      if (savingRef.current) return;
+      savingRef.current = true;
       try {
         const params = {
-          latitude: workerCoords?.latitude || 0,
-          longitude: workerCoords?.longitude || 0,
+          latitude: workerCoords?.latitude,
+          longitude: workerCoords?.longitude,
           role: 'WORKER',
         };
         const res = await jsonPostAPI('/addresses/save-or-update', params);
@@ -65,16 +87,13 @@ export default function FindJob() {
         console.log('save address res', res);
       } catch (error) {
         console.log('save address error', error);
+      } finally {
+        savingRef.current = false;
       }
     };
-    if (!isSearching) {
-      setIsSavedAddress(false);
-      setJobList([]);
-      return;
-    }
-    saveAddress();
-    
-  }, [isSearching]);
+
+    doSave();
+  }, [isSearching, workerCoords]);
 
   // Lấy danh sách job
   const fetchJobsAvailable = async () => {
@@ -134,22 +153,48 @@ export default function FindJob() {
   return (
     <View style={styles.container}>
       {/* Map */}
-      <MapView
-        style={StyleSheet.absoluteFill}
-        region={
-          workerCoords
-            ? {
-                latitude: workerCoords.latitude,
-                longitude: workerCoords.longitude,
-                latitudeDelta: 0.05,
-                longitudeDelta: 0.05,
-              }
-            : undefined
-        }>
-        {workerCoords && (
-          <Marker coordinate={workerCoords} title='Vị trí của bạn' description='Đây là vị trí hiện tại' />
-        )}
-      </MapView>
+      <View style={{ flex: 1 }}>
+  <MapView
+    style={StyleSheet.absoluteFill}
+    region={
+      workerCoords && isValidCoords(workerCoords)
+        ? {
+            latitude: workerCoords.latitude,
+            longitude: workerCoords.longitude,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          }
+        : undefined
+    }
+  >
+    {isValidCoords(workerCoords) && (
+      <Marker
+        coordinate={workerCoords as any}
+        title="Vị trí của bạn"
+        description="Đây là vị trí hiện tại"
+      />
+    )}
+  </MapView>
+
+  {/* Overlay loading */}
+  {!isValidCoords(workerCoords) && (
+    <View
+      style={[
+        StyleSheet.absoluteFillObject,
+        {
+          backgroundColor: 'rgba(255,255,255,0.7)',
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+      ]}
+    >
+      <ActivityIndicator size="large" color="#6200ee" />
+      <Text style={{ marginTop: 8, color: '#333', fontWeight: '500' }}>
+        Đang xác định vị trí của bạn...
+      </Text>
+    </View>
+  )}
+</View>
 
       {/* Drawer */}
       <Animated.View
@@ -170,13 +215,24 @@ export default function FindJob() {
           ItemSeparatorComponent={() => <View style={{height: 12}} />}
           renderItem={({item}) => {
             const customerCoords = {
-              latitude: item.latitude,
-              longitude: item.longitude,
+              latitude: item?.latitude || 0,
+              longitude: item?.longitude || 0,
             };
             const distance = calculateDistance(customerCoords, workerCoords as any);
 
             return (
-              <View style={styles.jobCard}>
+              <TouchableOpacity
+                style={styles.jobCard}
+                onPress={() => {
+                  // Xử lý khi nhấn vào công việc
+                  console.log('Chọn công việc:', item);
+                  router.push({
+                    pathname: '/booking/send-quote',
+                    params: {
+                      job_detail: JSON.stringify(item),
+                    },
+                  });
+                }}>
                 {/* Hình ảnh hoặc placeholder */}
                 <View style={{flexDirection: 'column', alignItems: 'center'}}>
                   {item.files?.length > 0 && item.files[0]?.fileUrl ? (
@@ -204,12 +260,6 @@ export default function FindJob() {
                     <MaterialCommunityIcons name='clock-outline' size={16} color='#999' />
                     <Text style={styles.jobEstimate}>Ước tính: {item.estimatedDurationMinutes} phút</Text>
                   </View>
-                  
-
-                  {/* Address (1 dòng) */}
-                  {/* <Text style={styles.jobAddress} numberOfLines={1} ellipsizeMode='tail'>
-                    {item.bookingAddress}
-                  </Text> */}
 
                   {/* Hàng ngang: khoảng cách - giá tiền */}
                   <View style={styles.rowBetween}>
@@ -227,15 +277,14 @@ export default function FindJob() {
                 </View>
                 <View style={styles.ratingWrapper}>
                   <LinearGradient
-                    colors={['#00c6ff', '#0072ff']} // vàng → cam
+                    colors={['#00c6ff', '#0072ff']}
                     start={{x: 0, y: 0}}
                     end={{x: 1, y: 1}}
                     style={styles.ratingBox}>
                     <Text style={styles.ratingText}>{displayDateVN(item.bookingDate)}</Text>
-                    {/* <MaterialCommunityIcons name='star' size={14} color='#fff' /> */}
                   </LinearGradient>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           }}
         />
@@ -317,16 +366,14 @@ const styles = StyleSheet.create({
   },
   toggleContainer: {
     position: 'absolute',
-    top: 48,
+    top: 24,
     right: 16,
     backgroundColor: 'rgba(255,255,255,0.9)',
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 4,
     borderRadius: 24,
     borderWidth: 1,
     borderColor: '#eee',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
     shadowOffset: {width: 0, height: 2},
     shadowRadius: 4,
     elevation: 6,

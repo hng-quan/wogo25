@@ -129,7 +129,13 @@ export default function Index() {
 
   const renderWorker = ({item}: {item: WorkerQuote}) => {
     const onPress = () => {
-      alert(`Chi tiết thợ: ${item?.worker?.user?.fullName}`);
+      router.push({
+        pathname: '/booking/job-request-detail/info-worker',
+        params: {
+          jobRequestCode: jobRequestCode as string,
+          info_worker: JSON.stringify(item),
+        }
+      })
     };
 
     return (
@@ -304,7 +310,7 @@ const styles = StyleSheet.create({
     right: 0,
     borderBottomLeftRadius: 12,
     borderTopRightRadius: 12,
-    overflow: 'hidden', // bắt buộc để gradient bo góc
+    overflow: 'hidden', 
   },
   ratingBox: {
     flexDirection: 'row',

@@ -74,7 +74,7 @@ export default function Index() {
       setPriceSuggestion(priceAround as any);
       setDuration(res.result?.estimatedDurationMinutes);
     };
-    await jsonGettAPI('/services/suggestions/' + parentId, {}, onSuccess);
+    await jsonGettAPI('/services/suggestions/' + serviceId, {}, onSuccess);
   };
 
   const handleSelectLocation = async (selectedCoords: {latitude: number; longitude: number}) => {

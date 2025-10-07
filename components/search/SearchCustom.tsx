@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Searchbar } from 'react-native-paper';
 
@@ -24,8 +25,8 @@ export default function SearchCustom({
       onChangeText={handleChange}
       editable={editable}
       value={searchQuery}
-      icon="magnify"          // có thể đổi icon
-      clearIcon="close"       // icon xoá
+      icon={props => <MaterialCommunityIcons name='magnify' size={24} color={props.color || 'gray'} />} // có thể đổi icon
+      clearIcon={props => <MaterialCommunityIcons name='close' size={24} color={props.color || 'gray'} />} // có thể đổi icon
       style={[
         {
           borderRadius: 12,
@@ -34,7 +35,7 @@ export default function SearchCustom({
         },
         style,
       ]}
-      inputStyle={{ fontSize: 16 }}
+      inputStyle={{fontSize: 16}}
       {...props}
     />
   );

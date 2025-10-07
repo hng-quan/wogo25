@@ -41,6 +41,7 @@ export default ButtonCustom;
 const styles = StyleSheet.create({
   button: {
     borderRadius: 2,
+    paddingVertical: 6
   },
   customerButtonColor: {
     backgroundColor: '#4CAF50', // Green 500

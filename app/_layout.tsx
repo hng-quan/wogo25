@@ -47,10 +47,7 @@ export default function RootLayout() {
             <PaperProvider>
               <ThemeProvider>
                 <AppContent />
-                {/* <Slot /> */}
-                {/* Debug */}
                 {/* {history.length > 0 && <>{console.log('📜 History stack:', history)}</>} */}
-                {/* <Toast /> */}
                 <Toast config={toastConfig} topOffset={0} />
                 <StatusBar style='auto' />
               </ThemeProvider>

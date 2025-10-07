@@ -1,7 +1,7 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { Icon } from 'react-native-paper';
 
 const Appbar = ({title, onBackPress, className}: {title: string; onBackPress?: () => void; className?: string}) => {
   const handleBackPress = () => {
@@ -15,7 +15,7 @@ const Appbar = ({title, onBackPress, className}: {title: string; onBackPress?: (
     <View className={`flex-row items-center justify-between p-4 bg-[#F2F2F2] ${className}`}>
       {/* Left */}
       <TouchableOpacity onPress={handleBackPress} className='w-9 items-start'>
-        <Icon source='chevron-left' size={36} />
+        <MaterialCommunityIcons name='chevron-left' size={36} />
       </TouchableOpacity>
 
       {/* Middle */}

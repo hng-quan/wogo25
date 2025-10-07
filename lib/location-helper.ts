@@ -31,11 +31,11 @@ export function calculateDistance(coord1: Coordinates, coord2: Coordinates): str
   const toRad = (value: number) => (value * Math.PI) / 180;
 
   const R = 6371; // Bán kính Trái Đất (km)
-  const dLat = toRad(coord2.latitude - coord1.latitude);
-  const dLon = toRad(coord2.longitude - coord1.longitude);
+  const dLat = toRad(coord2?.latitude - coord1?.latitude);
+  const dLon = toRad(coord2?.longitude - coord1?.longitude);
 
-  const lat1 = toRad(coord1.latitude);
-  const lat2 = toRad(coord2.latitude);
+  const lat1 = toRad(coord1?.latitude);
+  const lat2 = toRad(coord2?.latitude);
 
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -48,6 +48,7 @@ export function calculateDistance(coord1: Coordinates, coord2: Coordinates): str
 }
 
 export function formatDistance(distanceKm: number): string {
+  console.log('formatDistance:', distanceKm);
   if (distanceKm < 1) {
     const meters = Math.round(distanceKm * 1000);
     return `${meters} m`;
