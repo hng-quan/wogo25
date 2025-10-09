@@ -3,7 +3,7 @@ import Appbar from '@/components/layout/Appbar';
 import { StarRating } from '@/components/ui/StarRating';
 import { jsonPostAPI } from '@/lib/apiService';
 import { formatPrice } from '@/lib/utils';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { Avatar, Divider, Text } from 'react-native-paper';
@@ -17,8 +17,8 @@ type Review = {
 };
 
 export default function OrderDetailScreen() {
-  const {info_worker, jobRequestCode} = useLocalSearchParams();
-  console.log('info_worker param:', info_worker);
+  const {info_worker, jobRequestCode, currentTab, latitude, longitude, serviceId} = useLocalSearchParams();
+  // console.log('info_worker param:', info_worker);
   let workerData: any = {};
   try {
     workerData = info_worker ? JSON.parse(info_worker as string) : {};
@@ -56,20 +56,32 @@ export default function OrderDetailScreen() {
     },
   ];
 
-  const handlePlaceOrder = async() => {
+  const handlePlaceOrder = async () => {
     const params = {
-        jobRequestCode: jobRequestCode as string,
-        workerId: workerData?.worker?.id as string,
-        quotedPrice: quotedPrice as string,
-    }
+      jobRequestCode: jobRequestCode as string,
+      workerId: workerData?.worker?.id as string,
+      quotedPrice: quotedPrice as string,
+    };
     // console.log('params place order worker:', params);
     const res = await jsonPostAPI('/bookings/place-job', params);
     console.log('response place order worker:', res);
-  }
+  };
 
+  const goBack = () => {
+    router.push({
+      pathname: '/booking/job-request-detail',
+      params: {
+        jobRequestCode: jobRequestCode,
+        currentTab: currentTab,
+        latitude: latitude,
+        longitude: longitude,
+        serviceId: serviceId,
+      },
+    });
+  };
   return (
     <View style={styles.container}>
-      <Appbar title='Chi tiết thợ' />
+      <Appbar title='Chi tiết thợ' onBackPress={goBack} />
       {/* Header */}
       <View style={{alignItems: 'center'}}>
         {avatarUrl ? (
@@ -82,9 +94,9 @@ export default function OrderDetailScreen() {
         <Text style={{marginTop: 4}}>{totalJobs} đơn</Text>
         {/* sao đánh giá */}
         <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 4}}>
-            <StarRating rating={averageRating} size={18} />
+          <StarRating rating={averageRating} size={18} />
         </View>
-        
+
         <Text style={{color: 'blue', marginTop: 4}}>Bảo hành 7 ngày</Text>
       </View>
 
@@ -122,7 +134,24 @@ export default function OrderDetailScreen() {
           Giá dự kiến: {formatPrice(quotedPrice)}đ
         </Text>
         <View className='flex flex-row gap-2'>
-          <ButtonCustom mode='outlined' style={{flex: 1}} onPress={() => {}}>
+          <ButtonCustom
+            mode='outlined'
+            style={{flex: 1}}
+            onPress={() =>
+              router.push({
+                pathname: '/chat-room',
+                params: {
+                  jobRequestCode: jobRequestCode,
+                  prevPathname: '/booking/job-request-detail/info-worker',
+                  info_worker: info_worker,
+                  currentTab: currentTab,
+                  latitude: latitude,
+                  longitude: longitude,
+                  serviceId: serviceId,
+                  workerId: workerData?.worker?.user?.id,
+                },
+              })
+            }>
             Nhắn tin
           </ButtonCustom>
           <ButtonCustom mode='contained' style={{flex: 1}} onPress={handlePlaceOrder}>

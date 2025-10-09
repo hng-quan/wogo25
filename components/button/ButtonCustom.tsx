@@ -27,7 +27,7 @@ const ButtonCustom = ({children, loading, ...props}: React.ComponentProps<typeof
   return (
     <Button
       {...props}
-      loading={loading} // ✅ thêm
+      loading={loading}
       style={[styles.button, props.style]}
       textColor={textColor}
       buttonColor={mainColor}>

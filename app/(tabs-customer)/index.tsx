@@ -89,7 +89,7 @@ export default function HomeScreen() {
   };
 
   const _navigateToSearch = () => {
-    console.log('navigate to search');
+    // console.log('navigate to search');
     router.push('/booking/search');
   };
   return (

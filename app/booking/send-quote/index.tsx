@@ -5,20 +5,21 @@ import { useRole } from '@/context/RoleContext';
 import { jsonPostAPI } from '@/lib/apiService';
 import { formatDistance } from '@/lib/location-helper';
 import { displayDateVN } from '@/lib/utils';
+import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { Dimensions, FlatList, Image, ScrollView, StyleSheet, View } from 'react-native';
+import { Dimensions, FlatList, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Modal, Portal, Text, TextInput } from 'react-native-paper';
 
 export default function SendQuotePage() {
-  const { job_detail } = useLocalSearchParams();
-  const { role } = useRole();
+  const {job_detail} = useLocalSearchParams();
+  const {role} = useRole();
   const [isOpenModal, setIsOpenModal] = React.useState(false);
 
   let detailData: any = {};
   try {
     detailData = job_detail ? JSON.parse(job_detail as string) : {};
-    console.log('Parsed job_detail:', detailData);
+    // console.log('Parsed job_detail:', detailData);
   } catch (e) {
     console.log('❌ Lỗi parse job_detail:', e);
   }
@@ -34,22 +35,18 @@ export default function SendQuotePage() {
     <View style={styles.container}>
       <Appbar title='Chi tiết đơn hàng' onBackPress={goBack} />
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView contentContainerStyle={{paddingBottom: 24}}>
         {/* --- ẢNH ĐƠN HÀNG --- */}
         <View>
           <FlatList
             data={files}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={item => item.id.toString()}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
-            renderItem={({ item, index }) => (
+            renderItem={({item, index}) => (
               <View>
-                <Image
-                  source={{ uri: item.fileUrl }}
-                  style={styles.image}
-                  resizeMode='cover'
-                />
+                <Image source={{uri: item.fileUrl}} style={styles.image} resizeMode='cover' />
                 <View style={styles.imageBadge}>
                   <Text style={styles.imageBadgeText}>
                     {index + 1}/{files.length}
@@ -57,13 +54,7 @@ export default function SendQuotePage() {
                 </View>
               </View>
             )}
-            ListEmptyComponent={
-              <Image
-                source={{ uri: mainImage }}
-                style={styles.image}
-                resizeMode='cover'
-              />
-            }
+            ListEmptyComponent={<Image source={{uri: mainImage}} style={styles.image} resizeMode='cover' />}
           />
         </View>
 
@@ -77,14 +68,28 @@ export default function SendQuotePage() {
 
             <View style={styles.customerRow}>
               <AvatarWrapper url={avatarUrl} role={role} />
-              <View style={{ gap: 4 }}>
+              <View style={{gap: 4}}>
                 <Text style={styles.customerName}>{fullName}</Text>
                 <Text style={styles.distanceText}>{formatDistance(detailData?.distance)}</Text>
               </View>
+              {/* Nút chat */}
+              <TouchableOpacity style={styles.chatButton} onPress={() => {
+                router.push({
+                  pathname: '/chat-room',
+                 params: {
+                  jobRequestCode: detailData?.jobRequestCode,
+                  prevPathname: '/booking/send-quote',
+                  job_detail: job_detail,
+                  userId: detailData?.user?.id, 
+                 }
+                })
+              }}>
+                <MaterialIcons name='chat' size={20} color='#fff' />
+              </TouchableOpacity>
             </View>
 
             {/* Thông tin dịch vụ */}
-            <View style={{ gap: 4, marginTop: 4 }}>
+            <View style={{gap: 4, marginTop: 4}}>
               <Text style={styles.serviceName}>{detailData?.service?.serviceName}</Text>
               <Text style={styles.description}>{detailData?.description}</Text>
             </View>
@@ -109,7 +114,7 @@ export default function SendQuotePage() {
         isOpen={isOpenModal}
         jobRequestCode={detailData?.jobRequestCode}
         onClose={() => setIsOpenModal(false)}
-        priceSuggestion={detailData?.priceSuggestion}
+        priceSuggestion={{estimatedPriceLower: detailData?.estimatedPriceLower || 0, estimatedPriceHigher: detailData?.estimatedPriceHigher || 0}}
       />
     </View>
   );
@@ -124,10 +129,10 @@ const SendQuoteModal = ({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  priceSuggestion: number;
+  priceSuggestion: any;
   jobRequestCode: string;
 }) => {
-  const [price, setPrice] = React.useState(priceSuggestion || 0);
+  const [price, setPrice] = React.useState(priceSuggestion?.estimatedPriceLower || 0);
 
   const sendQuote = async () => {
     try {
@@ -149,16 +154,11 @@ const SendQuoteModal = ({
 
   return (
     <Portal>
-      <Modal
-        visible={isOpen}
-        onDismiss={onClose}
-        contentContainerStyle={styles.modalContainer}>
+      <Modal visible={isOpen} onDismiss={onClose} contentContainerStyle={styles.modalContainer}>
         <View style={styles.priceContainer}>
           <View>
             <Text style={styles.priceLabel}>Giá tham khảo</Text>
-            <Text style={styles.priceRange}>
-              {priceSuggestion ? priceSuggestion + ' đ' : 'Chưa xác định'}
-            </Text>
+            <Text style={styles.priceRange}>{priceSuggestion?.estimatedPriceLower || 0} đ - {priceSuggestion?.estimatedPriceHigher || 0} đ</Text>
           </View>
         </View>
 
@@ -167,8 +167,8 @@ const SendQuoteModal = ({
           label='Nhập giá đề xuất'
           value={price.toString()}
           keyboardType='numeric'
-          onChangeText={(val) => setPrice(Number(val))}
-          style={{ marginBottom: 16 }}
+          onChangeText={val => setPrice(Number(val))}
+          style={{marginBottom: 16}}
         />
         <ButtonCustom mode='contained' onPress={sendQuote}>
           Xác nhận gửi báo giá
@@ -179,10 +179,10 @@ const SendQuoteModal = ({
 };
 
 // -------------------- STYLE --------------------
-const { width } = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
-  image: { width, height: 220 },
+  container: {flex: 1, backgroundColor: '#F9FAFB'},
+  image: {width, height: 220},
   imageBadge: {
     position: 'absolute',
     top: 8,
@@ -192,33 +192,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  imageBadgeText: { color: '#fff', fontSize: 12 },
-  content: { paddingHorizontal: 16, marginTop: 8 },
-  sectionTitle: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
+  imageBadgeText: {color: '#fff', fontSize: 12},
+  content: {paddingHorizontal: 16, marginTop: 8},
+  sectionTitle: {fontSize: 18, fontWeight: '600', marginBottom: 8},
   infoCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
     padding: 16,
     shadowColor: '#000',
     shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowRadius: 4,
     elevation: 2,
   },
-  orderCode: { color: '#777', marginBottom: 8 },
+  orderCode: {color: '#777', marginBottom: 8},
   customerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
     gap: 8,
   },
-  customerName: { fontWeight: 'bold', fontSize: 16 },
-  distanceText: { color: '#666' },
-  serviceName: { fontWeight: '600', fontSize: 15, color: '#333' },
-  description: { color: '#555' },
-  detailRow: { marginTop: 8 },
-  timeText: { color: '#666' },
-  addressText: { color: '#444', marginTop: 4 },
+  customerName: {fontWeight: 'bold', fontSize: 16},
+  distanceText: {color: '#666'},
+  serviceName: {fontWeight: '600', fontSize: 15, color: '#333'},
+  description: {color: '#555'},
+  detailRow: {marginTop: 8},
+  timeText: {color: '#666'},
+  addressText: {color: '#444', marginTop: 4},
   footer: {
     paddingHorizontal: 16,
     paddingBottom: 16,
@@ -237,6 +237,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 12,
   },
-  priceLabel: { fontSize: 14, color: '#777' },
-  priceRange: { fontSize: 16, fontWeight: 'bold', color: '#16a34a' },
+  priceLabel: {fontSize: 14, color: '#777'},
+  priceRange: {fontSize: 16, fontWeight: 'bold', color: '#16a34a'},
+  chatButton: {
+    backgroundColor: '#1565C0',
+    padding: 6,
+    borderRadius: 20,
+    marginLeft: 'auto',
+  },
 });

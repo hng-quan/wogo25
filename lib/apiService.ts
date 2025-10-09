@@ -66,7 +66,7 @@ export const jsonPostAPI = async (
       isShowToast &&
         Toast.show({
           type: 'error',
-          text1: data.message,
+          text1: data?.message,
         });
       onLoading && onLoading(false);
       onError?.(data);
@@ -119,7 +119,7 @@ export const jsonGettAPI = async (
     // Xử lý lỗi
     const errorData = error.response?.data || error.message;
     onError?.(errorData);
-    _handleError(error);
+    _handleError(errorData);
 
     console.log(`Error call api ${endpoint}:`, errorData);
   }
@@ -285,6 +285,13 @@ const _handleError = (error: any) => {
       text2: t('Vui lòng kiểm tra kết nối internet của bạn.'),
     });
     return;
+  }
+  if (error?.code === 5009) {
+    Toast.show({
+      type:'error',
+      text1: 'Cảnh báo',
+      text2: error?.message
+    })
   }
 };
 

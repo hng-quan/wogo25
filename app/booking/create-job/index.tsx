@@ -7,6 +7,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
+import mime from 'mime';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -43,7 +44,7 @@ export default function Index() {
 
   const onBackPress = () => router.push('/(tabs-customer)');
 
-  // Lấy vị trí khi mở màn hình
+  // 📍 Lấy vị trí khi mở màn hình
   useEffect(() => {
     (async () => {
       try {
@@ -98,56 +99,84 @@ export default function Index() {
     setShowPicker(false);
   };
 
-  // Hàm mở picker chọn ảnh/video
+  // 🖼️ Mở picker chọn ảnh/video
   const handlePickImage = async () => {
     if (imageList.length >= 4) {
       alert('Chỉ được chọn tối đa 4 ảnh/video');
       return;
     }
+
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'],
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsMultipleSelection: false,
       quality: 1,
     });
 
     if (!result.canceled) {
-      setImageList([...imageList, result.assets[0].uri]);
+      const asset = result.assets[0];
+      const uri = asset.uri;
+
+      // ✅ Xác định MIME type chính xác
+      const mimeType = mime.getType(uri) || asset.mimeType || 'application/octet-stream';
+
+      // 🪄 Thêm dòng log tại đây
+      console.log('🧩 File info:', {
+        uri,
+        mimeType,
+        fileName: uri.split('/').pop(),
+      });
+
+      // ✅ Danh sách cho phép từ BE
+      const allowedTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'video/mp4',
+        'video/mpeg',
+        'video/quicktime',
+        'video/x-msvideo',
+        'file/pdf',
+      ];
+
+      if (!allowedTypes.includes(mimeType)) {
+        alert('Định dạng không được hỗ trợ. Vui lòng chọn ảnh hoặc video hợp lệ.');
+        return;
+      }
+
+      // ✅ Lưu cả uri và mimeType
+      setImageList([...imageList, {uri, mimeType}]);
     }
   };
 
   const handleRemoveImage = (uri: string) => {
-    setImageList(imageList.filter(img => img !== uri));
+    setImageList(imageList.filter(img => img.uri !== uri));
   };
 
+  // 🚀 Gửi yêu cầu tạo job
   const handleCreateJob = async () => {
     if (submitting) return;
     setSubmitting(true);
     try {
       const formData = new FormData();
-      // formData.append('serviceId', parentId as string);
       formData.append('serviceId', serviceId as string);
       formData.append('description', description);
       formData.append('address', address);
       const bookingDate = date.toISOString().slice(0, 19);
-      console.log('bookingDate', bookingDate);
       formData.append('bookingDate', bookingDate);
       formData.append('latitudeUser', String(coords?.latitude || ''));
       formData.append('longitudeUser', String(coords?.longitude || ''));
-      // add files ảnh
-      imageList.forEach((fileUri, index) => {
-        const filename = fileUri.split('/').pop() || `image_${index}.jpg`;
-        const ext = filename.split('.')?.pop().toLowerCase();
-        let mimeType = 'application/octet-stream';
-        if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
-        if (ext === 'png') mimeType = 'image/png';
-        if (ext === 'mp4') mimeType = 'video/mp4';
-        if (ext === 'webp') mimeType = 'image/webp';
+
+      // ✅ Thêm danh sách file ảnh/video
+      imageList.forEach((file, index) => {
+        const filename = file.uri.split('/').pop() || `file_${index}`;
         formData.append('files', {
-          uri: fileUri,
+          uri: file.uri,
           name: filename,
-          type: mimeType,
+          type: file.mimeType,
         } as any);
       });
+
       const res = await formPostAPI(
         '/bookings/create-job',
         formData,
@@ -155,7 +184,7 @@ export default function Index() {
         () => {},
         handleError,
       );
-      // console.log('res', res);
+
       if (res?.result) {
         router.push({
           pathname: '/booking/job-request-detail',
@@ -232,8 +261,7 @@ export default function Index() {
           </View>
         </TouchableOpacity>
 
-        {/* Hình ảnh mô tả */}
-        {/* Ảnh / Video */}
+        {/* Ảnh/Video mô tả */}
         <View style={styles.card}>
           <View style={styles.row}>
             <Text style={[styles.label]}>Ảnh/Video</Text>
@@ -242,7 +270,7 @@ export default function Index() {
           <FlatList
             data={[...imageList, 'add']}
             horizontal
-            keyExtractor={(item, index) => item + index}
+            keyExtractor={(item, index) => (typeof item === 'string' ? item : item.uri) + index}
             renderItem={({item}) =>
               item === 'add' ? (
                 imageList.length < 4 ? (
@@ -252,19 +280,18 @@ export default function Index() {
                 ) : null
               ) : (
                 <View style={[styles.imageWrapper, {marginTop: 8}]}>
-                  <TouchableOpacity style={styles.removeButton} onPress={() => handleRemoveImage(item)}>
+                  <TouchableOpacity style={styles.removeButton} onPress={() => handleRemoveImage(item.uri)}>
                     <MaterialCommunityIcons name='close-circle' size={20} color='red' />
                   </TouchableOpacity>
-                  <Image source={{uri: item}} style={styles.imagePreview} />
+                  <Image source={{uri: item.uri}} style={styles.imagePreview} />
                 </View>
               )
             }
           />
         </View>
 
+        {/* Giá & nút gửi */}
         <View style={{bottom: 0, marginTop: 'auto', paddingVertical: 2}}>
-          {/* <Text>{`Thời gian dự kiến hoàn thành: ${duration} phút`}</Text> */}
-          {/* Giá tham khảo */}
           <View style={styles.priceContainer}>
             <View>
               <Text style={styles.priceLabel}>Giá tham khảo</Text>

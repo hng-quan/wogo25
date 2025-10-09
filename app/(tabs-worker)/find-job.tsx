@@ -51,6 +51,10 @@ export default function FindJob() {
     return !nearZero;
   };
 
+  useEffect(() => {
+    console.log('workerCoords changed', workerCoords);
+  }, [workerCoords])
+
   useFocusEffect(
     React.useCallback(() => {
       setShowAlert(false);
@@ -219,13 +223,11 @@ export default function FindJob() {
               longitude: item?.longitude || 0,
             };
             const distance = calculateDistance(customerCoords, workerCoords as any);
-
             return (
               <TouchableOpacity
                 style={styles.jobCard}
                 onPress={() => {
                   // Xử lý khi nhấn vào công việc
-                  console.log('Chọn công việc:', item);
                   router.push({
                     pathname: '/booking/send-quote',
                     params: {
@@ -373,10 +375,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: '#ddd',
     shadowOffset: {width: 0, height: 2},
-    shadowRadius: 4,
-    elevation: 6,
     flexDirection: 'row',
     alignItems: 'center',
   },

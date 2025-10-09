@@ -18,6 +18,7 @@ import { Modal, Portal, Text } from 'react-native-paper';
 
 export default function Index() {
   const {currentTab, jobRequestCode, latitude, longitude, serviceId} = useLocalSearchParams();
+  console.log('jobRequestCode param:', jobRequestCode);
   const {connected, subscribe} = useSocket();
   const [region, setRegion] = useState({
     latitude: 0,
@@ -128,14 +129,19 @@ export default function Index() {
   };
 
   const renderWorker = ({item}: {item: WorkerQuote}) => {
+    console.log('Rendering worker item:', item);
     const onPress = () => {
       router.push({
         pathname: '/booking/job-request-detail/info-worker',
         params: {
-          jobRequestCode: jobRequestCode as string,
+          jobRequestCode: jobRequestCode,
           info_worker: JSON.stringify(item),
-        }
-      })
+          currentTab: currentTab,
+          latitude: latitude,
+          longitude: longitude,
+          serviceId: serviceId,
+        },
+      });
     };
 
     return (
@@ -179,12 +185,27 @@ export default function Index() {
         </View>
 
         {/* Nút chat */}
-        <TouchableOpacity style={styles.chatButton}>
+        <TouchableOpacity
+          style={styles.chatButton}
+          onPress={() => {
+            router.push({
+              pathname: '/chat-room',
+              params: {
+                jobRequestCode: jobRequestCode,
+                prevPathname: '/booking/job-request-detail',
+                currentTab: currentTab,
+                latitude: latitude,
+                longitude: longitude,
+                serviceId: serviceId,
+                workerId: item?.worker?.user?.id,
+              },
+            });
+          }}>
           <MaterialIcons name='chat' size={20} color='#fff' />
         </TouchableOpacity>
         <View style={styles.ratingWrapper}>
           <LinearGradient
-            colors={['#fbbf24', '#f97316']} // vàng → cam
+            colors={['#fbbf24', '#f97316']}
             start={{x: 0, y: 0}}
             end={{x: 1, y: 1}}
             style={styles.ratingBox}>
@@ -310,7 +331,7 @@ const styles = StyleSheet.create({
     right: 0,
     borderBottomLeftRadius: 12,
     borderTopRightRadius: 12,
-    overflow: 'hidden', 
+    overflow: 'hidden',
   },
   ratingBox: {
     flexDirection: 'row',
