@@ -81,12 +81,15 @@ export default function ActivityScreen() {
       <View style={{flexDirection: 'row', justifyContent: 'space-between', gap: 8}}>
         <View>
           <Text style={styles.jobTitle} numberOfLines={1} ellipsizeMode='tail'>
-            {item.service.serviceName + ' - ' + item.description}
+            {item.service.serviceName}
           </Text>
 
           {/* Thời gian + số lượng báo giá */}
           <View style={styles.row}>
             <Text style={styles.time}>{displayDateVN(new Date(item.bookingDate))}</Text>
+          </View>
+          <View>
+            <Text numberOfLines={1} ellipsizeMode='tail'>{item.description}</Text>
           </View>
         </View>
         <Image source={require('../../assets/images/map.png')} style={{width: 50, height: 50}} />
@@ -95,11 +98,7 @@ export default function ActivityScreen() {
       {/* Hình ảnh hoặc bản đồ */}
       {item.files.length > 0 ? (
         <Image source={{uri: item.files[0].fileUrl}} style={styles.jobImage} />
-      ) : (
-        <View>
-          <Text>Không có hình ảnh</Text>
-        </View>
-      )}
+      ) : null}
     </TouchableOpacity>
   );
 
