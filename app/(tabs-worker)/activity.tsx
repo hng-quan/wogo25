@@ -1,34 +1,36 @@
 import Tabs from '@/components/ui/Tabs';
 import { JobRequest } from '@/interfaces/interfaces';
-import { displayDateVN } from '@/lib/utils';
+import { jsonGettAPI } from '@/lib/apiService';
+import { displayDateVN, formatPrice } from '@/lib/utils';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
 const STATUS = {
+  ALL: 'ALL',
   PENDING: 'PENDING',
   ACCEPTED: 'ACCEPTED',
   CANCELLED: 'CANCELLED',
 };
 
 const filters = [
-  {key: 'ALL', label: 'Tất cả'},
-  {key: STATUS.PENDING, label: 'Đang tìm'},
+  {key: STATUS.ALL, label: 'Tất cả'},
+  {key: STATUS.PENDING, label: 'Đang báo giá'},
   {key: STATUS.ACCEPTED, label: 'Đang tiến hành'},
 ];
 
 export default function ActivityScreen() {
   const {currentTab} = useLocalSearchParams();
   const [myJobsRequest, setMyJobsRequest] = React.useState<JobRequest[]>([]);
-  const [activeTab, setActiveTab] = useState(currentTab || 'ALL');
+  const [activeTab, setActiveTab] = useState(currentTab || STATUS.ALL);
 
   useEffect(() => {
     const fetchMyJobsRequest = async () => {
-      // const endpoint = activeTab === 'ALL' ? '/jobs/my-quotes' : '/jobs/my-jobRequests/' + activeTab;
-      // const res = await jsonGettAPI(endpoint);
-      // setMyJobsRequest(res?.result || []);
-      setMyJobsRequest([]);
+      const endpoint = '/jobs/my-quotes/' + activeTab;
+      const res = await jsonGettAPI(endpoint);
+      console.log('Fetched jobs request:', res);
+      setMyJobsRequest(res?.result || []);
     };
     fetchMyJobsRequest();
   }, [activeTab]);
@@ -52,56 +54,62 @@ export default function ActivityScreen() {
     });
   };
 
-  const renderJobCard = ({item}: {item: JobRequest}) => (
-    <TouchableOpacity style={styles.card} onPress={() => navigateToFindWorker(item)}>
-      {/* Header: Mã job + Trạng thái */}
-      <View style={styles.cardHeader}>
-        <View style={[styles.row, {gap: 8}]}>
-          <Text style={styles.jobCode}>#{item.jobRequestCode}</Text>
-          <Text style={styles.priceLabel}>{item.workerQuotes.length} báo giá</Text>
-        </View>
-        <Text
-          style={[
-            styles.status,
-            item.status === STATUS.PENDING
-              ? styles.statusPending
-              : item.status === STATUS.ACCEPTED
-                ? styles.statusAccepted
-                : styles.statusCancelled,
-          ]}>
-          {item.status === STATUS.PENDING
-            ? 'Đang tìm thợ'
-            : item.status === STATUS.ACCEPTED
-              ? 'Đang tiến hành'
-              : 'Đã hủy'}
-        </Text>
-      </View>
+  const renderJobCard = ({item}: {item: any}) => {
+    const job = item.job;
 
-      {/* Nội dung */}
-      <View style={{flexDirection: 'row', justifyContent: 'space-between', gap: 8}}>
-        <View>
-          <Text style={styles.jobTitle} numberOfLines={1} ellipsizeMode='tail'>
-            {item.service.serviceName + ' - ' + item.description}
-          </Text>
-
-          {/* Thời gian + số lượng báo giá */}
-          <View style={styles.row}>
-            <Text style={styles.time}>{displayDateVN(new Date(item.bookingDate))}</Text>
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => {
+          // navigateToFindWorker(item)
+        }}>
+        <View style={styles.cardHeader}>
+          <View style={[styles.row, {gap: 8}]}>
+            <Text style={styles.jobCode}>#{job.jobRequestCode}</Text>
           </View>
+          <Text
+            style={[
+              styles.status,
+              // SỬA: item.status -> job.status
+              job.status === STATUS.PENDING
+                ? styles.statusPending
+                : job.status === STATUS.ACCEPTED
+                  ? styles.statusAccepted
+                  : styles.statusCancelled,
+            ]}>
+            {job.status === STATUS.PENDING
+              ? 'Chờ xác nhận'
+              : job.status === STATUS.ACCEPTED
+                ? 'Đang tiến hành'
+                : 'Đã hủy'}
+          </Text>
         </View>
-        <Image source={require('../../assets/images/map.png')} style={{width: 50, height: 50}} />
-      </View>
 
-      {/* Hình ảnh hoặc bản đồ */}
-      {item.files.length > 0 ? (
-        <Image source={{uri: item.files[0].fileUrl}} style={styles.jobImage} />
-      ) : (
-        <View>
-          <Text>Không có hình ảnh</Text>
+        {/* Nội dung */}
+        <View style={{flexDirection: 'row', justifyContent: 'space-between', gap: 8}}>
+          <View style={{flex: 1}}>
+            {/* SỬA: Thêm .job vào các truy cập */}
+            <Text style={styles.jobTitle} numberOfLines={2} ellipsizeMode='tail'>
+              {job.service?.serviceName}
+            </Text>
+
+            {/* Thời gian */}
+            <View style={[styles.row, {justifyContent: 'space-between', alignItems: 'flex-end'}]}>
+              <Text style={styles.time}>{displayDateVN(new Date(job.bookingDate))}</Text>
+              <Text style={[styles.priceLabel, {fontSize: 18}]}>{formatPrice(item.quotedPrice)} đ</Text>
+            </View>
+
+            {/* <View>
+              <Text numberOfLines={1} ellipsizeMode='tail'>
+                {job?.description}
+              </Text>
+            </View> */}
+          </View>
+          {/* <Image source={require('../../assets/images/map.png')} style={{width: 50, height: 50}} /> */}
         </View>
-      )}
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -118,14 +126,14 @@ export default function ActivityScreen() {
         <FlatList
           data={myJobsRequest}
           renderItem={renderJobCard}
-          keyExtractor={item => item.id.toString()}
+          keyExtractor={item => item?.id?.toString()}
           contentContainerStyle={{paddingBottom: 50}}
         />
       )}
 
       {/* Lịch sử */}
-      <Text style={styles.sectionTitle}>Lịch sử</Text>
-      {renderEmptyState('Chưa có hoạt động')}
+      {/* <Text style={styles.sectionTitle}>Lịch sử</Text>
+      {renderEmptyState('Chưa có hoạt động')} */}
     </View>
   );
 }

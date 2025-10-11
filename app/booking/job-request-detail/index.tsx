@@ -63,6 +63,7 @@ export default function Index() {
   const fetchJobRequestByCode = async (code: string) => {
     try {
       const res = await jsonGettAPI('/jobs/getByJobRequestCode/' + code);
+      console.log('Fetched job request by code:', res);
       if (res?.result) {
         setJobRequest(res.result || null);
       }

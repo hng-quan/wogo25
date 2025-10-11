@@ -122,9 +122,9 @@ export default function ActivityScreen() {
         />
       )}
 
-      {/* Lịch sử */}
+      {/* Lịch sử
       <Text style={styles.sectionTitle}>Lịch sử</Text>
-      {renderEmptyState('Chưa có hoạt động')}
+      {renderEmptyState('Chưa có hoạt động')} */}
     </View>
   );
 }
