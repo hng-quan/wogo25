@@ -29,7 +29,7 @@ export default function ActivityScreen() {
     const fetchMyJobsRequest = async () => {
       const endpoint = '/jobs/my-quotes/' + activeTab;
       const res = await jsonGettAPI(endpoint);
-      console.log('Fetched jobs request:', res);
+      // console.log('Fetched jobs request:', res);
       setMyJobsRequest(res?.result || []);
     };
     fetchMyJobsRequest();
@@ -41,17 +41,24 @@ export default function ActivityScreen() {
     </View>
   );
 
-  const navigateToFindWorker = (item: JobRequest) => {
-    router.push({
-      pathname: '/booking/job-request-detail',
-      params: {
-        currentTab: activeTab,
-        jobRequestCode: item.jobRequestCode,
-        latitude: item.latitude,
-        longitude: item.longitude,
-        serviceId: item.service.id,
-      },
-    });
+  const navigateToScreen = (item: any) => {
+    if (item?.job?.status === STATUS.PENDING) {
+      router.push({
+        pathname: '/booking/send-quote',
+        params: {
+          currentTab: activeTab,
+          job_detail: JSON.stringify(item.job),
+          prevPath: 'worker-activity',
+        },
+      });
+    } else if (item?.job?.status === STATUS.ACCEPTED) {
+      router.push({
+        pathname: '/workflow',
+        params: {
+          currentTab: activeTab,
+        }
+      })
+    }
   };
 
   const renderJobCard = ({item}: {item: any}) => {
@@ -61,7 +68,7 @@ export default function ActivityScreen() {
       <TouchableOpacity
         style={styles.card}
         onPress={() => {
-          // navigateToFindWorker(item)
+          navigateToScreen(item);
         }}>
         <View style={styles.cardHeader}>
           <View style={[styles.row, {gap: 8}]}>
@@ -126,7 +133,7 @@ export default function ActivityScreen() {
         <FlatList
           data={myJobsRequest}
           renderItem={renderJobCard}
-          keyExtractor={item => item?.id?.toString()}
+          keyExtractor={(_, index) => index.toString()}
           contentContainerStyle={{paddingBottom: 50}}
         />
       )}

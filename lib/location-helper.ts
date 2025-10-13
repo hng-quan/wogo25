@@ -28,27 +28,30 @@ export async function getCurrentLocation(): Promise<Coordinates | null> {
  * Tính khoảng cách giữa 2 tọa độ (theo km)
  */
 export function calculateDistance(coord1: Coordinates, coord2: Coordinates): string {
-  const toRad = (value: number) => (value * Math.PI) / 180;
+  const toRad = Math.PI / 180;
+  const lat1 = coord1.latitude * toRad;
+  const lon1 = coord1.longitude * toRad;
+  const lat2 = coord2.latitude * toRad;
+  const lon2 = coord2.longitude * toRad;
 
-  const R = 6371; // Bán kính Trái Đất (km)
-  const dLat = toRad(coord2?.latitude - coord1?.latitude);
-  const dLon = toRad(coord2?.longitude - coord1?.longitude);
-
-  const lat1 = toRad(coord1?.latitude);
-  const lat2 = toRad(coord2?.latitude);
+  const dLat = lat2 - lat1;
+  const dLon = lon2 - lon1;
 
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.sin(dLon / 2) * Math.sin(dLon / 2) *
-    Math.cos(lat1) * Math.cos(lat2);
+    Math.cos(lat1) * Math.cos(lat2) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  // THAY ĐỔI DÒNG NÀY ĐỂ KHỚP VỚI JAVA
+  const c = 2 * Math.asin(Math.sqrt(a)); 
 
-  return formatDistance(R * c); // Khoảng cách (km)
+  const R = 6371; // bán kính Trái Đất (km)
+  return formatDistance(R * c * 1.3); // khoảng cách tính theo km
 }
 
+
+
 export function formatDistance(distanceKm: number): string {
-  console.log('formatDistance:', distanceKm);
   if (distanceKm < 1) {
     const meters = Math.round(distanceKm * 1000);
     return `${meters} m`;

@@ -24,55 +24,74 @@ import {
 } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 
-// Interface Message không đổi
+// --- CÁC INTERFACE ĐÃ ĐƯỢC CẬP NHẬT ---
+interface FileAttachment {
+  id: number;
+  fileName: string;
+  fileType: string;
+  fileUrl: string;
+}
+
 interface Message {
   id: string | number;
   content?: string;
   senderType: 'USER' | 'WORKER';
   createdAt: string;
   messageType: 'TEXT' | 'FILE' | 'IMAGE';
-  fileUrls: string[] | null;
+  fileUrls: FileAttachment[] | null;
 }
 
-const MessageItem = ({item, currentRole}: {item: Message; currentRole: string}) => {
+// --- COMPONENT MESSAGEITEM ĐÃ ĐƯỢC CẬP NHẬT ---
+const MessageItem = ({ item, currentRole }: { item: Message; currentRole:string }) => {
   const isMyMessage = item.senderType === currentRole;
 
   const renderMessageContent = () => {
-    if ((item.messageType === 'IMAGE' || item.messageType === 'FILE') && item.fileUrls && item.fileUrls.length > 0) {
-      const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp'];
-      const isImage = imageExtensions.some(ext => item.fileUrls![0].toLowerCase().endsWith(ext));
+    const hasFiles = item.fileUrls && item.fileUrls.length > 0;
 
-      if (isImage) {
-        return (
-          <View style={styles.imageContainer}>
-            {item.fileUrls.map((url, index) => (
-              <TouchableOpacity key={index} onPress={() => Linking.openURL(url)}>
-                <Image source={{uri: url}} style={styles.messageImage} resizeMode='cover' />
-              </TouchableOpacity>
-            ))}
-          </View>
-        );
-      }
-      return (
-        <TouchableOpacity style={styles.fileContainer} onPress={() => Linking.openURL(item.fileUrls![0])}>
-          <MaterialCommunityIcons name='file-document-outline' size={24} color={isMyMessage ? '#005500' : '#00529B'} />
-          <Text style={[styles.fileText, {color: isMyMessage ? '#005500' : '#00529B'}]}>
-            {item.content || 'Tệp đính kèm'}
-          </Text>
-        </TouchableOpacity>
-      );
-    }
+    return (
+      // Sử dụng một View để chứa cả text và file, cách nhau 8px
+      <View style={{ gap: 8 }}>
+        {/* 1. Luôn hiển thị text nếu có */}
+        {item.content && <Text style={styles.messageText}>{item.content}</Text>}
 
-    return <Text style={styles.messageText}>{item.content}</Text>;
+        {/* 2. Hiển thị file/ảnh nếu có */}
+        {hasFiles && (
+          <React.Fragment>
+            {item.fileUrls!.map((file, index) => {
+              const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp'];
+              const isImage = imageExtensions.some(ext => file.fileUrl.toLowerCase().endsWith(ext));
+
+              if (isImage) {
+                return (
+                  <TouchableOpacity key={index} onPress={() => Linking.openURL(file.fileUrl)}>
+                    <Image source={{ uri: file.fileUrl }} style={styles.messageImage} resizeMode='cover' />
+                  </TouchableOpacity>
+                );
+              } else {
+                return (
+                  <TouchableOpacity key={index} style={styles.fileContainer} onPress={() => Linking.openURL(file.fileUrl)}>
+                    <MaterialCommunityIcons name='file-document-outline' size={24} color={isMyMessage ? '#005500' : '#00529B'} />
+                    {/* Hiển thị tên file thay vì content */}
+                    <Text style={[styles.fileText, { color: isMyMessage ? '#005500' : '#00529B' }]}>
+                      {file.fileName || 'Tệp đính kèm'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }
+            })}
+          </React.Fragment>
+        )}
+      </View>
+    );
   };
 
   return (
-    <View style={[styles.messageItemContainer, {justifyContent: isMyMessage ? 'flex-end' : 'flex-start'}]}>
+    <View style={[styles.messageItemContainer, { justifyContent: isMyMessage ? 'flex-end' : 'flex-start' }]}>
       <View
         style={[
           styles.messageBubble,
           isMyMessage ? styles.myMessageBubble : styles.theirMessageBubble,
-          item.messageType === 'IMAGE' && item.fileUrls && {padding: 0, overflow: 'hidden'},
+          // Bỏ điều kiện padding: 0 để bubble luôn có padding đẹp
         ]}>
         {renderMessageContent()}
       </View>
@@ -80,27 +99,19 @@ const MessageItem = ({item, currentRole}: {item: Message; currentRole: string}) 
   );
 };
 
+// --- Component chính không có thay đổi logic ---
 export default function ChatRoom() {
   const {
-    jobRequestCode,
-    prevPathname,
-    currentTab,
-    latitude,
-    longitude,
-    serviceId,
-    info_worker,
-    job_detail,
-    workerId,
-    userId,
-  } = useLocalSearchParams<{jobRequestCode: string; [key: string]: any}>();
+    jobRequestCode, prevPathname, currentTab, latitude, longitude, serviceId, info_worker, job_detail, workerId, userId,
+  } = useLocalSearchParams<{ jobRequestCode: string; [key: string]: any }>();
 
-  const {user, role} = useRole();
+  const { user, role } = useRole();
   const [messageList, setMessageList] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [newMessage, setNewMessage] = useState('');
   const flatListRef = useRef<FlatList>(null);
   const [roomCode, setRoomCode] = useState('');
-  const {subscribe, connected} = useSocket();
+  const { subscribe, connected } = useSocket();
 
   useEffect(() => {
     if (user && role) {
@@ -116,10 +127,8 @@ export default function ChatRoom() {
     if (roomCode) fetchMessageList();
   }, [roomCode]);
 
-  // Lắng nghe tin nhắn mới từ WebSocket
   useEffect(() => {
     if (!connected || !roomCode) return;
-
     const topic = `/topic/chat/${roomCode}`;
     const subscription = subscribe(topic, (message: IMessage) => {
       try {
@@ -128,7 +137,6 @@ export default function ChatRoom() {
         console.error('Lỗi parse tin nhắn từ WS:', error);
       }
     });
-
     return () => {
       subscription?.unsubscribe();
     };
@@ -136,7 +144,7 @@ export default function ChatRoom() {
 
   useEffect(() => {
     if (messageList.length > 0) {
-      flatListRef.current?.scrollToEnd({animated: true});
+      flatListRef.current?.scrollToEnd({ animated: true });
     }
   }, [messageList]);
 
@@ -163,7 +171,7 @@ export default function ChatRoom() {
       );
     } catch (error) {
       console.log('❌ Lỗi fetchMessageList:', error);
-      setMessageList([]); // Đặt lại thành mảng rỗng nếu có lỗi
+      setMessageList([]);
       setIsLoading(false);
     }
   };
@@ -185,9 +193,8 @@ export default function ChatRoom() {
   const handlePickAndSendFile = async () => {
     if (!roomCode || !role) return;
     try {
-      const result = await DocumentPicker.getDocumentAsync({type: '*/*', copyToCacheDirectory: true});
+      const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
       if (result.canceled) return;
-
       const file = result.assets[0];
       const formData = new FormData();
       formData.append('files', {
@@ -206,18 +213,12 @@ export default function ChatRoom() {
 
   const handlePickAndSendImage = async () => {
     if (!roomCode || !role) return;
-
-    // 1. Lấy trạng thái quyền hiện tại mà không cần hỏi
     const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
-
-    // 2. Nếu quyền chưa được xác định (lần đầu hỏi) -> Yêu cầu quyền
     let finalStatus = status;
     if (status !== 'granted') {
         const { status: newStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         finalStatus = newStatus;
     }
-
-    // 3. Nếu sau khi hỏi mà quyền vẫn không được cấp -> Hiển thị cảnh báo với nút Mở Cài đặt
     if (finalStatus !== 'granted') {
         Alert.alert(
             'Quyền truy cập bị từ chối',
@@ -225,7 +226,7 @@ export default function ChatRoom() {
             [
                 {
                     text: 'Mở Cài đặt',
-                    onPress: () => Linking.openSettings(), // Mở Cài đặt của ứng dụng
+                    onPress: () => Linking.openSettings(),
                 },
                 {
                     text: 'Hủy',
@@ -233,23 +234,17 @@ export default function ChatRoom() {
                 },
             ]
         );
-        return; // Dừng hàm tại đây
+        return;
     }
-
-    // 4. Nếu quyền đã được cấp -> Mở thư viện ảnh
     const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.7,
     });
-
     if (result.canceled) return;
-
-    // ... (Phần còn lại của hàm giữ nguyên)
     const image = result.assets[0];
     const formData = new FormData();
     const filename = image.uri.split('/').pop() || 'image.jpg';
     const fileType = `image/${filename.split('.').pop()}`;
-
     formData.append('files', {
         uri: image.uri,
         name: filename,
@@ -263,12 +258,12 @@ export default function ChatRoom() {
     } catch (error) {
         console.error('❌ Lỗi khi gửi ảnh:', error);
     }
-};
+  };
 
   const goBack = () => {
     router.push({
       pathname: prevPathname as any,
-      params: {currentTab, jobRequestCode, latitude, longitude, serviceId, info_worker, job_detail},
+      params: { currentTab, jobRequestCode, latitude, longitude, serviceId, info_worker, job_detail },
     });
   };
 
@@ -280,7 +275,7 @@ export default function ChatRoom() {
     );
   }
 
-  const renderItem = ({item}: {item: Message}) => (
+  const renderItem = ({ item }: { item: Message }) => (
     <MessageItem item={item} currentRole={role === ROLE.CUSTOMER ? 'USER' : 'WORKER'} />
   );
 
@@ -297,7 +292,7 @@ export default function ChatRoom() {
           renderItem={renderItem}
           keyExtractor={(item, index) => `${item.createdAt}-${index}`}
           style={styles.messageList}
-          contentContainerStyle={{paddingVertical: 10, paddingHorizontal: 10}}
+          contentContainerStyle={{ paddingVertical: 10, paddingHorizontal: 10 }}
         />
         <View style={styles.inputContainer}>
           <TouchableOpacity style={styles.actionButton} onPress={handlePickAndSendFile}>
@@ -323,24 +318,23 @@ export default function ChatRoom() {
   );
 }
 
-const {width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const maxImageWidth = width * 0.6;
-
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F2F2F2'},
-  loadingContainer: {flex: 1, justifyContent: 'center', alignItems: 'center'},
-  keyboardAvoidingView: {flex: 1},
-  messageList: {flex: 1},
-  messageItemContainer: {flexDirection: 'row', marginVertical: 4},
+  container: { flex: 1, backgroundColor: '#F2F2F2' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  keyboardAvoidingView: { flex: 1 },
+  messageList: { flex: 1 },
+  messageItemContainer: { flexDirection: 'row', marginVertical: 4 },
   messageBubble: {
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 20,
     maxWidth: '80%',
   },
-  myMessageBubble: {backgroundColor: '#DCF8C6'},
-  theirMessageBubble: {backgroundColor: '#FFFFFF'},
-  messageText: {fontSize: 16, color: '#000'},
+  myMessageBubble: { backgroundColor: '#DCF8C6' },
+  theirMessageBubble: { backgroundColor: '#FFFFFF' },
+  messageText: { fontSize: 16, color: '#000' },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -359,13 +353,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     maxHeight: 120,
   },
-  sendButton: {justifyContent: 'center', alignItems: 'center', paddingLeft: 8},
+  sendButton: { justifyContent: 'center', alignItems: 'center', paddingLeft: 8 },
   actionButton: {
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 6,
   },
-  imageContainer: {padding: 3},
+  imageContainer: { padding: 3 },
   messageImage: {
     width: maxImageWidth,
     height: maxImageWidth,

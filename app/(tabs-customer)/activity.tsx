@@ -40,16 +40,26 @@ export default function ActivityScreen() {
   );
 
   const navigateToFindWorker = (item: JobRequest) => {
-    router.push({
-      pathname: '/booking/job-request-detail',
-      params: {
-        currentTab: activeTab,
-        jobRequestCode: item.jobRequestCode,
-        latitude: item.latitude,
-        longitude: item.longitude,
-        serviceId: item.service.id,
-      },
-    });
+    if (item.status === STATUS.PENDING) {
+      router.push({
+        pathname: '/booking/job-request-detail',
+        params: {
+          currentTab: activeTab,
+          jobRequestCode: item.jobRequestCode,
+          latitude: item.latitude,
+          longitude: item.longitude,
+          serviceId: item.service.id,
+        },
+      });
+    } else if (item.status === STATUS.ACCEPTED) {
+      router.push({
+        pathname: '/tracking',
+        params: {
+          currentTab: activeTab,
+          jobRequestCode: item.jobRequestCode,
+        }
+      })
+    }
   };
 
   const renderJobCard = ({item}: {item: JobRequest}) => (
@@ -89,16 +99,16 @@ export default function ActivityScreen() {
             <Text style={styles.time}>{displayDateVN(new Date(item.bookingDate))}</Text>
           </View>
           <View>
-            <Text numberOfLines={1} ellipsizeMode='tail'>{item.description}</Text>
+            <Text numberOfLines={1} ellipsizeMode='tail'>
+              {item.description}
+            </Text>
           </View>
         </View>
         <Image source={require('../../assets/images/map.png')} style={{width: 50, height: 50}} />
       </View>
 
       {/* Hình ảnh hoặc bản đồ */}
-      {item.files.length > 0 ? (
-        <Image source={{uri: item.files[0].fileUrl}} style={styles.jobImage} />
-      ) : null}
+      {item.files.length > 0 ? <Image source={{uri: item.files[0].fileUrl}} style={styles.jobImage} /> : null}
     </TouchableOpacity>
   );
 

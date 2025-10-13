@@ -129,8 +129,9 @@ export default function Index() {
     );
   };
 
-  const renderWorker = ({item}: {item: WorkerQuote}) => {
+  const renderWorker = ({item, joblatitude, joblongitude}: {item: WorkerQuote, joblatitude: number, joblongitude: number}) => {
     console.log('Rendering worker item:', item);
+    console.log('joblatitude:', joblatitude, 'joblongitude:', joblongitude);
     const onPress = () => {
       router.push({
         pathname: '/booking/job-request-detail/info-worker',
@@ -138,8 +139,8 @@ export default function Index() {
           jobRequestCode: jobRequestCode,
           info_worker: JSON.stringify(item),
           currentTab: currentTab,
-          latitude: latitude,
-          longitude: longitude,
+          latitude: joblatitude,
+          longitude: joblongitude,
           serviceId: serviceId,
         },
       });
@@ -252,7 +253,7 @@ export default function Index() {
       <FlatList
         data={jobRequest?.workerQuotes || []}
         keyExtractor={(item, idx) => item.id?.toString() || idx.toString()}
-        renderItem={renderWorker}
+        renderItem={({item}) => renderWorker({item, joblatitude: region.latitude, joblongitude: region.longitude})}
         contentContainerStyle={{flex: 1, paddingBottom: 16}}
       />
       <InfoDetailModal visible={isOpen} onClose={() => setIsOpen(false)} jobRequest={jobRequest} />

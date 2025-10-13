@@ -293,6 +293,11 @@ const _handleError = (error: any) => {
       text2: error?.message
     })
   }
+  if (error.response?.data?.code === 5006) {
+    if (error?.response?.data?.message === 'You have already sent a quote for this job request') {
+      alert('Bạn đã gửi báo giá cho yêu cầu công việc này.');
+    }
+  }
 };
 
 export const formPostAPI = async (

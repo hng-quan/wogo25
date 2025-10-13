@@ -12,14 +12,13 @@ import { Dimensions, FlatList, Image, ScrollView, StyleSheet, TouchableOpacity, 
 import { Modal, Portal, Text, TextInput } from 'react-native-paper';
 
 export default function SendQuotePage() {
-  const {job_detail} = useLocalSearchParams();
+  const {job_detail, workerLatitude, workerLongitude, currentTab, prevPath} = useLocalSearchParams();
   const {role} = useRole();
   const [isOpenModal, setIsOpenModal] = React.useState(false);
 
   let detailData: any = {};
   try {
     detailData = job_detail ? JSON.parse(job_detail as string) : {};
-    // console.log('Parsed job_detail:', detailData);
   } catch (e) {
     console.log('❌ Lỗi parse job_detail:', e);
   }
@@ -29,7 +28,21 @@ export default function SendQuotePage() {
   const files = detailData?.files || [];
   const mainImage = files?.[0]?.fileUrl || 'https://placehold.co/400x200?text=No+Image';
 
-  const goBack = () => router.push('/(tabs-worker)/find-job');
+  const goBackFindJob = () => router.push('/(tabs-worker)/find-job');
+  const goBackActivity = () => router.push({
+    pathname: '/(tabs-worker)/activity',
+    params: {
+      currentTab: currentTab || 'ALL',
+    }
+  });
+
+  const goBack = () => {
+    if (prevPath === 'worker-activity') {
+      goBackActivity();
+    }else {
+      goBackFindJob();
+    }
+  }
 
   return (
     <View style={styles.container}>
@@ -115,6 +128,8 @@ export default function SendQuotePage() {
         jobRequestCode={detailData?.jobRequestCode}
         onClose={() => setIsOpenModal(false)}
         priceSuggestion={{estimatedPriceLower: detailData?.estimatedPriceLower || 0, estimatedPriceHigher: detailData?.estimatedPriceHigher || 0}}
+        workerLatitude={workerLatitude ? Number(workerLatitude) : undefined}
+        workerLongitude={workerLongitude ? Number(workerLongitude) : undefined}
       />
     </View>
   );
@@ -126,21 +141,29 @@ const SendQuoteModal = ({
   onClose,
   priceSuggestion,
   jobRequestCode,
+  workerLatitude,
+  workerLongitude,
 }: {
   isOpen: boolean;
   onClose: () => void;
   priceSuggestion: any;
   jobRequestCode: string;
+  workerLatitude?: number;
+  workerLongitude?: number;
 }) => {
   const [price, setPrice] = React.useState(priceSuggestion?.estimatedPriceLower || 0);
 
   const sendQuote = async () => {
+    if (workerLatitude === undefined || workerLongitude === undefined) {
+      console.log('❌ workerLatitude hoặc workerLongitude không xác định');
+      return;
+    }
     try {
       const params = {
         jobRequestCode: jobRequestCode,
         quotedPrice: price,
-        latitude: '10.7705',
-        longitude: '106.7503',
+        latitude: workerLatitude,
+        longitude: workerLongitude,
       };
       const res = await jsonPostAPI('/bookings/send-quote', params);
       if (res) {

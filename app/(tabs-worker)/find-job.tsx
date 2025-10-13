@@ -232,6 +232,8 @@ export default function FindJob() {
                     pathname: '/booking/send-quote',
                     params: {
                       job_detail: JSON.stringify(item),
+                      workerLatitude: workerCoords?.latitude,
+                      workerLongitude: workerCoords?.longitude,
                     },
                   });
                 }}>
@@ -241,7 +243,7 @@ export default function FindJob() {
                     <Image source={{uri: item.files[0].fileUrl}} style={styles.jobImage} />
                   ) : (
                     <View style={[styles.jobImage, styles.noImage]}>
-                      <MaterialCommunityIcons name='image-off' size={52} color='#999' />
+                      <MaterialCommunityIcons name='image-area' size={52} color='#999' />
                     </View>
                   )}
 
@@ -404,6 +406,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#222',
+    marginTop: 4
   },
   jobDate: {
     position: 'absolute',
