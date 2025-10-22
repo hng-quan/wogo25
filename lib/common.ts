@@ -4,3 +4,15 @@ export const Colors = {
     background: '#F2F2F2',
     card: '#FFFFFF',
 };
+
+export const BOOKING_STATUS_MAP = {
+  COMING: 'Thợ đang đến',
+  ARRIVED: 'Thợ đã đến nhà',
+  NEGOTIATING: 'Đang thỏa thuận',
+  WORKING: 'Đang làm việc',
+  PAYING: 'Thanh toán',
+  PAID: 'Đã thanh toán',
+  COMPLETED: 'Hoàn tất',
+  CANCELLED: 'Đã hủy',
+  PENDING: 'Đang chờ xử lý',
+};

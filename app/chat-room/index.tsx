@@ -117,8 +117,10 @@ export default function ChatRoom() {
     if (user && role) {
       if (role === ROLE.CUSTOMER) {
         setRoomCode(`job:${jobRequestCode}:worker:${workerId}:user:${user.id}`);
+        console.log('Room code:', `job:${jobRequestCode}:worker:${workerId}:user:${user.id}`);
       } else if (role === ROLE.WORKER) {
         setRoomCode(`job:${jobRequestCode}:worker:${user.id}:user:${userId}`);
+        console.log('Room code:', `job:${jobRequestCode}:worker:${user.id}:user:${userId}`);
       }
     }
   }, [userId, workerId, role, user, jobRequestCode]);

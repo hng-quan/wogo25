@@ -86,6 +86,7 @@ export const AvatarWrapper = ({
           style={{backgroundColor: `${role === ROLE.WORKER ? '#1565C0' : '#4CAF50'}`}}
           size={size}
           icon='account'
+          color='#fff'
         />
       </View>
     );
