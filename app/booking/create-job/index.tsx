@@ -37,7 +37,7 @@ export default function Index() {
   const [showPicker, setShowPicker] = useState(false);
   const [coords, setCoords] = useState<{latitude: number; longitude: number} | null>(null);
   const [mapVisible, setMapVisible] = useState(false);
-  const [priceSuggestion, setPriceSuggestion] = useState<number | null>(null);
+  const [priceSuggestion, setPriceSuggestion] = useState<any>(null);
   const [duration, setDuration] = useState<number | null>(null);
   const [imageList, setImageList] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -72,7 +72,12 @@ export default function Index() {
     if (!parentId) return;
     const onSuccess = (res: any) => {
       const priceAround = res.result?.estimatedPriceLower + ' - ' + res.result?.estimatedPriceHigher;
-      setPriceSuggestion(priceAround as any);
+      setPriceSuggestion({
+        estimatedPriceLower: res.result?.estimatedPriceLower,
+        estimatedPriceHigher: res.result?.estimatedPriceHigher,
+        estimatedDurationMinutes: res.result?.estimatedDurationMinutes,
+        priceAround: priceAround,
+      });
       setDuration(res.result?.estimatedDurationMinutes);
     };
     await jsonGettAPI('/services/suggestions/' + serviceId, {}, onSuccess);
@@ -93,6 +98,7 @@ export default function Index() {
 
     if (selectedDate > maxDate) {
       alert('Chỉ được chọn trong vòng 7 ngày!');
+      setShowPicker(false);
       return;
     }
     setDate(selectedDate);
@@ -166,6 +172,9 @@ export default function Index() {
       formData.append('bookingDate', bookingDate);
       formData.append('latitudeUser', String(coords?.latitude || ''));
       formData.append('longitudeUser', String(coords?.longitude || ''));
+      formData.append('estimatedPriceLower', priceSuggestion?.estimatedPriceLower ?? null);
+      formData.append('estimatedPriceHigher', priceSuggestion?.estimatedPriceHigher ?? null);
+      formData.append('estimatedDurationMinutes', priceSuggestion?.estimatedDurationMinutes ?? null);
 
       // ✅ Thêm danh sách file ảnh/video
       imageList.forEach((file, index) => {
@@ -295,7 +304,7 @@ export default function Index() {
           <View style={styles.priceContainer}>
             <View>
               <Text style={styles.priceLabel}>Giá tham khảo</Text>
-              <Text style={styles.priceRange}>{priceSuggestion ? priceSuggestion + ' đ' : 'Chưa xác định'}</Text>
+              <Text style={styles.priceRange}>{priceSuggestion ? priceSuggestion.priceAround + ' đ' : 'Chưa xác định'}</Text>
             </View>
             <View>
               <Text style={styles.priceLabel}>Thời gian xử lý</Text>
