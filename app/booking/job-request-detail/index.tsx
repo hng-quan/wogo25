@@ -18,7 +18,6 @@ import { Modal, Portal, Text } from 'react-native-paper';
 
 export default function Index() {
   const {currentTab, jobRequestCode, latitude, longitude, serviceId} = useLocalSearchParams();
-  console.log('jobRequestCode param:', jobRequestCode);
   const {connected, subscribe} = useSocket();
   const [region, setRegion] = useState({
     latitude: 0,

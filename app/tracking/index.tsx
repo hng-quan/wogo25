@@ -103,6 +103,7 @@ export default function Tracking() {
   const fetchBookingDetail = async () => {
     try {
       const res = await jsonGettAPI('/bookings/getByCode/' + jobRequestCode);
+      console.log('Fetched booking detail:', res);
       if (res?.result) {
         setBookingDetail(res.result);
         setBookingStatus(res.result.bookingStatus);
@@ -139,7 +140,7 @@ export default function Tracking() {
       );
       const encoded = res.data.routes[0].geometry;
       const decoded = polyline.decode(encoded);
-      console.log('✅ Lấy route thành công:', decoded);
+      console.log('✅ User nhận được vị trí route mới');
       const coords = decoded.map(([lat, lng]) => ({
         latitude: lat,
         longitude: lng,
@@ -206,12 +207,8 @@ export default function Tracking() {
             })
             .start();
         }
-
-        // Cập nhật workerLocation state và fetch route
-        console.log('Nhận được tọa độ mới của worker 211:', newCoordinate);
         setWorkerLocation(newCoordinate);
         if (customerLocation && newCoordinate.latitude !== 0 && newCoordinate.longitude !== 0) {
-          console.log('🗺️ Cập nhật tuyến đường mới giữa worker và customer');
           fetchRoute(newCoordinate, customerLocation);
         }
         
@@ -235,26 +232,21 @@ export default function Tracking() {
     console.log('🔌 Lắng nghe trạng thái booking:', topic);
     
     const sub = subscribe(topic, (msg: any) => {
-      try {
-        const newStatus = msg.body.trim();
-        console.log('📨 Nhận được cập nhật trạng thái:', newStatus);
-        
-        if (BOOKING_STATUS_MAP[newStatus as keyof typeof BOOKING_STATUS_MAP]) {
-          setBookingDetail((prev: any) => {
-            if (!prev) return prev;
-            return {
-              ...prev,
-              bookingStatus: newStatus
-            };
-          });
-          
-          console.log('✅ Đã cập nhật trạng thái booking thành:', newStatus);
-        } else {
-          console.warn('⚠️ Trạng thái không hợp lệ:', newStatus);
-        }
-      } catch (error) {
-        console.error('❌ Lỗi xử lý cập nhật trạng thái:', error);
-      }
+      let raw = msg.body;
+    let parsedStatus = '';
+
+    try {
+      // Nếu msg.body là JSON string (vd: `"COMING"`)
+      parsedStatus = JSON.parse(raw);
+    } catch {
+      // Nếu không phải JSON, giữ nguyên giá trị
+      parsedStatus = raw;
+    }
+
+    const normalizedStatus = parsedStatus.trim().toUpperCase();
+    console.log('📨 Nhận được cập nhật trạng thái:', normalizedStatus);
+
+    setBookingStatus(normalizedStatus);
     });
     
     return () => {
@@ -284,6 +276,10 @@ export default function Tracking() {
       },
     });
   };
+
+  useEffect(() => {
+    console.log('Booking status updated:', bookingStatus);
+  }, [bookingStatus])
 
   /** -------------------------------
    *  Render giao diện
@@ -373,7 +369,7 @@ export default function Tracking() {
 
             {/* Tuyến đường */}
             {routeCoords.length > 0 && (
-              <Polyline coordinates={routeCoords} strokeColor={Colors.secondary} strokeWidth={4} />
+              <Polyline coordinates={routeCoords} strokeColor={Colors.primary} strokeWidth={8} />
             )}
           </MapView>
         )}
@@ -404,7 +400,7 @@ export default function Tracking() {
               <View style={styles.timelineContainer}>
                 {processSteps.map((status, index) => {
                   const label = BOOKING_STATUS_MAP[status as keyof typeof BOOKING_STATUS_MAP];
-                  const currentStatus = bookingDetail?.bookingStatus || bookingStatus;
+                  const currentStatus =  bookingStatus;
                   const isActive = status === currentStatus;
                   const isCompleted = processSteps.indexOf(currentStatus) > index;
 

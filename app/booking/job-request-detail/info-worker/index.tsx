@@ -5,7 +5,7 @@ import { jsonPostAPI } from '@/lib/apiService';
 import { formatPrice } from '@/lib/utils';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, View } from 'react-native';
 import { Avatar, Divider, Text } from 'react-native-paper';
 
 type Review = {
@@ -18,7 +18,6 @@ type Review = {
 
 export default function OrderDetailScreen() {
   const {info_worker, jobRequestCode, currentTab, latitude, longitude, serviceId} = useLocalSearchParams();
-  // console.log('info_worker param:', info_worker);
   let workerData: any = {};
   try {
     workerData = info_worker ? JSON.parse(info_worker as string) : {};
@@ -57,14 +56,33 @@ export default function OrderDetailScreen() {
   ];
 
   const handlePlaceOrder = async () => {
-    const params = {
+    try {
+      const params = {
       jobRequestCode: jobRequestCode as string,
       workerId: workerData?.worker?.id as string,
       quotedPrice: quotedPrice as string,
     };
-    // console.log('params place order worker:', params);
-    const res = await jsonPostAPI('/bookings/place-job', params);
+    console.log('ID thợ đặt:', workerData?.worker?.id);
+    const res = await jsonPostAPI('/bookings/place-job', params, () => {
+      Alert.alert('Thành công', 'Đặt thợ thành công!', [
+        {
+          text: 'Ở lại', onPress: () => {},
+        },
+        {
+          text: 'Xem lịch sử', onPress: () => {
+            router.push({
+              pathname: '/(tabs-customer)/activity'
+            })
+          }
+        }
+      ]);
+    }, () => {}, () => {
+      Alert.alert('Lỗi', 'Đặt thợ thất bại. Vui lòng thử lại sau.');
+    });
     console.log('response place order worker:', res);
+    } catch (error) {
+      console.error('Error placing order:', error);
+    }
   };
 
   const goBack = () => {

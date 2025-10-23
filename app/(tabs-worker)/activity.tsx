@@ -1,4 +1,5 @@
 import Tabs from '@/components/ui/Tabs';
+import { ensureLocationEnabled } from '@/hooks/useLocation';
 import { JobRequest } from '@/interfaces/interfaces';
 import { jsonGettAPI } from '@/lib/apiService';
 import { displayDateVN, formatPrice } from '@/lib/utils';
@@ -24,6 +25,7 @@ export default function ActivityScreen() {
   const {currentTab} = useLocalSearchParams();
   const [myJobsRequest, setMyJobsRequest] = React.useState<JobRequest[]>([]);
   const [activeTab, setActiveTab] = useState(currentTab || STATUS.ALL);
+  
 
   useEffect(() => {
     const fetchMyJobsRequest = async () => {
@@ -41,7 +43,7 @@ export default function ActivityScreen() {
     </View>
   );
 
-  const navigateToScreen = (item: any) => {
+  const navigateToScreen = async (item: any) => {
     if (item?.job?.status === STATUS.PENDING) {
       router.push({
         pathname: '/booking/send-quote',
@@ -52,10 +54,13 @@ export default function ActivityScreen() {
         },
       });
     } else if (item?.job?.status === STATUS.ACCEPTED) {
+      const enable = await ensureLocationEnabled();
+      if (!enable) return;
       router.push({
         pathname: '/workflow',
         params: {
           currentTab: activeTab,
+          jobRequestCode: item.job.jobRequestCode,
         }
       })
     }

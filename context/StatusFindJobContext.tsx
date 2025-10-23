@@ -4,7 +4,7 @@ import { IMessage, StompSubscription } from '@stomp/stompjs';
 import { router } from 'expo-router';
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import Toast from 'react-native-toast-message';
-import { useRole } from './RoleContext';
+import { ROLE, useRole } from './RoleContext';
 import { useSocket } from './SocketContext';
 
 type Service = {id: number; serviceName: string};
@@ -28,25 +28,14 @@ export const StatusFindJobProvider: React.FC<{children: React.ReactNode}> = ({ch
   const [jobTrigger, setJobTrigger] = useState(0);
   const subscriptionsRef = useRef<StompSubscription[]>([]);
   const showAlertRef = useRef(showAlert);
-  const {role} = useRole();
+  const {role, user} = useRole();
+  console.log('user trong StatusFindJobContext:', user);
 
   const toggleAlert = () => setShowAlert(prev => !prev);
 
   useEffect(() => {
     showAlertRef.current = showAlert;
-    // console.log('showAlert =:', showAlert);
   }, [showAlert]);
-
-  useEffect(() => {
-    console.log('role', role);
-  }, [role]);
-  //   useEffect(() => {
-  //     console.log('connected =:', connected);
-  //   }, [connected]);
-
-  //   useEffect(() => {
-  //     console.log('finding =:', finding);
-  //   }, [finding]);
 
   const toggleFinding = async () => {
     setFinding(prev => !prev);
@@ -97,7 +86,7 @@ export const StatusFindJobProvider: React.FC<{children: React.ReactNode}> = ({ch
                 type: 'job',
                 text1: 'Có job mới!',
                 text2: `Khách vừa tạo job thuộc dịch vụ ${s.serviceName}`,
-                autoHide: true,
+                autoHide: false,
                 visibilityTime: 3000,
                 onPress: () => {
                   router.push('/find-job');
@@ -107,6 +96,45 @@ export const StatusFindJobProvider: React.FC<{children: React.ReactNode}> = ({ch
           });
           subscriptionsRef.current.push(sub!);
         });
+
+        // Subscribe place-job events for this worker
+        if (user?.id && role === ROLE.WORKER) {
+          console.log('🎯 Subscribe place-job cho worker ID:', user.id);
+          // const placeJobSub = subscribe(`/topic/place-job/${user.id}`, (msg: IMessage) => {
+          const placeJobSub = subscribe(`/topic/place-job/6`, (msg: IMessage) => {
+            const booking = JSON.parse(msg.body);
+            console.log('🎉 Được chọn cho job:', booking);
+            console.log('📋 Booking object structure:', {
+              jobRequestCode: booking.jobRequestCode,
+              jobRequest: booking.jobRequest,
+              keys: Object.keys(booking)
+            });
+
+            // Trigger job list refresh
+            setJobTrigger(prev => (prev >= 1_000_000 ? 1 : prev + 1));
+
+            // if (showAlertRef.current) {
+              Toast.show({
+                type: 'job',
+                text1: 'Chúc mừng! 🎉',
+                text2: `Bạn đã được chọn cho công việc #${booking.bookingCode}`,
+                autoHide: false,
+                visibilityTime: 3000,
+                onPress: () => {
+                  // Navigate to workflow or activity screen
+                  router.push({
+                    pathname: '/workflow',
+                    params: {
+                      jobRequestCode: booking.bookingCode,
+                      currentTab: 'ALL'
+                    }
+                  });
+                },
+              });
+            // }
+          });
+          subscriptionsRef.current.push(placeJobSub!);
+        }
       } catch (err) {
         console.error('❌ Lỗi khi lấy dịch vụ:', err);
       }

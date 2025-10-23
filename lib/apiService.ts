@@ -377,3 +377,43 @@ export const formPutAPI = async (
     console.log(`Error call api ${endpoint}:`, errorData);
   }
 };
+
+
+export const jsonPutAPI = async (
+  endpoint: any,
+  formData = {},
+  onSuccess?: (data: any) => void,
+  onLoading?: (loading: boolean) => void,
+  onError?: (error: any) => void,
+  isShowToast?: boolean,
+): Promise<any | undefined> => {
+  try {
+    onLoading && onLoading(true);
+
+    const response = await apiClient.put(endpoint, formData);
+    const data = response.data;
+
+    // Kiểm tra kết quả
+    if (data.result) {
+      onSuccess?.(data);
+    } else {
+      isShowToast &&
+        Toast.show({
+          type: 'error',
+          text1: data.message,
+        });
+      onLoading && onLoading(false);
+      onError?.(data);
+    }
+    return data;
+  } catch (error: any) {
+    onLoading?.(false);
+
+    // Xử lý lỗi
+    const errorData = error.response?.data || error.message;
+    onError?.(errorData);
+    _handleError(error);
+
+    console.log(`Error call api ${endpoint}:`, errorData);
+  }
+};

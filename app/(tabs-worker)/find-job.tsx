@@ -51,10 +51,6 @@ export default function FindJob() {
     return !nearZero;
   };
 
-  useEffect(() => {
-    console.log('workerCoords changed', workerCoords);
-  }, [workerCoords])
-
   useFocusEffect(
     React.useCallback(() => {
       setShowAlert(false);
@@ -88,7 +84,6 @@ export default function FindJob() {
         };
         const res = await jsonPostAPI('/addresses/save-or-update', params);
         setIsSavedAddress(true);
-        console.log('save address res', res);
       } catch (error) {
         console.log('save address error', error);
       } finally {

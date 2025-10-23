@@ -159,7 +159,7 @@ export default function HomeScreen() {
         visible={isOpenModal}
         onClose={() => setIsOpenModal(false)}
         onSelect={service => {
-          console.log('Selected service:', service);
+          // console.log('Selected service:', service);
           router.push({
             pathname: '/booking/create-job',
             params: {
