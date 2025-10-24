@@ -98,10 +98,10 @@ export const StatusFindJobProvider: React.FC<{children: React.ReactNode}> = ({ch
         });
 
         // Subscribe place-job events for this worker
-        if (user?.id && role === ROLE.WORKER) {
-          console.log('🎯 Subscribe place-job cho worker ID:', user.id);
+        if (user?.workerId && role === ROLE.WORKER) {
+          console.log('🎯 Subscribe place-job cho worker ID:', user.workerId);
           // const placeJobSub = subscribe(`/topic/place-job/${user.id}`, (msg: IMessage) => {
-          const placeJobSub = subscribe(`/topic/place-job/6`, (msg: IMessage) => {
+          const placeJobSub = subscribe(`/topic/place-job/${user.workerId}`, (msg: IMessage) => {
             const booking = JSON.parse(msg.body);
             console.log('🎉 Được chọn cho job:', booking);
             console.log('📋 Booking object structure:', {

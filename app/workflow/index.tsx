@@ -11,7 +11,18 @@ import axios from 'axios';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
-import { Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import MapView, { AnimatedRegion, Marker, Polyline } from 'react-native-maps';
 
 const ORS_API_KEY = process.env.EXPO_PUBLIC_OPENROUTE_SERVICE_API_KEY || '';
@@ -20,24 +31,21 @@ const processSteps = ['PENDING', 'COMING', 'ARRIVED', 'NEGOTIATING', 'WORKING', 
 // Tính khoảng cách giữa 2 điểm (mét)
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
   const R = 6371000; // bán kính trái đất (mét)
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
-
-
 
 export default function WorkFlow() {
   const {currentTab, jobRequestCode} = useLocalSearchParams();
   console.log('jobRequestCode param:', jobRequestCode);
   const {subscribe, connected} = useSocket();
   const mapRef = useRef<MapView>(null);
-  
+
   const [bookingDetail, setBookingDetail] = React.useState<any>(null);
   const [bookingStatus, setBookingStatus] = React.useState<string>('');
   const [jobDetail, setJobDetail] = React.useState<any>(null);
@@ -46,12 +54,12 @@ export default function WorkFlow() {
   const [myLocation, setMyLocation] = React.useState<{latitude: number; longitude: number} | null>(null);
   const [loadingMyLocation, setLoadingMyLocation] = React.useState<boolean>(false);
   const [routeCoords, setRouteCoords] = React.useState<{latitude: number; longitude: number}[]>([]);
-  
+
   // Location tracking states
   const [isTrackingLocation, setIsTrackingLocation] = React.useState<boolean>(false);
   const lastSentLocationRef = useRef<{latitude: number; longitude: number} | null>(null);
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
-  
+
   // Price negotiation states
   const [showPriceModal, setShowPriceModal] = React.useState<boolean>(false);
   const [finalPrice, setFinalPrice] = React.useState<string>('');
@@ -60,13 +68,13 @@ export default function WorkFlow() {
   const [isSubmittingPrice, setIsSubmittingPrice] = React.useState<boolean>(false);
 
   const workerLocationRef = useRef(
-      new AnimatedRegion({
-        latitude: 0,
-        longitude: 0,
-        latitudeDelta: 0,
-        longitudeDelta: 0,
-      }),
-    ).current;
+    new AnimatedRegion({
+      latitude: 0,
+      longitude: 0,
+      latitudeDelta: 0,
+      longitudeDelta: 0,
+    }),
+  ).current;
 
   const fetchBookingDetail = async () => {
     try {
@@ -74,7 +82,7 @@ export default function WorkFlow() {
       if (res?.result) {
         setBookingDetail(res.result);
         setBookingStatus(res.result.bookingStatus);
-        
+
         // Reset price confirmation flag khi status thay đổi
         if (res.result.bookingStatus !== 'NEGOTIATING') {
           setIsPriceConfirmed(false);
@@ -86,49 +94,49 @@ export default function WorkFlow() {
   };
 
   const fetchMyLocation = async () => {
-      try {
-        setLoadingMyLocation(true);
-        const res = await jsonGettAPI('/bookings/get-location/' + jobRequestCode);
-        if (res?.result && res.result.latitude && res.result.longitude) {
-          const location = {
-            latitude: res.result.latitude,
-            longitude: res.result.longitude,
-          };
-          setMyLocation(location);
-          
-          // Cập nhật vị trí khởi tạo của worker marker
-          workerLocationRef.setValue({
-            latitude: res.result.latitude,
-            longitude: res.result.longitude,
-            latitudeDelta: 0,
-            longitudeDelta: 0,
-          });
-          
-          console.log('📍 Đã lấy vị trí worker từ API:', location);
-        } else {
-          console.warn('⚠️ API không trả về vị trí worker hợp lệ');
-          setMyLocation(null);
-        }
-      } catch (error) {
-        console.error('❌ Lỗi khi lấy vị trí worker:', error);
+    try {
+      setLoadingMyLocation(true);
+      const res = await jsonGettAPI('/bookings/get-location/' + jobRequestCode);
+      if (res?.result && res.result.latitude && res.result.longitude) {
+        const location = {
+          latitude: res.result.latitude,
+          longitude: res.result.longitude,
+        };
+        setMyLocation(location);
+
+        // Cập nhật vị trí khởi tạo của worker marker
+        workerLocationRef.setValue({
+          latitude: res.result.latitude,
+          longitude: res.result.longitude,
+          latitudeDelta: 0,
+          longitudeDelta: 0,
+        });
+
+        console.log('📍 Đã lấy vị trí worker từ API:', location);
+      } else {
+        console.warn('⚠️ API không trả về vị trí worker hợp lệ');
         setMyLocation(null);
-      } finally {
-        setLoadingMyLocation(false);
       }
-    };
+    } catch (error) {
+      console.error('❌ Lỗi khi lấy vị trí worker:', error);
+      setMyLocation(null);
+    } finally {
+      setLoadingMyLocation(false);
+    }
+  };
 
   // Gửi vị trí lên server
   const sendLocationToServer = async (latitude: number, longitude: number) => {
     try {
-      console.log('📤 Gửi vị trí lên server:', { latitude, longitude });
+      console.log('📤 Gửi vị trí lên server:', {latitude, longitude});
       const response = await jsonPostAPI(`/bookings/send-location/${jobRequestCode}`, {
         latitude: latitude.toString(),
         longitude: longitude.toString(),
       });
-      
+
       if (response?.code === 1000) {
         console.log('✅ Gửi vị trí thành công');
-        lastSentLocationRef.current = { latitude, longitude };
+        lastSentLocationRef.current = {latitude, longitude};
       } else {
         console.error('❌ Lỗi gửi vị trí:', response);
       }
@@ -141,25 +149,25 @@ export default function WorkFlow() {
   const startLocationTracking = async () => {
     try {
       console.log('🌐 Bắt đầu theo dõi vị trí GPS...');
-      
+
       // Kiểm tra quyền location
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      const {status} = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         console.error('❌ Không có quyền truy cập location');
         return;
       }
       setIsTrackingLocation(true);
-      
+
       // Lấy vị trí hiện tại đầu tiên
       const currentLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
       });
-      
-      const { latitude, longitude } = currentLocation.coords;
-      console.log('📍 Vị trí hiện tại:', { latitude, longitude });
-      
+
+      const {latitude, longitude} = currentLocation.coords;
+      console.log('📍 Vị trí hiện tại:', {latitude, longitude});
+
       // Cập nhật UI và gửi vị trí đầu tiên
-      const newLocation = { latitude, longitude };
+      const newLocation = {latitude, longitude};
       setMyLocation(newLocation);
       workerLocationRef.setValue({
         latitude,
@@ -167,9 +175,9 @@ export default function WorkFlow() {
         latitudeDelta: 0,
         longitudeDelta: 0,
       });
-      
+
       await sendLocationToServer(latitude, longitude);
-      
+
       // Bắt đầu watch location
       const subscription = await Location.watchPositionAsync(
         {
@@ -177,21 +185,21 @@ export default function WorkFlow() {
           timeInterval: 5000, // Kiểm tra mỗi 5 giây
           distanceInterval: 1, // Cập nhật khi di chuyển ít nhất 1 mét
         },
-        (location) => {
-          const { latitude: newLat, longitude: newLon } = location.coords;
-          console.log('📱 GPS cập nhật vị trí:', { latitude: newLat, longitude: newLon });
-          
+        location => {
+          const {latitude: newLat, longitude: newLon} = location.coords;
+          console.log('📱 GPS cập nhật vị trí:', {latitude: newLat, longitude: newLon});
+
           // Kiểm tra khoảng cách so với lần gửi cuối
           if (lastSentLocationRef.current) {
             const distance = calculateDistance(
               lastSentLocationRef.current.latitude,
               lastSentLocationRef.current.longitude,
               newLat,
-              newLon
+              newLon,
             );
-            
+
             // console.log(`📏 Khoảng cách di chuyển: ${distance.toFixed(2)}m`);
-            
+
             // Chỉ gửi khi di chuyển >= 10m
             if (distance >= 10) {
               console.log('🚚 Di chuyển đủ 10m, gửi vị trí mới');
@@ -201,31 +209,32 @@ export default function WorkFlow() {
             // Lần đầu tiên, gửi luôn
             sendLocationToServer(newLat, newLon);
           }
-          
+
           // Cập nhật UI marker
-          const newLocation = { latitude: newLat, longitude: newLon };
+          const newLocation = {latitude: newLat, longitude: newLon};
           setMyLocation(newLocation);
-          
+
           // Animate marker
-          (workerLocationRef as any).timing({
-            latitude: newLat,
-            longitude: newLon,
-            latitudeDelta: 0,
-            longitudeDelta: 0,
-            duration: 500,
-            useNativeDriver: false,
-          }).start();
-          
+          (workerLocationRef as any)
+            .timing({
+              latitude: newLat,
+              longitude: newLon,
+              latitudeDelta: 0,
+              longitudeDelta: 0,
+              duration: 500,
+              useNativeDriver: false,
+            })
+            .start();
+
           // Cập nhật route nếu có customer location
           if (customerLocation) {
             fetchRoute(newLocation, customerLocation);
           }
-        }
+        },
       );
-      
+
       locationSubscriptionRef.current = subscription;
       console.log('✅ Đã khởi tạo location tracking');
-      
     } catch (error) {
       console.error('❌ Lỗi khởi tạo location tracking:', error);
       setIsTrackingLocation(false);
@@ -235,12 +244,12 @@ export default function WorkFlow() {
   // Dừng location tracking
   const stopLocationTracking = () => {
     console.log('🛑 Dừng theo dõi vị trí GPS');
-    
+
     if (locationSubscriptionRef.current) {
       locationSubscriptionRef.current.remove();
       locationSubscriptionRef.current = null;
     }
-    
+
     setIsTrackingLocation(false);
     lastSentLocationRef.current = null;
   };
@@ -284,20 +293,19 @@ export default function WorkFlow() {
     fetchMyLocation();
   }, [jobRequestCode]);
 
-
   // Vẽ tuyến khi có đủ dữ liệu vị trí hợp lệ
   useEffect(() => {
     if (!customerLocation || !myLocation) {
       console.log('⏳ Chưa có đủ dữ liệu vị trí để vẽ route và fit map');
       return;
     }
-    
+
     // Kiểm tra tọa độ có hợp lệ không
     if (myLocation.latitude === 0 && myLocation.longitude === 0) {
       console.log('⚠️ Vị trí worker không hợp lệ (0,0), bỏ qua vẽ route');
       return;
     }
-    
+
     fetchRoute(myLocation, customerLocation);
 
     // Fit map vùng nhìn
@@ -312,10 +320,10 @@ export default function WorkFlow() {
   // Lắng nghe cập nhật trạng thái booking
   useEffect(() => {
     if (!connected || !bookingDetail?.bookingCode) return;
-    
+
     const topic = `/topic/bookingStatus/${bookingDetail.bookingCode}`;
     console.log('🔌 [Worker] Lắng nghe trạng thái booking:', topic);
-    
+
     const sub = subscribe(topic, (msg: any) => {
       try {
         const newStatus = msg.body.trim();
@@ -325,7 +333,7 @@ export default function WorkFlow() {
         console.error('❌ [Worker] Lỗi xử lý cập nhật trạng thái:', error);
       }
     });
-    
+
     return () => {
       console.log('🔌 [Worker] Ngừng lắng nghe trạng thái booking');
       sub?.unsubscribe();
@@ -341,24 +349,24 @@ export default function WorkFlow() {
   }, []);
 
   const fetchJobDetail = async () => {
-      try {
-        const res = await jsonGettAPI('/jobs/getByJobRequestCode/' + jobRequestCode);
-        if (res?.result) {
-          const job = res.result;
-          setJobDetail(job);
-          setCustomer(job?.user)
-  
-          if (job.latitude && job.longitude) {
-            setCustomerLocation({
-              latitude: job.latitude,
-              longitude: job.longitude,
-            });
-          }
+    try {
+      const res = await jsonGettAPI('/jobs/getByJobRequestCode/' + jobRequestCode);
+      if (res?.result) {
+        const job = res.result;
+        setJobDetail(job);
+        setCustomer(job?.user);
+
+        if (job.latitude && job.longitude) {
+          setCustomerLocation({
+            latitude: job.latitude,
+            longitude: job.longitude,
+          });
         }
-      } catch (error) {
-        console.error('Error fetching job request:', error);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching job request:', error);
+    }
+  };
 
   const goBack = () => {
     router.push({
@@ -370,17 +378,16 @@ export default function WorkFlow() {
   };
 
   const handleChat = () => {
-      router.push({
-        pathname: '/chat-room',
-        params: {
-          jobRequestCode: jobRequestCode,
-          prevPathname: '/workflow',
-          currentTab: currentTab,
-          userId: customer?.id || '',
-        },
-      });
-    };
-
+    router.push({
+      pathname: '/chat-room',
+      params: {
+        jobRequestCode: jobRequestCode,
+        prevPathname: '/workflow',
+        currentTab: currentTab,
+        userId: customer?.id || '',
+      },
+    });
+  };
 
   // Lấy step tiếp theo trong quy trình
   const getNextStep = (currentStatus: string) => {
@@ -396,11 +403,11 @@ export default function WorkFlow() {
     try {
       const payload = {
         bookingCode: bookingDetail?.bookingCode,
-        status: newStatus
+        status: newStatus,
       };
-      
+
       console.log('🔄 Cập nhật trạng thái booking:', payload);
-      
+
       const response = await jsonPutAPI('/bookings/updateStatus', payload);
       if (response?.code === 1000) {
         console.log('✅ Cập nhật trạng thái thành công');
@@ -425,11 +432,11 @@ export default function WorkFlow() {
       const payload = {
         bookingCode: bookingDetail?.bookingCode,
         finalPrice: parseFloat(finalPrice),
-        notes: notes.trim()
+        notes: notes.trim(),
       };
-      
+
       console.log('💰 Gửi xác nhận giá:', payload);
-      
+
       const response = await jsonPostAPI('/bookings/confirm-price', payload);
       if (response?.code === 1000) {
         console.log('✅ Xác nhận giá thành công');
@@ -460,17 +467,17 @@ export default function WorkFlow() {
   const handleNextStep = () => {
     const currentStatus = bookingDetail?.bookingStatus || bookingStatus;
     const nextStep = getNextStep(currentStatus);
-    
+
     if (nextStep) {
       const stepName = BOOKING_STATUS_MAP[nextStep as keyof typeof BOOKING_STATUS_MAP];
       console.log(`🚀 Chuyển sang bước tiếp theo: ${stepName}`);
-      
+
       // Bắt đầu location tracking khi chuyển từ PENDING sang COMING
       if (currentStatus === 'PENDING' && nextStep === 'COMING') {
         // console.log('🌐 Bắt đầu theo dõi vị trí GPS khi di chuyển');
         startLocationTracking();
       }
-      
+
       console.log('Current Status:', currentStatus);
       console.log('Next Step:', nextStep);
       // Dừng location tracking khi hoàn thành công việc
@@ -478,7 +485,7 @@ export default function WorkFlow() {
         console.log('🛑 Dừng theo dõi vị trí GPS khi hoàn thành');
         stopLocationTracking();
       }
-      
+
       updateBookingStatus(nextStep);
     } else {
       console.log('✅ Đã hoàn thành tất cả các bước');
@@ -488,27 +495,25 @@ export default function WorkFlow() {
   return (
     <View style={styles.container}>
       <Appbar title='Tiến trình làm việc' onBackPress={goBack} />
-      
+
       {/* MAP - Chỉ hiển thị khi COMING */}
-      {(bookingDetail?.bookingStatus === 'COMING' && bookingStatus !== 'COMING') ? (
+      { ['COMING'].includes(bookingDetail?.bookingStatus) && ['COMING'].includes(bookingStatus) ? (
         <View style={{flex: 1}}>
           {loadingMyLocation && (
             <View style={styles.loadingContainer}>
               <Text style={styles.loadingText}>Đang tải vị trí...</Text>
             </View>
           )}
-          
+
           {/* Overlay thông báo khi không có vị trí */}
           {!loadingMyLocation && !myLocation && customerLocation && (
             <View style={styles.noLocationOverlay}>
               <View style={styles.noLocationCard}>
-                <MaterialIcons name="location-off" size={32} color={Colors.primary} />
+                <MaterialIcons name='location-off' size={32} color={Colors.primary} />
                 <Text style={styles.noLocationTitle}>Không tìm thấy vị trí của bạn</Text>
-                <Text style={styles.noLocationText}>
-                  Vui lòng cập nhật vị trí để hiển thị bản đồ.
-                </Text>
+                <Text style={styles.noLocationText}>Vui lòng cập nhật vị trí để hiển thị bản đồ.</Text>
                 <TouchableOpacity style={styles.retryButton} onPress={fetchMyLocation}>
-                  <MaterialIcons name="refresh" size={16} color="#fff" />
+                  <MaterialIcons name='refresh' size={16} color='#fff' />
                   <Text style={styles.retryButtonText}>Thử lại</Text>
                 </TouchableOpacity>
               </View>
@@ -579,19 +584,14 @@ export default function WorkFlow() {
       ) : null}
 
       {/* JOB INFO - Layout khác nhau cho PENDING, NEGOTIATING và COMING */}
-      {(bookingDetail?.bookingStatus === 'PENDING' || bookingStatus === 'PENDING' || 
-        bookingDetail?.bookingStatus === 'NEGOTIATING' || bookingStatus === 'NEGOTIATING') ? (
+      {['PENDING', 'ARRIVED', 'NEGOTIATING'].includes(bookingDetail?.bookingStatus) ||
+      ['PENDING', 'ARRIVED', 'NEGOTIATING'].includes(bookingStatus) ? (
         /* PENDING & NEGOTIATING: Hiển thị toàn bộ thông tin chi tiết */
         <View style={styles.infoCardFull}>
           <ScrollView showsVerticalScrollIndicator={false}>
             <Text>#{bookingDetail?.bookingCode}</Text>
             <View style={{flexDirection: 'row', alignItems: 'center', marginVertical: 4}}>
-              <AvatarWrapper
-                url={customer?.avatarUrl}
-                role={ROLE.WORKER}
-                size={48}
-                className='mr-2'
-              />
+              <AvatarWrapper url={customer?.avatarUrl} role={ROLE.WORKER} size={48} className='mr-2' />
               <Text style={{fontWeight: 'bold', fontSize: 16}}>{customer?.fullName}</Text>
               <View style={{marginLeft: 'auto', flexDirection: 'row', gap: 8}}>
                 <TouchableOpacity style={styles.chatButton} onPress={handleChat}>
@@ -603,97 +603,97 @@ export default function WorkFlow() {
             {/* Location tracking status */}
             {isTrackingLocation && (
               <View style={styles.trackingStatus}>
-                <MaterialIcons name="gps-fixed" size={16} color={Colors.primary} />
+                <MaterialIcons name='gps-fixed' size={16} color={Colors.primary} />
                 <Text style={styles.trackingStatusText}>
-                  Đang theo dõi vị trí 
+                  Đang theo dõi vị trí
                   {/* • Tự động gửi mỗi 10m */}
                 </Text>
               </View>
             )}
 
-          <View>
-            <View style={{marginTop: 16}}>
-              <Text style={styles.sectionTitle}>Quy trình làm việc</Text>
-              <View style={styles.timelineContainer}>
-                {processSteps.map((status, index) => {
-                  const label = BOOKING_STATUS_MAP[status as keyof typeof BOOKING_STATUS_MAP];
-                  const currentStatus = bookingDetail?.bookingStatus || bookingStatus;
-                  const isActive = status === currentStatus;
-                  const isCompleted = processSteps.indexOf(currentStatus) > index;
+            <View>
+              <View style={{marginTop: 16}}>
+                <Text style={styles.sectionTitle}>Quy trình làm việc</Text>
+                <View style={styles.timelineContainer}>
+                  {processSteps.map((status, index) => {
+                    const label = BOOKING_STATUS_MAP[status as keyof typeof BOOKING_STATUS_MAP];
+                    const currentStatus = bookingDetail?.bookingStatus || bookingStatus;
+                    const isActive = status === currentStatus;
+                    const isCompleted = processSteps.indexOf(currentStatus) > index;
 
-                  return (
-                    <View key={status} style={styles.timelineItem}>
-                      <View style={styles.timelineLeft}>
-                        <View
+                    return (
+                      <View key={status} style={styles.timelineItem}>
+                        <View style={styles.timelineLeft}>
+                          <View
+                            style={[
+                              styles.timelineDot,
+                              isCompleted && styles.timelineDotCompleted,
+                              isActive && styles.timelineDotActive,
+                            ]}
+                          />
+                          {index !== processSteps.length - 1 && (
+                            <View
+                              style={[styles.timelineLine, (isCompleted || isActive) && styles.timelineLineActive]}
+                            />
+                          )}
+                        </View>
+                        <Text
                           style={[
-                            styles.timelineDot,
-                            isCompleted && styles.timelineDotCompleted,
-                            isActive && styles.timelineDotActive,
-                          ]}
-                        />
-                        {index !== processSteps.length - 1 && (
-                          <View style={[styles.timelineLine, (isCompleted || isActive) && styles.timelineLineActive]} />
-                        )}
+                            styles.timelineLabel,
+                            isActive && styles.timelineLabelActive,
+                            isCompleted && styles.timelineLabelCompleted,
+                          ]}>
+                          {label}
+                        </Text>
                       </View>
-                      <Text
-                        style={[
-                          styles.timelineLabel,
-                          isActive && styles.timelineLabelActive,
-                          isCompleted && styles.timelineLabelCompleted,
-                        ]}>
-                        {label}
-                      </Text>
-                    </View>
-                  );
-                })}
-              </View>
-
-
-            </View>
-
-            <View style={styles.detailSection}>
-              <Text style={styles.sectionTitle}>Thông tin chi tiết</Text>
-
-              <View style={styles.detailRow}>
-                <MaterialCommunityIcons name='tools' size={18} color={Colors.primary} />
-                <Text style={styles.detailText}>{jobDetail?.service?.serviceName}</Text>
-              </View>
-
-              <View style={styles.detailRow}>
-                <MaterialIcons name='description' size={18} color={Colors.primary} />
-                <Text style={styles.detailText}>{jobDetail?.description || 'Không có mô tả'}</Text>
-              </View>
-
-              <View style={styles.detailRow}>
-                <MaterialIcons name='calendar-today' size={18} color={Colors.primary} />
-                <Text style={styles.detailText}>{displayDateVN(jobDetail?.bookingDate)}</Text>
-              </View>
-
-              <View style={styles.detailRow}>
-                <MaterialCommunityIcons name='map-marker' size={18} color={Colors.primary} />
-                <Text style={styles.detailText}>{jobDetail?.bookingAddress}</Text>
-              </View>
-
-              <View style={styles.priceBox}>
-                <Text style={styles.priceLabel}>Giá dự kiến</Text>
-                <Text style={styles.priceValue}>{formatPrice(bookingDetail?.totalAmount)} đ</Text>
-              </View>
-
-              {jobDetail?.files?.length > 0 && (
-                <View style={styles.imageSection}>
-                  <Text style={styles.sectionTitle}>Hình ảnh đính kèm</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    {jobDetail.files.map((file: any) => (
-                      <View key={file.id} style={styles.imageWrapper}>
-                        <Image source={{uri: file.fileUrl}} style={styles.imageItem} resizeMode='cover' />
-                      </View>
-                    ))}
-                  </ScrollView>
+                    );
+                  })}
                 </View>
-              )}
+              </View>
+
+              <View style={styles.detailSection}>
+                <Text style={styles.sectionTitle}>Thông tin chi tiết</Text>
+
+                <View style={styles.detailRow}>
+                  <MaterialCommunityIcons name='tools' size={18} color={Colors.primary} />
+                  <Text style={styles.detailText}>{jobDetail?.service?.serviceName}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <MaterialIcons name='description' size={18} color={Colors.primary} />
+                  <Text style={styles.detailText}>{jobDetail?.description || 'Không có mô tả'}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <MaterialIcons name='calendar-today' size={18} color={Colors.primary} />
+                  <Text style={styles.detailText}>{displayDateVN(jobDetail?.bookingDate)}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <MaterialCommunityIcons name='map-marker' size={18} color={Colors.primary} />
+                  <Text style={styles.detailText}>{jobDetail?.bookingAddress}</Text>
+                </View>
+
+                <View style={styles.priceBox}>
+                  <Text style={styles.priceLabel}>Giá dự kiến</Text>
+                  <Text style={styles.priceValue}>{formatPrice(bookingDetail?.totalAmount)} đ</Text>
+                </View>
+
+                {jobDetail?.files?.length > 0 && (
+                  <View style={styles.imageSection}>
+                    <Text style={styles.sectionTitle}>Hình ảnh đính kèm</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      {jobDetail.files.map((file: any) => (
+                        <View key={file.id} style={styles.imageWrapper}>
+                          <Image source={{uri: file.fileUrl}} style={styles.imageItem} resizeMode='cover' />
+                        </View>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
             </View>
-          </View>
-        </ScrollView>
+          </ScrollView>
         </View>
       ) : (
         /* COMING và các trạng thái khác: Hiển thị hộp thông tin nhỏ */
@@ -704,14 +704,9 @@ export default function WorkFlow() {
               <MaterialIcons name='chat' size={24} color={Colors.primary} />
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.compactCustomerInfo}>
-            <AvatarWrapper
-              url={customer?.avatarUrl}
-              role={ROLE.WORKER}
-              size={40}
-              className='mr-2'
-            />
+            <AvatarWrapper url={customer?.avatarUrl} role={ROLE.WORKER} size={40} className='mr-2' />
             <View style={styles.compactCustomerDetails}>
               <Text style={styles.compactCustomerName}>{customer?.fullName}</Text>
               <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 2}}>
@@ -726,10 +721,8 @@ export default function WorkFlow() {
           {/* Location tracking status */}
           {isTrackingLocation && (
             <View style={styles.trackingStatus}>
-              <MaterialIcons name="gps-fixed" size={16} color={Colors.primary} />
-              <Text style={styles.trackingStatusText}>
-                Đang theo dõi vị trí • Tự động gửi mỗi 10m
-              </Text>
+              <MaterialIcons name='gps-fixed' size={16} color={Colors.primary} />
+              <Text style={styles.trackingStatusText}>Đang theo dõi vị trí • Tự động gửi mỗi 10m</Text>
             </View>
           )}
         </View>
@@ -740,30 +733,21 @@ export default function WorkFlow() {
         const currentStatus = bookingDetail?.bookingStatus || bookingStatus;
         const nextStep = getNextStep(currentStatus);
         const nextStepName = nextStep ? BOOKING_STATUS_MAP[nextStep as keyof typeof BOOKING_STATUS_MAP] : null;
-        
+
         // Nếu đang ARRIVED và chưa confirm price
         if (currentStatus === 'ARRIVED') {
           return (
-            <TouchableOpacity 
-              style={styles.floatingActionButton}
-              onPress={handleOpenPriceModal}
-            >
-              <MaterialIcons name="attach-money" size={24} color="#fff" />
-              <Text style={styles.floatingActionButtonText}>
-                Chốt giá dịch vụ
-              </Text>
+            <TouchableOpacity style={styles.floatingActionButton} onPress={handleOpenPriceModal}>
+              <MaterialIcons name='attach-money' size={24} color='#fff' />
+              <Text style={styles.floatingActionButtonText}>Chốt giá dịch vụ</Text>
             </TouchableOpacity>
           );
         }
 
-        
         // Các trạng thái khác
         return nextStep && nextStep !== 'PAID' && currentStatus !== 'NEGOTIATING' ? (
-          <TouchableOpacity 
-            style={styles.floatingActionButton}
-            onPress={handleNextStep}
-          >
-            <MaterialIcons name="arrow-forward" size={24} color="#fff" />
+          <TouchableOpacity style={styles.floatingActionButton} onPress={handleNextStep}>
+            <MaterialIcons name='arrow-forward' size={24} color='#fff' />
             <Text style={styles.floatingActionButtonText}>
               {nextStep === 'COMING' ? 'Bắt đầu di chuyển' : `${nextStepName}`}
             </Text>
@@ -775,66 +759,63 @@ export default function WorkFlow() {
       <Modal
         visible={showPriceModal}
         transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowPriceModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Chốt giá dịch vụ</Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setShowPriceModal(false)}
-              >
-                <MaterialIcons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modalBody}>
-              <Text style={styles.modalLabel}>Giá dịch vụ cuối cùng (VNĐ)</Text>
-              <TextInput
-                style={styles.priceInput}
-                value={finalPrice}
-                onChangeText={setFinalPrice}
-                placeholder="Nhập giá dịch vụ..."
-                keyboardType="numeric"
-                editable={!isSubmittingPrice}
-              />
-
-              <Text style={styles.modalLabel}>Ghi chú (tùy chọn)</Text>
-              <TextInput
-                style={[styles.priceInput, styles.notesInput]}
-                value={notes}
-                onChangeText={setNotes}
-                placeholder="Thêm ghi chú về giá..."
-                multiline={true}
-                numberOfLines={3}
-                textAlignVertical="top"
-                editable={!isSubmittingPrice}
-              />
-
-              <View style={styles.modalActions}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
-                  onPress={() => setShowPriceModal(false)}
-                  disabled={isSubmittingPrice}
-                >
-                  <Text style={styles.cancelButtonText}>Hủy</Text>
+        animationType='slide'
+        onRequestClose={() => setShowPriceModal(false)}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0} // offset nếu có appbar
+          style={{flex: 1}}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Chốt giá dịch vụ</Text>
+                <TouchableOpacity style={styles.closeButton} onPress={() => setShowPriceModal(false)}>
+                  <MaterialIcons name='close' size={24} color='#666' />
                 </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.confirmButton]}
-                  onPress={confirmPrice}
-                  disabled={isSubmittingPrice}
-                >
-                  <Text style={styles.confirmButtonText}>
-                    {isSubmittingPrice ? 'Đang xác nhận...' : 'Xác nhận'}
-                  </Text>
-                </TouchableOpacity>
+              </View>
+
+              <View style={styles.modalBody}>
+                <Text style={styles.modalLabel}>Giá dịch vụ cuối cùng (VNĐ)</Text>
+                <TextInput
+                  style={styles.priceInput}
+                  value={finalPrice}
+                  onChangeText={setFinalPrice}
+                  placeholder='Nhập giá dịch vụ...'
+                  keyboardType='numeric'
+                  editable={!isSubmittingPrice}
+                />
+
+                <Text style={styles.modalLabel}>Ghi chú (tùy chọn)</Text>
+                <TextInput
+                  style={[styles.priceInput, styles.notesInput]}
+                  value={notes}
+                  onChangeText={setNotes}
+                  placeholder='Thêm ghi chú về giá...'
+                  multiline={true}
+                  numberOfLines={3}
+                  textAlignVertical='top'
+                  editable={!isSubmittingPrice}
+                />
+
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => setShowPriceModal(false)}
+                    disabled={isSubmittingPrice}>
+                    <Text style={styles.cancelButtonText}>Hủy</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.confirmButton]}
+                    onPress={confirmPrice}
+                    disabled={isSubmittingPrice}>
+                    <Text style={styles.confirmButtonText}>{isSubmittingPrice ? 'Đang xác nhận...' : 'Xác nhận'}</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -846,258 +827,258 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2F2F2',
   },
   map: {flex: 1},
-    infoCard: {
-      backgroundColor: '#fff',
-      padding: 16,
-      borderTopWidth: 1,
-      borderColor: '#eee',
-      flex: 1,
-    },
-    chatButton: {
-      borderWidth: 1,
-      borderColor: Colors.primary,
-      padding: 10,
-      borderRadius: 50,
-      marginRight: 10,
-    },
-    locationButton: {
-      borderWidth: 1,
-      borderColor: Colors.primary,
-      padding: 8,
-      borderRadius: 50,
-      backgroundColor: Colors.primary + '10',
-    },
-    locationButtonActive: {
-      backgroundColor: Colors.primary,
-      borderColor: Colors.primary,
-    },
-    step: {
-      color: '#aaa',
-      marginVertical: 3,
-      fontSize: 14,
-    },
-    activeStep: {
-      color: '#000',
-      fontWeight: 'bold',
-    },
-    imageWrapper: {
-      width: 80,
-      height: 80,
-      borderRadius: 8,
-      overflow: 'hidden',
-      marginRight: 8,
-      backgroundColor: '#f0f0f0',
-    },
-    imageItem: {
-      width: '100%',
-      height: '100%',
-    },
-    markerIconContainer: {
-      padding: 1,
-      borderRadius: 25,
-      shadowColor: '#000',
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-      elevation: 4,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    markerArrow: {
-      width: 0,
-      height: 0,
-      backgroundColor: 'transparent',
-      borderStyle: 'solid',
-      borderLeftWidth: 10,
-      borderRightWidth: 10,
-      borderTopWidth: 15,
-      borderLeftColor: 'transparent',
-      borderRightColor: 'transparent',
-      position: 'absolute',
-      bottom: -10,
-      left: '50%',
-      marginLeft: -10,
-      transform: [{rotate: '0deg'}],
-    },
-    detailSection: {
-      marginTop: 12,
-      backgroundColor: '#fafafa',
-      borderRadius: 12,
-      padding: 12,
-      shadowColor: '#000',
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    detailRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginVertical: 4,
-    },
-    detailText: {
-      marginLeft: 8,
-      fontSize: 14,
-      color: '#444',
-      flexShrink: 1,
-    },
-    priceBox: {
-      marginTop: 12,
-      backgroundColor: Colors.primary + '10',
-      borderRadius: 8,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    priceLabel: {
-      color: Colors.primary,
-      fontWeight: '600',
-    },
-    priceValue: {
-      fontWeight: 'bold',
-      fontSize: 16,
-      color: Colors.primary,
-    },
-    imageSection: {
-      marginTop: 16,
-    },
-    sectionTitle: {
-      fontSize: 16,
-      fontWeight: 'bold',
-      color: Colors.primary,
-      marginBottom: 8,
-    },
-  
-    timelineContainer: {
-      marginVertical: 8,
-      paddingLeft: 8,
-      borderLeftWidth: 2,
-      borderLeftColor: '#eee',
-    },
-  
-    timelineItem: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      marginBottom: 12,
-    },
-  
-    timelineLeft: {
-      width: 20,
-      alignItems: 'center',
-      position: 'relative',
-    },
-  
-    timelineDot: {
-      width: 12,
-      height: 12,
-      borderRadius: 6,
-      backgroundColor: '#ccc',
-      zIndex: 1,
-    },
-  
-    timelineDotActive: {
-      backgroundColor: Colors.secondary,
-      transform: [{scale: 1.3}],
-    },
-  
-    timelineDotCompleted: {
-      backgroundColor: Colors.primary,
-    },
-  
-    timelineLine: {
-      position: 'absolute',
-      top: 12,
-      width: 2,
-      height: 28,
-      backgroundColor: '#ddd',
-      zIndex: 0,
-    },
-  
-    timelineLineActive: {
-      backgroundColor: Colors.primary,
-    },
-  
-    timelineLabel: {
-      marginLeft: 12,
-      color: '#999',
-      fontSize: 14,
-      flexShrink: 1,
-    },
-  
-    timelineLabelActive: {
-      color: Colors.secondary,
-      fontWeight: 'bold',
-    },
-  
-    timelineLabelCompleted: {
-      color: Colors.primary,
-    },
-  
-    // Loading styles
-    loadingContainer: {
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: [{translateX: -50}, {translateY: -50}],
-      zIndex: 1000,
-      backgroundColor: 'rgba(255,255,255,0.9)',
-      padding: 20,
-      borderRadius: 10,
-      alignItems: 'center',
-    },
-    loadingText: {
-      fontSize: 16,
-      color: Colors.primary,
-    },
-  
-    // No location styles
-    noLocationContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 20,
-      backgroundColor: '#f8f9fa',
-    },
-    noLocationOverlay: {
-      position: 'absolute',
-      top: 20,
-      left: 20,
-      right: 20,
-      zIndex: 1000,
-    },
-    noLocationCard: {
-      backgroundColor: 'rgba(255,255,255,0.95)',
-      padding: 16,
-      borderRadius: 12,
-      alignItems: 'center',
-      shadowColor: '#000',
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 5,
-    },
-    noLocationTitle: {
-      fontSize: 18,
-      fontWeight: 'bold',
-      color: Colors.primary,
-      marginTop: 16,
-      marginBottom: 8,
-    },
-    noLocationText: {
-      fontSize: 14,
-      color: '#666',
-      textAlign: 'center',
-      lineHeight: 20,
-      marginBottom: 20,
-    },
-    retryButton: {
-      backgroundColor: Colors.primary,
-      paddingHorizontal: 20,
-      paddingVertical: 10,
-      borderRadius: 8,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-    },
+  infoCard: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderTopWidth: 1,
+    borderColor: '#eee',
+    flex: 1,
+  },
+  chatButton: {
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    padding: 10,
+    borderRadius: 50,
+    marginRight: 10,
+  },
+  locationButton: {
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    padding: 8,
+    borderRadius: 50,
+    backgroundColor: Colors.primary + '10',
+  },
+  locationButtonActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  step: {
+    color: '#aaa',
+    marginVertical: 3,
+    fontSize: 14,
+  },
+  activeStep: {
+    color: '#000',
+    fontWeight: 'bold',
+  },
+  imageWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginRight: 8,
+    backgroundColor: '#f0f0f0',
+  },
+  imageItem: {
+    width: '100%',
+    height: '100%',
+  },
+  markerIconContainer: {
+    padding: 1,
+    borderRadius: 25,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  markerArrow: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderTopWidth: 15,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    position: 'absolute',
+    bottom: -10,
+    left: '50%',
+    marginLeft: -10,
+    transform: [{rotate: '0deg'}],
+  },
+  detailSection: {
+    marginTop: 12,
+    backgroundColor: '#fafafa',
+    borderRadius: 12,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  detailText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#444',
+    flexShrink: 1,
+  },
+  priceBox: {
+    marginTop: 12,
+    backgroundColor: Colors.primary + '10',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  priceLabel: {
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  priceValue: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: Colors.primary,
+  },
+  imageSection: {
+    marginTop: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: Colors.primary,
+    marginBottom: 8,
+  },
+
+  timelineContainer: {
+    marginVertical: 8,
+    paddingLeft: 8,
+    borderLeftWidth: 2,
+    borderLeftColor: '#eee',
+  },
+
+  timelineItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+
+  timelineLeft: {
+    width: 20,
+    alignItems: 'center',
+    position: 'relative',
+  },
+
+  timelineDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#ccc',
+    zIndex: 1,
+  },
+
+  timelineDotActive: {
+    backgroundColor: Colors.secondary,
+    transform: [{scale: 1.3}],
+  },
+
+  timelineDotCompleted: {
+    backgroundColor: Colors.primary,
+  },
+
+  timelineLine: {
+    position: 'absolute',
+    top: 12,
+    width: 2,
+    height: 28,
+    backgroundColor: '#ddd',
+    zIndex: 0,
+  },
+
+  timelineLineActive: {
+    backgroundColor: Colors.primary,
+  },
+
+  timelineLabel: {
+    marginLeft: 12,
+    color: '#999',
+    fontSize: 14,
+    flexShrink: 1,
+  },
+
+  timelineLabelActive: {
+    color: Colors.secondary,
+    fontWeight: 'bold',
+  },
+
+  timelineLabelCompleted: {
+    color: Colors.primary,
+  },
+
+  // Loading styles
+  loadingContainer: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{translateX: -50}, {translateY: -50}],
+    zIndex: 1000,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors.primary,
+  },
+
+  // No location styles
+  noLocationContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#f8f9fa',
+  },
+  noLocationOverlay: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    right: 20,
+    zIndex: 1000,
+  },
+  noLocationCard: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  noLocationTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.primary,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  noLocationText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   retryButtonText: {
     color: '#fff',
     fontSize: 14,
@@ -1142,7 +1123,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    marginHorizontal: 5
+    marginHorizontal: 5,
   },
   nextStepButtonText: {
     color: '#fff',

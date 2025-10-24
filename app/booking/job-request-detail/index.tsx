@@ -129,8 +129,6 @@ export default function Index() {
   };
 
   const renderWorker = ({item, joblatitude, joblongitude}: {item: WorkerQuote, joblatitude: number, joblongitude: number}) => {
-    console.log('Rendering worker item:', item);
-    console.log('joblatitude:', joblatitude, 'joblongitude:', joblongitude);
     const onPress = () => {
       router.push({
         pathname: '/booking/job-request-detail/info-worker',

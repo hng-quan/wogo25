@@ -43,7 +43,6 @@ export default function Tracking() {
 
   // useEffect lắng nghe sự kiện thay đổi trạng thái
 
-
   /** -------------------------------
    *  B1. Fetch thông tin job + booking
    * --------------------------------*/
@@ -78,7 +77,7 @@ export default function Tracking() {
           longitude: res.result.longitude,
         };
         setWorkerLocation(location);
-        
+
         // Cập nhật vị trí khởi tạo của worker marker
         workerLocationRef.setValue({
           latitude: res.result.latitude,
@@ -86,7 +85,7 @@ export default function Tracking() {
           latitudeDelta: 0,
           longitudeDelta: 0,
         });
-        
+
         console.log('📍 Đã lấy vị trí worker từ API:', location);
       } else {
         console.warn('⚠️ API không trả về vị trí worker hợp lệ');
@@ -157,13 +156,13 @@ export default function Tracking() {
       console.log('⏳ Chưa có đủ dữ liệu vị trí để vẽ route và fit map');
       return;
     }
-    
+
     // Kiểm tra tọa độ có hợp lệ không
     if (workerLocation.latitude === 0 && workerLocation.longitude === 0) {
       console.log('⚠️ Vị trí worker không hợp lệ (0,0), bỏ qua vẽ route');
       return;
     }
-    
+
     fetchRoute(workerLocation, customerLocation);
 
     // Fit map vùng nhìn
@@ -181,10 +180,10 @@ export default function Tracking() {
   // Lắng nghe cập nhật vị trí worker
   useEffect(() => {
     if (!connected || !jobRequestCode) return;
-    
+
     const topic = `/topic/driverLocation/${jobRequestCode}`;
     console.log('🔌 Lắng nghe vị trí worker:', topic);
-    
+
     const sub = subscribe(topic, (msg: any) => {
       try {
         const data = JSON.parse(msg.body);
@@ -197,27 +196,30 @@ export default function Tracking() {
         // Animate marker position
         if (workerLocationRef) {
           (workerLocationRef as any)
-            .timing({
-              ...newCoordinate,
-              latitudeDelta: 0,
-              longitudeDelta: 0,
-            }, {
-              duration: 500,
-              useNativeDriver: false,
-            })
+            .timing(
+              {
+                ...newCoordinate,
+                latitudeDelta: 0,
+                longitudeDelta: 0,
+              },
+              {
+                duration: 500,
+                useNativeDriver: false,
+              },
+            )
             .start();
         }
         setWorkerLocation(newCoordinate);
         if (customerLocation && newCoordinate.latitude !== 0 && newCoordinate.longitude !== 0) {
           fetchRoute(newCoordinate, customerLocation);
         }
-        
+
         console.log('📍 Cập nhật vị trí worker:', newCoordinate);
       } catch (error) {
         console.error('❌ Lỗi xử lý cập nhật vị trí:', error);
       }
     });
-    
+
     return () => {
       console.log('🔌 Ngừng lắng nghe vị trí worker');
       sub?.unsubscribe();
@@ -227,28 +229,28 @@ export default function Tracking() {
   // Lắng nghe cập nhật trạng thái booking
   useEffect(() => {
     if (!connected || !bookingDetail?.bookingCode) return;
-    
+
     const topic = `/topic/bookingStatus/${bookingDetail.bookingCode}`;
     console.log('🔌 Lắng nghe trạng thái booking:', topic);
-    
+
     const sub = subscribe(topic, (msg: any) => {
       let raw = msg.body;
-    let parsedStatus = '';
+      let parsedStatus = '';
 
-    try {
-      // Nếu msg.body là JSON string (vd: `"COMING"`)
-      parsedStatus = JSON.parse(raw);
-    } catch {
-      // Nếu không phải JSON, giữ nguyên giá trị
-      parsedStatus = raw;
-    }
+      try {
+        // Nếu msg.body là JSON string (vd: `"COMING"`)
+        parsedStatus = JSON.parse(raw);
+      } catch {
+        // Nếu không phải JSON, giữ nguyên giá trị
+        parsedStatus = raw;
+      }
 
-    const normalizedStatus = parsedStatus.trim().toUpperCase();
-    console.log('📨 Nhận được cập nhật trạng thái:', normalizedStatus);
+      const normalizedStatus = parsedStatus.trim().toUpperCase();
+      console.log('📨 Nhận được cập nhật trạng thái:', normalizedStatus);
 
-    setBookingStatus(normalizedStatus);
+      setBookingStatus(normalizedStatus);
     });
-    
+
     return () => {
       console.log('🔌 Ngừng lắng nghe trạng thái booking');
       sub?.unsubscribe();
@@ -279,7 +281,7 @@ export default function Tracking() {
 
   useEffect(() => {
     console.log('Booking status updated:', bookingStatus);
-  }, [bookingStatus])
+  }, [bookingStatus]);
 
   /** -------------------------------
    *  Render giao diện
@@ -295,18 +297,16 @@ export default function Tracking() {
             <Text style={styles.loadingText}>Đang tải vị trí thợ...</Text>
           </View>
         )}
-        
+
         {/* Overlay thông báo khi không có vị trí worker */}
         {!loadingWorkerLocation && !workerLocation && customerLocation && (
           <View style={styles.noLocationOverlay}>
             <View style={styles.noLocationCard}>
-              <MaterialIcons name="location-off" size={32} color={Colors.primary} />
+              <MaterialIcons name='location-off' size={32} color={Colors.primary} />
               <Text style={styles.noLocationTitle}>Không tìm thấy vị trí thợ</Text>
-              <Text style={styles.noLocationText}>
-                Thợ chưa cập nhật vị trí hoặc đang offline.
-              </Text>
+              <Text style={styles.noLocationText}>Thợ chưa cập nhật vị trí hoặc đang offline.</Text>
               <TouchableOpacity style={styles.retryButton} onPress={fetchWorkerLocation}>
-                <MaterialIcons name="refresh" size={16} color="#fff" />
+                <MaterialIcons name='refresh' size={16} color='#fff' />
                 <Text style={styles.retryButtonText}>Thử lại</Text>
               </TouchableOpacity>
             </View>
@@ -400,7 +400,7 @@ export default function Tracking() {
               <View style={styles.timelineContainer}>
                 {processSteps.map((status, index) => {
                   const label = BOOKING_STATUS_MAP[status as keyof typeof BOOKING_STATUS_MAP];
-                  const currentStatus =  bookingStatus;
+                  const currentStatus = bookingStatus;
                   const isActive = status === currentStatus;
                   const isCompleted = processSteps.indexOf(currentStatus) > index;
 
