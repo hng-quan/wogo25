@@ -102,7 +102,7 @@ export default function Tracking() {
   const fetchBookingDetail = async () => {
     try {
       const res = await jsonGettAPI('/bookings/getByCode/' + jobRequestCode);
-      console.log('Fetched booking detail:', res);
+      // console.log('Fetched booking detail:', res);
       if (res?.result) {
         setBookingDetail(res.result);
         setBookingStatus(res.result.bookingStatus);
@@ -139,7 +139,7 @@ export default function Tracking() {
       );
       const encoded = res.data.routes[0].geometry;
       const decoded = polyline.decode(encoded);
-      console.log('✅ User nhận được vị trí route mới');
+      console.log('User thấy thợ đang di chuyển');
       const coords = decoded.map(([lat, lng]) => ({
         latitude: lat,
         longitude: lng,
@@ -221,7 +221,7 @@ export default function Tracking() {
     });
 
     return () => {
-      console.log('🔌 Ngừng lắng nghe vị trí worker');
+      // console.log('🔌 Ngừng lắng nghe vị trí worker');
       sub?.unsubscribe();
     };
   }, [connected, jobRequestCode, customerLocation]);
@@ -328,7 +328,7 @@ export default function Tracking() {
             <Marker coordinate={customerLocation}>
               <View style={{alignItems: 'center'}}>
                 <View style={[styles.markerIconContainer, {backgroundColor: Colors.secondary}]}>
-                  <MaterialIcons name='handyman' size={28} color='#fff' />
+                  <MaterialIcons name='person' size={28} color='#fff' />
                 </View>
                 <View style={[styles.markerArrow, {borderTopColor: Colors.secondary}]} />
               </View>
@@ -351,7 +351,7 @@ export default function Tracking() {
             <Marker coordinate={customerLocation}>
               <View style={{alignItems: 'center'}}>
                 <View style={[styles.markerIconContainer, {backgroundColor: Colors.secondary}]}>
-                  <MaterialIcons name='handyman' size={28} color='#fff' />
+                  <MaterialIcons name='person' size={28} color='#fff' />
                 </View>
                 <View style={[styles.markerArrow, {borderTopColor: Colors.secondary}]} />
               </View>

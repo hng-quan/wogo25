@@ -1,6 +1,7 @@
 import ButtonCustom from '@/components/button/ButtonCustom';
 import Appbar from '@/components/layout/Appbar';
 import { StarRating } from '@/components/ui/StarRating';
+import { useSocket } from '@/context/SocketContext';
 import { jsonPostAPI } from '@/lib/apiService';
 import { formatPrice } from '@/lib/utils';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -30,6 +31,8 @@ export default function OrderDetailScreen() {
   const totalJobs = workerData?.worker?.totalJobs || 0;
   const quotedPrice = workerData?.quotedPrice || 0;
   const averageRating = workerData?.worker?.averageRating || 0;
+
+  const { registerConfirmJob } = useSocket();
 
   const reviews: Review[] = [
     {
@@ -79,6 +82,15 @@ export default function OrderDetailScreen() {
     }, () => {}, () => {
       Alert.alert('Lỗi', 'Đặt thợ thất bại. Vui lòng thử lại sau.');
     });
+    // Nếu đặt thành công, đăng ký để lắng nghe sự kiện confirmPrice
+    try {
+      if (registerConfirmJob && res?.result) {
+        await registerConfirmJob(jobRequestCode as string);
+        console.log('✅ Registered jobRequestCode for confirmPrice listening:', jobRequestCode);
+      }
+    } catch (err) {
+      console.warn('⚠️ Không thể đăng ký confirmPrice:', err);
+    }
     console.log('response place order worker:', res);
     } catch (error) {
       console.error('Error placing order:', error);

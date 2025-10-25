@@ -583,9 +583,9 @@ export default function WorkFlow() {
         </View>
       ) : null}
 
-      {/* JOB INFO - Layout khác nhau cho PENDING, NEGOTIATING và COMING */}
-      {['PENDING', 'ARRIVED', 'NEGOTIATING'].includes(bookingDetail?.bookingStatus) ||
-      ['PENDING', 'ARRIVED', 'NEGOTIATING'].includes(bookingStatus) ? (
+      {/* JOB INFO - Layout khác nhau cho PENDING, NEGOTIATING */}
+      {['PENDING', 'ARRIVED', 'NEGOTIATING', 'WORKING'].includes(bookingDetail?.bookingStatus) ||
+      ['PENDING', 'ARRIVED', 'NEGOTIATING', 'WORKING'].includes(bookingStatus) ? (
         /* PENDING & NEGOTIATING: Hiển thị toàn bộ thông tin chi tiết */
         <View style={styles.infoCardFull}>
           <ScrollView showsVerticalScrollIndicator={false}>

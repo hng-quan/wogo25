@@ -29,7 +29,7 @@ export const StatusFindJobProvider: React.FC<{children: React.ReactNode}> = ({ch
   const subscriptionsRef = useRef<StompSubscription[]>([]);
   const showAlertRef = useRef(showAlert);
   const {role, user} = useRole();
-  console.log('user trong StatusFindJobContext:', user);
+  // console.log('user trong StatusFindJobContext:', user);
 
   const toggleAlert = () => setShowAlert(prev => !prev);
 
@@ -43,7 +43,7 @@ export const StatusFindJobProvider: React.FC<{children: React.ReactNode}> = ({ch
 
   useEffect(() => {
     if (!finding) {
-      console.log('❌ Đã tắt trạng thái tìm việc');
+      // console.log('❌ Đã tắt trạng thái tìm việc');
       return;
     }
     if (!connected) return;
