@@ -29,6 +29,7 @@ const ButtonCustom = ({children, loading, ...props}: React.ComponentProps<typeof
       {...props}
       loading={loading}
       style={[styles.button, props.style]}
+      contentStyle={{paddingVertical: 6}}
       textColor={textColor}
       buttonColor={mainColor}>
       {children}
@@ -41,7 +42,6 @@ export default ButtonCustom;
 const styles = StyleSheet.create({
   button: {
     borderRadius: 2,
-    paddingVertical: 6
   },
   customerButtonColor: {
     backgroundColor: '#4CAF50', // Green 500

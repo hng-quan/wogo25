@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 
 const LoginScreen = () => {
@@ -77,7 +77,8 @@ const LoginScreen = () => {
     router.push('/register');
   };
   return (
-    <LinearGradient colors={['#E8F5E9', '#C8E6C9']} style={styles.container}>
+    <KeyboardAvoidingView style={{flex: 1}} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <LinearGradient colors={['#E8F5E9', '#C8E6C9']} style={styles.container}>
       <Text variant='headlineSmall' style={styles.title}>
         {t('Đăng nhập')}
       </Text>
@@ -136,6 +137,7 @@ const LoginScreen = () => {
         </Text>
       </View>
     </LinearGradient>
+    </KeyboardAvoidingView>
   );
 };
 
