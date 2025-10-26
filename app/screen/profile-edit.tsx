@@ -7,8 +7,16 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
-import { Card, IconButton, Modal, Portal, Text, TextInput } from 'react-native-paper';
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  StyleSheet,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import { Card, IconButton, Text, TextInput } from 'react-native-paper';
 
 const ProfileDetail = () => {
   const {user, role, updateUser} = useRole();
@@ -19,15 +27,12 @@ const ProfileDetail = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const pickImage = async () => {
-    // No permissions request is necessary for launching the image library
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     });
-
-    // console.log(result);
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
@@ -49,7 +54,7 @@ const ProfileDetail = () => {
       name: filename,
     } as any);
 
-    await formPutAPI('/users/update', formData, (res) => updateUser(res.result));
+    await formPutAPI('/users/update', formData, res => updateUser(res.result));
   };
 
   const renderStatistics = ({role}: {role: string}) => {
@@ -94,26 +99,48 @@ const ProfileDetail = () => {
       formData.append('fullName', name);
       formData.append('isActive', String(true));
 
-      await formPutAPI('/users/update', formData, async (res) => {
-        updateUser(res.result);
-        setLoading(false);
-        onClose();
-      }, setLoading);
+      await formPutAPI(
+        '/users/update',
+        formData,
+        async res => {
+          updateUser(res.result);
+          setLoading(false);
+          onClose();
+        },
+        setLoading,
+      );
     };
 
     const colorActive = role === ROLE.CUSTOMER ? '#4CAF50' : '#2196F3';
     return (
-      <Portal>
-        <Modal visible={isOpen} onDismiss={onClose} contentContainerStyle={styles.modalContent}>
-          <Text variant='titleMedium'>
-            {t('Cập nhật')}
-          </Text>
-          <TextInput mode='outlined' outlineColor={colorActive} activeOutlineColor={colorActive} label={''} value={newName} onChangeText={setNewName} />
-          <ButtonCustom loading={loading} mode='elevated' onPress={() => updateFullName(newName)}>
-            {t('Lưu thông tin')}
-          </ButtonCustom>
-        </Modal>
-      </Portal>
+      <Modal visible={isOpen} transparent animationType='fade' onRequestClose={onClose}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+          {/* Khi bấm ra ngoài thì đóng */}
+          <TouchableWithoutFeedback onPress={onClose}>
+            <View style={StyleSheet.absoluteFillObject} />
+          </TouchableWithoutFeedback>
+
+          {/* Nội dung Modal */}
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.modalContent}>
+              <Text variant='titleMedium'>{t('Cập nhật')}</Text>
+
+              <TextInput
+                mode='outlined'
+                outlineColor={colorActive}
+                activeOutlineColor={colorActive}
+                label=''
+                value={newName}
+                onChangeText={setNewName}
+              />
+
+              <ButtonCustom loading={loading} mode='elevated' onPress={() => updateFullName(newName)}>
+                {t('Lưu thông tin')}
+              </ButtonCustom>
+            </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </Modal>
     );
   };
 
@@ -123,34 +150,36 @@ const ProfileDetail = () => {
     } else {
       router.replace('/(tabs-customer)/profile');
     }
-  }
+  };
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <Appbar title='Hồ sơ' onBackPress={goBack} />
-      {/* Avatar và Thông tin */}
-      <View style={styles.profileContainer}>
-        <View className='items-center relative'>
-          <AvatarWrapper url={image ?? avatarUrl} size={76} role={role} />
-          <View className='absolute -bottom-6'>
-            <IconButton className='bg-white' size={16} icon={'image-edit'} onPress={pickImage} />
+    <KeyboardAvoidingView style={{flex: 1}} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <View style={styles.container}>
+        {/* Header */}
+        <Appbar title='Hồ sơ' onBackPress={goBack} />
+        {/* Avatar và Thông tin */}
+        <View style={styles.profileContainer}>
+          <View className='items-center relative'>
+            <AvatarWrapper url={image ?? avatarUrl} size={76} role={role} />
+            <View className='absolute -bottom-6'>
+              <IconButton className='bg-white' size={16} icon={'image-edit'} onPress={pickImage} />
+            </View>
           </View>
+
+          <View className='flex-row items-end'>
+            <View className='w-9' />
+            <Text style={styles.name}>{fullName}</Text>
+            <IconButton icon={'rename-box'} onPress={() => setIsModalOpen(true)} />
+          </View>
+          <Text style={styles.phone}>{phone}</Text>
         </View>
 
-        <View className='flex-row items-end'>
-          <View className='w-9' />
-          <Text style={styles.name}>{fullName}</Text>
-          <IconButton icon={'rename-box'} onPress={() => setIsModalOpen(true)} />
-        </View>
-        <Text style={styles.phone}>{phone}</Text>
+        {/* Thông tin thống kê */}
+        {renderStatistics({role})}
+
+        <UpdateModal fullName={fullName} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       </View>
-
-      {/* Thông tin thống kê */}
-      {renderStatistics({role})}
-
-      <UpdateModal fullName={fullName} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -210,5 +239,18 @@ const styles = StyleSheet.create({
     margin: 'auto',
     backgroundColor: 'white',
     borderRadius: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  modalContainer: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
   },
 });
