@@ -14,8 +14,6 @@ export default function AddProfessional() {
   const {t} = useTranslation();
   const [serviceList, setServiceList] = useState<ServiceGroup[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
-  // const [pageNum, setPageNum] = useState(1);
-  // const [pageSize, setPageSize] = useState(1000);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [selectedService, setSelectedService] = useState<ServiceType | null>(null);
@@ -33,9 +31,6 @@ export default function AddProfessional() {
     const res = await jsonGettAPI('/services/searchByName', {
       params: params,
     });
-    // console.log('res', res.result);
-    // const childData = res.result.flatMap((item: any) => item.childServices);
-    // console.log('childData', childData);
     setServiceList(res.result);
   };
 
@@ -44,7 +39,6 @@ export default function AddProfessional() {
   };
 
   const gotoVerify = (value: any) => {
-    // console.log('value:', value);
     if (value === 'test') {
       router.push({
         pathname: '/ppi/quiz',
@@ -52,12 +46,6 @@ export default function AddProfessional() {
           service_id: selectedService?.id,
           service_name: selectedService?.serviceName,
         },
-        // pathname: '/ppi/quiz/result',
-        // params: {
-        //   passed: String(true),
-        //   scorePercentage: 80,s
-        //   service_name: selectedService?.serviceName,
-        // }
       });
     } else {
       //license

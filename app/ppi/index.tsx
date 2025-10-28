@@ -62,10 +62,8 @@ export default function Index() {
     <View style={styles.container}>
       <Appbar title={t('Nghiệp vụ')} onBackPress={_goBack} />
 
-      <View className='p-4 gap-4'>
+      <View className='flex-1 p-4 gap-4'>
         {/* Button add professional */}
-        <ButtonCustom onPress={_gotoAddProfessional}>{t('Thêm mới')}</ButtonCustom>
-        {/* List professional */}
         <View className='flex-row justify-between items-center'>
           <Text variant='titleMedium' className='!font-bold'>
             {t('Nghiệp vụ của bạn')}
@@ -80,6 +78,7 @@ export default function Index() {
           renderItem={({item}) => <CardCustom item={item} />}
           keyExtractor={item => item.id.toString()}
         />
+        <ButtonCustom onPress={_gotoAddProfessional}>{t('Thêm mới')}</ButtonCustom>
       </View>
     </View>
   );

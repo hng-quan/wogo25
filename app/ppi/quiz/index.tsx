@@ -52,7 +52,6 @@ export default function Index() {
   };
 
   const onSuccess = (data: any) => {
-    // console.log('fetchQuestions data:', data);
     if (!data || !data.result || data.result.questions.length === 0) {
       Alert.alert('Thông báo', 'Hệ thống không có câu hỏi nào cho dịch vụ này. Vui lòng quay lại sau.');
       return;
@@ -68,9 +67,15 @@ export default function Index() {
     const params = {
       serviceId: service_id,
     };
-    await jsonPostAPI('/worker-verify/create-test', params, onSuccess, () => {}, () => {
-      Alert.alert('Thông báo', 'Hệ thống không có câu hỏi nào cho dịch vụ này. Vui lòng quay lại sau.');
-    });
+    await jsonPostAPI(
+      '/worker-verify/create-test',
+      params,
+      onSuccess,
+      () => {},
+      () => {
+        Alert.alert('Thông báo', 'Hệ thống không có câu hỏi nào cho dịch vụ này. Vui lòng quay lại sau.');
+      },
+    );
   };
 
   const formatTime = (sec: number) => {
@@ -94,7 +99,7 @@ export default function Index() {
     });
   }, []);
 
-  const submitTest = async (options?: { skipNavigate?: boolean }) => {
+  const submitTest = async (options?: {skipNavigate?: boolean}) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
@@ -155,7 +160,7 @@ export default function Index() {
               style: 'destructive',
               onPress: () => {
                 setAnswers({});
-                submitTest({ skipNavigate: true });
+                submitTest({skipNavigate: true});
                 unmountAll();
                 navigation.dispatch(e.data.action);
               },
@@ -178,20 +183,63 @@ export default function Index() {
     return (
       <>
         <Appbar title='Làm bài kiểm tra' />
-        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F2F2F2'}}>
-          <Text variant='titleMedium' style={{marginBottom: 20, textAlign: 'center'}}>
-            Kiểm tra nghiệp vụ {service_name}
-          </Text>
-          <Text variant='titleMedium' style={{marginBottom: 20, textAlign: 'center'}}>
-            Hãy hoàn thành 20 câu hỏi trong {DURATION / 60} phút!
-          </Text>
-          <ButtonCustom
-            mode='contained'
-            onPress={() => {
-              fetchQuestions();
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: '#F2F2F2',
+            paddingHorizontal: 24,
+          }}>
+          <View
+            style={{
+              backgroundColor: 'white',
+              borderRadius: 16,
+              paddingVertical: 32,
+              paddingHorizontal: 24,
+              width: '100%',
+              maxWidth: 400,
+              shadowColor: '#000',
+              shadowOpacity: 0.1,
+              shadowRadius: 6,
+              elevation: 3,
+              alignItems: 'center',
             }}>
-            Bắt đầu làm bài
-          </ButtonCustom>
+            <Text
+              variant='titleLarge'
+              style={{
+                marginBottom: 12,
+                textAlign: 'center',
+                fontWeight: '700',
+                color: '#111827',
+              }}>
+              Kiểm tra nghiệp vụ
+            </Text>
+
+            <Text
+              variant='titleMedium'
+              style={{
+                marginBottom: 8,
+                textAlign: 'center',
+                color: '#374151',
+              }}>
+              {service_name}
+            </Text>
+
+            <Text
+              variant='bodyMedium'
+              style={{
+                marginBottom: 24,
+                textAlign: 'center',
+                color: '#6B7280',
+              }}>
+              Hãy hoàn thành 20 câu hỏi trong {DURATION / 60} phút!
+            </Text>
+
+            <ButtonCustom mode='contained' onPress={() => fetchQuestions()} className='w-full'>
+              Bắt đầu làm bài
+            </ButtonCustom>
+          </View>
         </View>
       </>
     );

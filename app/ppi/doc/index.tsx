@@ -5,7 +5,7 @@ import { generateDocumentName } from '@/lib/utils';
 import * as DocumentPicker from 'expo-document-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, ScrollView, Text, View } from 'react-native';
+import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { Icon } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 
@@ -57,6 +57,7 @@ export default function Index() {
     });
 
     const res = await formPostAPI('/worker-verify/upload-worker-document', formData);
+    console.log('Upload response:', res);
     if (res?.message === 'Upload worker document successfully') {
       Toast.show({
         type: 'success',
@@ -78,6 +79,12 @@ export default function Index() {
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const getFileIcon = (type: any) => {
+    if (type.includes('pdf')) return 'file-pdf-box';
+    if (type.includes('word')) return 'file-word-box';
+    return 'file-document-outline';
+  };
+
   return (
     <View className='flex-1 bg-[#F2F2F2]'>
       <Appbar title='Cập nhật giấy phép lao động' />
@@ -88,10 +95,9 @@ export default function Index() {
         </ButtonCustom>
 
         {/* Hiển thị preview */}
-        <ScrollView style={{marginVertical: 16}}
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
+        <ScrollView style={{marginVertical: 16}} contentContainerStyle={{paddingHorizontal: 16, paddingBottom: 20}}>
           {files.length === 0 ? (
-            <View className='items-center justify-center'>
+            <View className='items-center justify-center py-10'>
               <Icon source='file-document-outline' size={60} color='#9CA3AF' />
               <Text className='text-gray-500 mt-2 text-center'>
                 Chưa có tệp nào được chọn.{'\n'}Hãy nhấn nút Chọn tệp upload để bắt đầu.
@@ -102,21 +108,76 @@ export default function Index() {
               <View
                 key={index}
                 style={{
-                  marginVertical: 6,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingHorizontal: 12,
+                  backgroundColor: 'white',
+                  borderRadius: 12,
+                  padding: 10,
+                  marginVertical: 8,
+                  shadowColor: '#000',
+                  shadowOpacity: 0.1,
+                  shadowRadius: 6,
+                  elevation: 3,
                 }}>
                 {file.type.includes('image') ? (
-                  <Image source={{uri: file.uri}} style={{width: 100, height: 100, borderRadius: 8}} />
+                  <View>
+                    <Image
+                      source={{uri: file.uri}}
+                      style={{
+                        width: '100%',
+                        height: 300,
+                        borderRadius: 12,
+                        resizeMode: 'cover',
+                      }}
+                    />
+                    <View
+                      style={{
+                        position: 'absolute',
+                        top: 10,
+                        right: 10,
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        borderRadius: 50,
+                        padding: 4,
+                      }}>
+                      <TouchableOpacity onPress={() => removeFile(index)}>
+                        <Icon source='trash-can-outline' size={24} color='white' />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                 ) : (
-                  <Text style={{flex: 1}}>📄 {file.name}</Text>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}>
+                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                      <View
+                        style={{
+                          width: 60,
+                          height: 60,
+                          borderRadius: 8,
+                          backgroundColor: '#E5E7EB',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginRight: 10,
+                        }}>
+                        {/* <Icon source='file-document' size={32} color='#6B7280' /> */}
+                        <Icon source={getFileIcon(file.type)} size={32} color='#6B7280' />
+                      </View>
+                      <View className='flex-1'>
+                        <Text
+                          ellipsizeMode='tail'
+                          numberOfLines={1}
+                          style={{fontSize: 16, fontWeight: '500', maxWidth: '90%', }}>
+                          {file.name || 'Không rõ tên tệp'}
+                        </Text>
+                        <Text style={{color: '#6B7280', fontSize: 13}}>Tài liệu</Text>
+                      </View>
+                      <TouchableOpacity onPress={() => removeFile(index)}>
+                      <Icon source='trash-can-outline' size={26} color='red' />
+                    </TouchableOpacity>
+                    </View>
+                  </View>
                 )}
-
-                <Text style={{marginLeft: 12}} onPress={() => removeFile(index)}>
-                  <Icon source='trash-can' size={28} color='red' />
-                </Text>
               </View>
             ))
           )}

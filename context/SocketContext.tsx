@@ -1,11 +1,12 @@
 import ButtonCustom from '@/components/button/ButtonCustom';
-import { jsonPutAPI } from '@/lib/apiService';
+import { jsonPostAPI } from '@/lib/apiService';
 import { getItem, setItem } from '@/lib/storage';
 import { formatPrice } from '@/lib/utils';
 import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Dialog, Paragraph, Portal, Text } from 'react-native-paper';
 import SockJS from 'sockjs-client';
+import { ROLE, useRole } from './RoleContext';
 
 type SocketContextType = {
   client: Client | null;
@@ -23,6 +24,7 @@ export const SocketProvider: React.FC<{userId: string; children: React.ReactNode
 }) => {
   const [client, setClient] = useState<Client | null>(null);
   const [connected, setConnected] = useState(false);
+  const { role } = useRole();
   // For handling confirm-price realtime for customers
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [confirmPayload, setConfirmPayload] = useState<any>(null);
@@ -78,19 +80,23 @@ export const SocketProvider: React.FC<{userId: string; children: React.ReactNode
   useEffect(() => {
     const subscribeStored = async () => {
       if (!connected || !client) return;
+      // Only customers should subscribe/show confirm-price modal
+      if (role !== ROLE.CUSTOMER) return;
       try {
         const codes: string[] | null = await getItem(PLACED_JOBS_KEY);
         if (!codes || !Array.isArray(codes)) return;
-        codes.push("JR-C80E8DF8-2025");
-        console.log('🔔 Subscribing confirmPrice for stored jobs:', codes);
+        console.log('🔔 Subscribing negotiatePrice for stored jobs:', codes);
         for (const code of codes) {
           if (confirmSubsRef.current[code]) continue; // already subscribed
-          const sub = client.subscribe(`/topic/confirmPrice/${code}`, (msg: IMessage) => {
+          const sub = client.subscribe(`/topic/negotiatePrice/${code}`, (msg: IMessage) => {
             try {
               const payload = JSON.parse(msg.body);
-              console.log('📨 Received confirmPrice event for', code, payload);
-              setConfirmPayload(payload);
-              setConfirmModalVisible(true);
+              console.log('📨 Received negotiatePrice event for', code, payload);
+              // Only show modal for customers
+              if (role === ROLE.CUSTOMER) {
+                setConfirmPayload(payload);
+                setConfirmModalVisible(true);
+              }
             } catch (err) {
               console.error('Error parsing confirmPrice message', err);
             }
@@ -117,6 +123,7 @@ export const SocketProvider: React.FC<{userId: string; children: React.ReactNode
 
   // Register a jobRequestCode to listen for confirmPrice events and persist the list
   const registerConfirmJob = async (jobRequestCode: string) => {
+
     try {
       // Persist
       const existing: string[] | null = await getItem(PLACED_JOBS_KEY);
@@ -125,18 +132,20 @@ export const SocketProvider: React.FC<{userId: string; children: React.ReactNode
         codes.push(jobRequestCode);
         await setItem(PLACED_JOBS_KEY, codes);
       }
-
-      // subscribe if connected
-      if (client && client.connected) {
+      // subscribe if connected and role is customer
+      if (client && client.connected && role === ROLE.CUSTOMER) {
         if (confirmSubsRef.current[jobRequestCode]) return;
-        const sub = client.subscribe(`/topic/confirmPrice/${jobRequestCode}`, (msg: IMessage) => {
+        console.log('Subscribing to negotiatePrice for jobRequestCode:', jobRequestCode);
+        const sub = client.subscribe(`/topic/negotiatePrice/${jobRequestCode}`, (msg: IMessage) => {
           try {
             const payload = JSON.parse(msg.body);
-            console.log('📨 Received confirmPrice event for', jobRequestCode, payload);
-            setConfirmPayload(payload);
-            setConfirmModalVisible(true);
+            console.log('📨 Received negotiatePrice event for', jobRequestCode, payload);
+            if (role === ROLE.CUSTOMER) {
+              setConfirmPayload(payload);
+              setConfirmModalVisible(true);
+            }
           } catch (err) {
-            console.error('Error parsing confirmPrice message', err);
+            console.error('Error parsing negotiatePrice message', err);
           }
         });
         confirmSubsRef.current[jobRequestCode] = sub;
@@ -162,7 +171,7 @@ export const SocketProvider: React.FC<{userId: string; children: React.ReactNode
     }
   };
 
-  const handleConfirmPrice = async () => {
+  const handleConfirmPrice = async (Option = 'ACCEPT') => {
     try {
       const bookingCode = confirmPayload?.bookingCode || confirmPayload?.jobRequestCode || confirmPayload?.bookingCode;
       if (!bookingCode) {
@@ -170,14 +179,22 @@ export const SocketProvider: React.FC<{userId: string; children: React.ReactNode
         return;
       }
 
-      const response = await jsonPutAPI('/bookings/updateStatus', { bookingCode, status: 'WORKING' });
-      if (response?.code === 1000) {
-        console.log('✅ Updated booking to WORKING:', bookingCode);
+      const params = {
+        bookingCode: bookingCode,
+        finalPrice: confirmPayload?.finalPrice,
+        notes: confirmPayload?.notes,
+        acceptTerms: Option === 'ACCEPT' ? true : false,
+      }
+      console.log('Sending confirmPrice with params:', params);
+      const response = await jsonPostAPI('/bookings/confirm-price', params);
+      console.log('response confirm price:', response);
+      if (response?.result) {
+        console.log('✅ Confirmed price for booking', bookingCode, 'Option:', Option);
         await _removePlacedJob(bookingCode);
         setConfirmModalVisible(false);
       } else {
-        console.error('Failed to update booking status', response);
-        alert('Cập nhật trạng thái thất bại. Vui lòng thử lại.');
+        console.log('Failed to confirm price', response);
+        alert('Xác nhận giá thất bại. Vui lòng thử lại.');
       }
     } catch (err) {
       console.error('handleConfirmPrice error', err);
@@ -245,7 +262,10 @@ export const SocketProvider: React.FC<{userId: string; children: React.ReactNode
         >
           <ButtonCustom
             mode="outlined"
-            onPress={() => setConfirmModalVisible(false)}
+            onPress={() => {
+              handleConfirmPrice('REJECT');
+              setConfirmModalVisible(false);
+            }}
             style={{
               flex: 1,
               marginRight: 8,
@@ -257,7 +277,7 @@ export const SocketProvider: React.FC<{userId: string; children: React.ReactNode
 
           <ButtonCustom
             mode="contained"
-            onPress={handleConfirmPrice}
+            onPress={() => handleConfirmPrice('ACCEPT')}
             style={{
               flex: 1,
               marginLeft: 8,

@@ -19,7 +19,7 @@ const processSteps = ['PENDING', 'COMING', 'ARRIVED', 'NEGOTIATING', 'WORKING', 
 
 export default function Tracking() {
   const {currentTab, jobRequestCode} = useLocalSearchParams();
-  const {subscribe, connected} = useSocket();
+  const {subscribe, connected, registerConfirmJob} = useSocket();
   const mapRef = useRef<MapView>(null);
 
   const [jobDetail, setJobDetail] = useState<any>(null);
@@ -139,14 +139,14 @@ export default function Tracking() {
       );
       const encoded = res.data.routes[0].geometry;
       const decoded = polyline.decode(encoded);
-      console.log('User thấy thợ đang di chuyển');
+      // console.log('User thấy thợ đang di chuyển');
       const coords = decoded.map(([lat, lng]) => ({
         latitude: lat,
         longitude: lng,
       }));
       setRouteCoords(coords);
     } catch (error: any) {
-      console.log('❌ Lỗi fetch route:', error?.message);
+      // console.log('❌ Lỗi fetch route:', error?.message);
     }
   };
 
@@ -291,105 +291,110 @@ export default function Tracking() {
       <Appbar title='Chi tiết dịch vụ' onBackPress={goBack} />
 
       {/* MAP */}
-      <View style={{flex: 1}}>
-        {loadingWorkerLocation && (
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Đang tải vị trí thợ...</Text>
-          </View>
-        )}
-
-        {/* Overlay thông báo khi không có vị trí worker */}
-        {!loadingWorkerLocation && !workerLocation && customerLocation && (
-          <View style={styles.noLocationOverlay}>
-            <View style={styles.noLocationCard}>
-              <MaterialIcons name='location-off' size={32} color={Colors.primary} />
-              <Text style={styles.noLocationTitle}>Không tìm thấy vị trí thợ</Text>
-              <Text style={styles.noLocationText}>Thợ chưa cập nhật vị trí hoặc đang offline.</Text>
-              <TouchableOpacity style={styles.retryButton} onPress={fetchWorkerLocation}>
-                <MaterialIcons name='refresh' size={16} color='#fff' />
-                <Text style={styles.retryButtonText}>Thử lại</Text>
-              </TouchableOpacity>
+      {bookingStatus === 'COMING' && (
+        <View style={{flex: 1}}>
+          {loadingWorkerLocation && (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Đang tải vị trí thợ...</Text>
             </View>
-          </View>
-        )}
+          )}
 
-        {/* Hiển thị map với chỉ customer location khi không có worker location */}
-        {!loadingWorkerLocation && customerLocation && !workerLocation && (
-          <MapView
-            ref={mapRef}
-            style={styles.map}
-            initialRegion={{
-              latitude: customerLocation.latitude,
-              longitude: customerLocation.longitude,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}>
-            {/* Marker khách hàng */}
-            <Marker coordinate={customerLocation}>
-              <View style={{alignItems: 'center'}}>
-                <View style={[styles.markerIconContainer, {backgroundColor: Colors.secondary}]}>
-                  <MaterialIcons name='person' size={28} color='#fff' />
-                </View>
-                <View style={[styles.markerArrow, {borderTopColor: Colors.secondary}]} />
+          {/* Overlay thông báo khi không có vị trí worker */}
+          {!loadingWorkerLocation && !workerLocation && customerLocation && (
+            <View style={styles.noLocationOverlay}>
+              <View style={styles.noLocationCard}>
+                <MaterialIcons name='location-off' size={32} color={Colors.secondary} />
+                <Text style={styles.noLocationTitle}>Không tìm thấy vị trí thợ</Text>
+                <Text style={styles.noLocationText}>Thợ chưa cập nhật vị trí hoặc đang offline.</Text>
+                <TouchableOpacity style={styles.retryButton} onPress={fetchWorkerLocation}>
+                  <MaterialIcons name='refresh' size={16} color='#fff' />
+                  <Text style={styles.retryButtonText}>Thử lại</Text>
+                </TouchableOpacity>
               </View>
-            </Marker>
-          </MapView>
-        )}
+            </View>
+          )}
 
-        {/* Hiển thị map khi có đủ dữ liệu */}
-        {customerLocation && workerLocation && (
-          <MapView
-            ref={mapRef}
-            style={styles.map}
-            initialRegion={{
-              latitude: (customerLocation.latitude + workerLocation.latitude) / 2,
-              longitude: (customerLocation.longitude + workerLocation.longitude) / 2,
-              latitudeDelta: Math.abs(customerLocation.latitude - workerLocation.latitude) * 2 + 0.01,
-              longitudeDelta: Math.abs(customerLocation.longitude - workerLocation.longitude) * 2 + 0.01,
-            }}>
-            {/* Marker khách hàng */}
-            <Marker coordinate={customerLocation}>
-              <View style={{alignItems: 'center'}}>
-                <View style={[styles.markerIconContainer, {backgroundColor: Colors.secondary}]}>
-                  <MaterialIcons name='person' size={28} color='#fff' />
+          {/* Hiển thị map với chỉ customer location khi không có worker location */}
+          {!loadingWorkerLocation && customerLocation && !workerLocation && (
+            <MapView
+              ref={mapRef}
+              style={styles.map}
+              initialRegion={{
+                latitude: customerLocation.latitude,
+                longitude: customerLocation.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}>
+              {/* Marker khách hàng */}
+              <Marker coordinate={customerLocation}>
+                <View style={{alignItems: 'center'}}>
+                  <View style={[styles.markerIconContainer, {backgroundColor: Colors.primary}]}>
+                    <MaterialIcons name='person' size={28} color='#fff' />
+                  </View>
+                  <View style={[styles.markerArrow, {borderTopColor: Colors.primary}]} />
                 </View>
-                <View style={[styles.markerArrow, {borderTopColor: Colors.secondary}]} />
-              </View>
-            </Marker>
+              </Marker>
+            </MapView>
+          )}
 
-            {/* Marker thợ */}
-            <Marker.Animated coordinate={workerLocationRef as any}>
-              <View style={{alignItems: 'center'}}>
-                <View style={[styles.markerIconContainer, {backgroundColor: Colors.primary}]}>
-                  <MaterialCommunityIcons name='account-hard-hat' size={28} color='white' />
+          {/* Hiển thị map khi có đủ dữ liệu */}
+          {customerLocation && workerLocation && (
+            <MapView
+              ref={mapRef}
+              style={styles.map}
+              initialRegion={{
+                latitude: (customerLocation.latitude + workerLocation.latitude) / 2,
+                longitude: (customerLocation.longitude + workerLocation.longitude) / 2,
+                latitudeDelta: Math.abs(customerLocation.latitude - workerLocation.latitude) * 2 + 0.01,
+                longitudeDelta: Math.abs(customerLocation.longitude - workerLocation.longitude) * 2 + 0.01,
+              }}>
+              {/* Marker khách hàng */}
+              <Marker coordinate={customerLocation}>
+                <View style={{alignItems: 'center'}}>
+                  <View style={[styles.markerIconContainer, {backgroundColor: Colors.primary}]}>
+                    <MaterialIcons name='person' size={28} color='#fff' />
+                  </View>
+                  <View style={[styles.markerArrow, {borderTopColor: Colors.primary}]} />
                 </View>
-                <View style={[styles.markerArrow, {borderTopColor: Colors.primary}]} />
-              </View>
-            </Marker.Animated>
+              </Marker>
 
-            {/* Tuyến đường */}
-            {routeCoords.length > 0 && (
-              <Polyline coordinates={routeCoords} strokeColor={Colors.primary} strokeWidth={8} />
-            )}
-          </MapView>
-        )}
-      </View>
+              {/* Marker thợ */}
+              <Marker.Animated coordinate={workerLocationRef as any}>
+                <View style={{alignItems: 'center'}}>
+                  <View style={[styles.markerIconContainer, {backgroundColor: Colors.secondary}]}>
+                    <MaterialCommunityIcons name='account-hard-hat' size={28} color='white' />
+                  </View>
+                  <View style={[styles.markerArrow, {borderTopColor: Colors.secondary}]} />
+                </View>
+              </Marker.Animated>
+
+              {/* Tuyến đường */}
+              {routeCoords.length > 0 && (
+                <Polyline coordinates={routeCoords} strokeColor={Colors.secondary} strokeWidth={8} />
+              )}
+            </MapView>
+          )}
+        </View>
+      )}
 
       {/* JOB INFO */}
-      <View style={styles.infoCard}>
+      <View style={[styles.infoCard, {flex: 1}]}>
         <ScrollView>
           <Text>#{bookingDetail?.bookingCode}</Text>
           <View style={{flexDirection: 'row', alignItems: 'center', marginVertical: 4}}>
             <AvatarWrapper
               url={acceptedWorker?.worker?.user?.avatarUrl}
-              role={ROLE.WORKER}
+              role={ROLE.CUSTOMER}
               size={48}
               className='mr-2'
             />
             <Text style={{fontWeight: 'bold', fontSize: 16}}>{acceptedWorker?.worker?.user?.fullName}</Text>
-            <View style={{marginLeft: 'auto'}}>
+            <View style={{marginLeft: 'auto', flexDirection: 'row'}}>
+              <TouchableOpacity style={styles.chatButton} onPress={() => registerConfirmJob('JR-C80E8DF8-2025')}>
+                <MaterialIcons name='call' size={26} color={Colors.secondary} />
+              </TouchableOpacity>
               <TouchableOpacity style={styles.chatButton} onPress={handleChat}>
-                <MaterialIcons name='chat' size={26} color={Colors.primary} />
+                <MaterialIcons name='chat' size={26} color={Colors.secondary} />
               </TouchableOpacity>
             </View>
           </View>
@@ -436,22 +441,22 @@ export default function Tracking() {
               <Text style={styles.sectionTitle}>Thông tin chi tiết</Text>
 
               <View style={styles.detailRow}>
-                <MaterialCommunityIcons name='tools' size={18} color={Colors.primary} />
+                <MaterialCommunityIcons name='tools' size={18} color={Colors.secondary} />
                 <Text style={styles.detailText}>{jobDetail?.service?.serviceName}</Text>
               </View>
 
               <View style={styles.detailRow}>
-                <MaterialIcons name='description' size={18} color={Colors.primary} />
+                <MaterialIcons name='description' size={18} color={Colors.secondary} />
                 <Text style={styles.detailText}>{jobDetail?.description || 'Không có mô tả'}</Text>
               </View>
 
               <View style={styles.detailRow}>
-                <MaterialIcons name='calendar-today' size={18} color={Colors.primary} />
+                <MaterialIcons name='calendar-today' size={18} color={Colors.secondary} />
                 <Text style={styles.detailText}>{displayDateVN(jobDetail?.bookingDate)}</Text>
               </View>
 
               <View style={styles.detailRow}>
-                <MaterialCommunityIcons name='map-marker' size={18} color={Colors.primary} />
+                <MaterialCommunityIcons name='map-marker' size={18} color={Colors.secondary} />
                 <Text style={styles.detailText}>{jobDetail?.bookingAddress}</Text>
               </View>
 
@@ -487,15 +492,14 @@ const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#F2F2F2'},
   map: {flex: 1},
   infoCard: {
-    backgroundColor: '#fff',
+    // backgroundColor: '#fff',
     padding: 16,
     borderTopWidth: 1,
     borderColor: '#eee',
-    maxHeight: '45%',
   },
   chatButton: {
     borderWidth: 1,
-    borderColor: Colors.primary,
+    borderColor: Colors.secondary,
     padding: 10,
     borderRadius: 50,
     marginRight: 10,
@@ -570,7 +574,7 @@ const styles = StyleSheet.create({
   },
   priceBox: {
     marginTop: 12,
-    backgroundColor: Colors.primary + '10',
+    backgroundColor: Colors.secondary + '10',
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -579,13 +583,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   priceLabel: {
-    color: Colors.primary,
+    color: Colors.secondary,
     fontWeight: '600',
   },
   priceValue: {
     fontWeight: 'bold',
     fontSize: 16,
-    color: Colors.primary,
+    color: Colors.secondary,
   },
   imageSection: {
     marginTop: 16,
@@ -593,7 +597,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: Colors.primary,
+    color: Colors.secondary,
     marginBottom: 8,
   },
 
@@ -630,7 +634,7 @@ const styles = StyleSheet.create({
   },
 
   timelineDotCompleted: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.secondary,
   },
 
   timelineLine: {
@@ -643,7 +647,7 @@ const styles = StyleSheet.create({
   },
 
   timelineLineActive: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.secondary,
   },
 
   timelineLabel: {
@@ -659,7 +663,7 @@ const styles = StyleSheet.create({
   },
 
   timelineLabelCompleted: {
-    color: Colors.primary,
+    color: Colors.secondary,
   },
 
   // Loading styles
@@ -676,7 +680,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: Colors.primary,
+    color: Colors.secondary,
   },
 
   // No location styles
@@ -696,8 +700,8 @@ const styles = StyleSheet.create({
   },
   noLocationCard: {
     backgroundColor: 'rgba(255,255,255,0.95)',
-    padding: 16,
-    borderRadius: 12,
+    padding: 8,
+    borderRadius: 8,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.1,
@@ -707,7 +711,7 @@ const styles = StyleSheet.create({
   noLocationTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: Colors.primary,
+    color: Colors.secondary,
     marginTop: 16,
     marginBottom: 8,
   },
@@ -719,7 +723,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   retryButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.secondary,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,

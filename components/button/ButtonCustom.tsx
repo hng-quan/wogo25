@@ -16,6 +16,7 @@ const ButtonCustom = ({children, loading, ...props}: React.ComponentProps<typeof
       <Button
         {...props}
         loading={loading}
+        contentStyle={{paddingVertical: 6}}
         style={[styles.button, {borderColor: mainColor, borderWidth: 1}, props.style]}
         textColor={textColor}
         rippleColor={props.rippleColor ?? mainColor + '33'}>

@@ -1,5 +1,7 @@
 import Appbar from '@/components/layout/Appbar';
 import { AvatarWrapper } from '@/components/layout/ProfileContainer';
+import PaymentMethodModal from '@/components/modal/PaymentQRModal';
+import PaymentQRModal from '@/components/modal/QRCodeModal';
 import { ROLE } from '@/context/RoleContext';
 import { useSocket } from '@/context/SocketContext';
 import { jsonGettAPI, jsonPostAPI, jsonPutAPI } from '@/lib/apiService';
@@ -12,6 +14,7 @@ import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import {
+  Alert,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -25,12 +28,14 @@ import {
 } from 'react-native';
 import MapView, { AnimatedRegion, Marker, Polyline } from 'react-native-maps';
 
-const ORS_API_KEY = process.env.EXPO_PUBLIC_OPENROUTE_SERVICE_API_KEY || '';
+// API key OpenRouteService
+// const ORS_API_KEY = process.env.EXPO_PUBLIC_OPENROUTE_SERVICE_API_KEY || '';
+const ORS_API_KEY = '';
 const processSteps = ['PENDING', 'COMING', 'ARRIVED', 'NEGOTIATING', 'WORKING', 'PAYING', 'PAID'];
 
 // Tính khoảng cách giữa 2 điểm (mét)
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-  const R = 6371000; // bán kính trái đất (mét)
+  const R = 6371000; // bán kính trái đất (mét) == 6371 km
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -42,10 +47,8 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 
 export default function WorkFlow() {
   const {currentTab, jobRequestCode} = useLocalSearchParams();
-  console.log('jobRequestCode param:', jobRequestCode);
   const {subscribe, connected} = useSocket();
   const mapRef = useRef<MapView>(null);
-
   const [bookingDetail, setBookingDetail] = React.useState<any>(null);
   const [bookingStatus, setBookingStatus] = React.useState<string>('');
   const [jobDetail, setJobDetail] = React.useState<any>(null);
@@ -66,6 +69,18 @@ export default function WorkFlow() {
   const [notes, setNotes] = React.useState<string>('');
   const [isPriceConfirmed, setIsPriceConfirmed] = React.useState<boolean>(false);
   const [isSubmittingPrice, setIsSubmittingPrice] = React.useState<boolean>(false);
+  const [qrVisible, setQrVisible] = React.useState<boolean>(false);
+  const [method, setMethod] = React.useState<'cash' | 'qr'>('cash');
+  const [qrLink, setQrLink] = React.useState<string | null>(null);
+  const [viewQRVisible, setViewQRVisible] = React.useState<boolean>(false);
+
+  // Khởi tạo
+  useEffect(() => {
+    if (!jobRequestCode) return;
+    fetchJobDetail();
+    fetchBookingDetail();
+    fetchMyLocation();
+  }, [jobRequestCode]);
 
   const workerLocationRef = useRef(
     new AnimatedRegion({
@@ -75,24 +90,6 @@ export default function WorkFlow() {
       longitudeDelta: 0,
     }),
   ).current;
-
-  const fetchBookingDetail = async () => {
-    try {
-      const res = await jsonGettAPI('/bookings/getByCode/' + jobRequestCode);
-      if (res?.result) {
-        setBookingDetail(res.result);
-        setBookingStatus(res.result.bookingStatus);
-
-        // Reset price confirmation flag khi status thay đổi
-        if (res.result.bookingStatus !== 'NEGOTIATING') {
-          setIsPriceConfirmed(false);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching booking detail:', error);
-    }
-  };
-
   const fetchMyLocation = async () => {
     try {
       setLoadingMyLocation(true);
@@ -125,6 +122,21 @@ export default function WorkFlow() {
     }
   };
 
+  const fetchBookingDetail = async () => {
+    try {
+      const res = await jsonGettAPI('/bookings/getByCode/' + jobRequestCode);
+      if (res?.result) {
+        setBookingDetail(res.result);
+        setBookingStatus(res.result.bookingStatus);
+        if (res.result.bookingStatus !== 'NEGOTIATING') {
+          // setIsPriceConfirmed(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching booking detail:', error);
+    }
+  };
+
   // Gửi vị trí lên server
   const sendLocationToServer = async (latitude: number, longitude: number) => {
     try {
@@ -148,7 +160,11 @@ export default function WorkFlow() {
   // Khởi tạo location tracking
   const startLocationTracking = async () => {
     try {
-      console.log('🌐 Bắt đầu theo dõi vị trí GPS...');
+      // Chặn nếu đã có watcher
+      if (isTrackingLocation || locationSubscriptionRef.current) {
+        console.log('startLocationTracking: already tracking, skipping new watcher');
+        return;
+      }
 
       // Kiểm tra quyền location
       const {status} = await Location.requestForegroundPermissionsAsync();
@@ -183,7 +199,7 @@ export default function WorkFlow() {
         {
           accuracy: Location.Accuracy.High,
           timeInterval: 5000, // Kiểm tra mỗi 5 giây
-          distanceInterval: 1, // Cập nhật khi di chuyển ít nhất 1 mét
+          distanceInterval: 5, // Cập nhật khi di chuyển ít nhất 5 mét
         },
         location => {
           const {latitude: newLat, longitude: newLon} = location.coords;
@@ -197,8 +213,6 @@ export default function WorkFlow() {
               newLat,
               newLon,
             );
-
-            // console.log(`📏 Khoảng cách di chuyển: ${distance.toFixed(2)}m`);
 
             // Chỉ gửi khi di chuyển >= 10m
             if (distance >= 10) {
@@ -286,13 +300,6 @@ export default function WorkFlow() {
     }
   };
 
-  useEffect(() => {
-    if (!jobRequestCode) return;
-    fetchJobDetail();
-    fetchBookingDetail();
-    fetchMyLocation();
-  }, [jobRequestCode]);
-
   // Vẽ tuyến khi có đủ dữ liệu vị trí hợp lệ
   useEffect(() => {
     if (!customerLocation || !myLocation) {
@@ -320,10 +327,7 @@ export default function WorkFlow() {
   // Lắng nghe cập nhật trạng thái booking
   useEffect(() => {
     if (!connected || !bookingDetail?.bookingCode) return;
-
     const topic = `/topic/bookingStatus/${bookingDetail.bookingCode}`;
-    console.log('🔌 [Worker] Lắng nghe trạng thái booking:', topic);
-
     const sub = subscribe(topic, (msg: any) => {
       try {
         const newStatus = msg.body.trim();
@@ -340,6 +344,32 @@ export default function WorkFlow() {
     };
   }, [connected, bookingDetail?.bookingCode]);
 
+  // Lắng nghe xác nhận giá từ khách hàng khi ở trạng thái NEGOTIATING
+  useEffect(() => {
+    if (!connected || !bookingDetail?.bookingCode) return;
+    const topic = `/topic/confirmPrice/${bookingDetail.bookingCode}`;
+    console.log('🔌 [Worker] Lắng nghe xác nhận giá:', topic);
+    const sub = subscribe(topic, (msg: any) => {
+      try {
+        const payload = JSON.parse(msg.body);
+        console.log('📨 [Worker] Nhận được xác nhận giá từ khách hàng:', payload);
+        if (payload.acceptTerms) {
+          setIsPriceConfirmed(true);
+          // setIsOpenModalStarWork(true);
+        } else {
+          setIsPriceConfirmed(false);
+          alert('Khách hàng từ chối giá ' + formatPrice(payload.finalPrice) + 'đ' + '. Vui lòng thương lượng lại.');
+        }
+      } catch (error) {
+        console.error('❌ [Worker] Lỗi xử lý xác nhận giá:', error);
+      }
+    });
+    return () => {
+      console.log('🔌 [Worker] Ngừng lắng nghe xác nhận giá');
+      sub?.unsubscribe();
+    };
+  }, [connected, bookingDetail?.bookingCode]);
+
   // Cleanup location tracking khi component unmount
   useEffect(() => {
     return () => {
@@ -347,6 +377,12 @@ export default function WorkFlow() {
       stopLocationTracking();
     };
   }, []);
+
+  useEffect(() => {
+    if (bookingDetail?.bookingStatus !== 'COMING' || bookingStatus !== 'COMING') {
+      stopLocationTracking();
+    }
+  }, [bookingStatus, bookingDetail?.bookingStatus]);
 
   const fetchJobDetail = async () => {
     try {
@@ -407,11 +443,9 @@ export default function WorkFlow() {
       };
 
       console.log('🔄 Cập nhật trạng thái booking:', payload);
-
       const response = await jsonPutAPI('/bookings/updateStatus', payload);
       if (response?.code === 1000) {
         console.log('✅ Cập nhật trạng thái thành công');
-        // State sẽ được cập nhật qua socket
       } else {
         console.error('❌ Lỗi cập nhật trạng thái:', response);
       }
@@ -437,10 +471,11 @@ export default function WorkFlow() {
 
       console.log('💰 Gửi xác nhận giá:', payload);
 
-      const response = await jsonPostAPI('/bookings/confirm-price', payload);
+      const response = await jsonPostAPI('/bookings/negotiate-price', payload);
+      console.log('response', response);
       if (response?.code === 1000) {
         console.log('✅ Xác nhận giá thành công');
-        setIsPriceConfirmed(true);
+        // setIsPriceConfirmed(true);
         setShowPriceModal(false);
         // Refresh booking detail
         await fetchBookingDetail();
@@ -453,6 +488,15 @@ export default function WorkFlow() {
       alert('Có lỗi xảy ra khi xác nhận giá. Vui lòng thử lại.');
     } finally {
       setIsSubmittingPrice(false);
+    }
+  };
+
+  const handleCreateQR = async () => {
+    try {
+      const res = await jsonPostAPI('/bookings/create-payment/' + bookingDetail?.bookingCode, {});
+      setQrLink(res?.result);
+    } catch (error) {
+      Alert.alert('Lỗi', error.message || 'Đã có lỗi xảy ra');
     }
   };
 
@@ -477,19 +521,9 @@ export default function WorkFlow() {
         // console.log('🌐 Bắt đầu theo dõi vị trí GPS khi di chuyển');
         startLocationTracking();
       }
-
-      console.log('Current Status:', currentStatus);
-      console.log('Next Step:', nextStep);
-      // Dừng location tracking khi hoàn thành công việc
-      if (nextStep === 'ARRIVED' || nextStep === 'NEGOTIATING') {
-        console.log('🛑 Dừng theo dõi vị trí GPS khi hoàn thành');
-        stopLocationTracking();
-      }
-
       updateBookingStatus(nextStep);
     } else {
       console.log('✅ Đã hoàn thành tất cả các bước');
-      stopLocationTracking();
     }
   };
   return (
@@ -497,7 +531,7 @@ export default function WorkFlow() {
       <Appbar title='Tiến trình làm việc' onBackPress={goBack} />
 
       {/* MAP - Chỉ hiển thị khi COMING */}
-      { ['COMING'].includes(bookingDetail?.bookingStatus) && ['COMING'].includes(bookingStatus) ? (
+      {['COMING'].includes(bookingStatus) ? (
         <View style={{flex: 1}}>
           {loadingMyLocation && (
             <View style={styles.loadingContainer}>
@@ -584,8 +618,7 @@ export default function WorkFlow() {
       ) : null}
 
       {/* JOB INFO - Layout khác nhau cho PENDING, NEGOTIATING */}
-      {['PENDING', 'ARRIVED', 'NEGOTIATING', 'WORKING'].includes(bookingDetail?.bookingStatus) ||
-      ['PENDING', 'ARRIVED', 'NEGOTIATING', 'WORKING'].includes(bookingStatus) ? (
+      {bookingStatus !== 'COMING' ? (
         /* PENDING & NEGOTIATING: Hiển thị toàn bộ thông tin chi tiết */
         <View style={styles.infoCardFull}>
           <ScrollView showsVerticalScrollIndicator={false}>
@@ -617,7 +650,7 @@ export default function WorkFlow() {
                 <View style={styles.timelineContainer}>
                   {processSteps.map((status, index) => {
                     const label = BOOKING_STATUS_MAP[status as keyof typeof BOOKING_STATUS_MAP];
-                    const currentStatus = bookingDetail?.bookingStatus || bookingStatus;
+                    const currentStatus = bookingStatus;
                     const isActive = status === currentStatus;
                     const isCompleted = processSteps.indexOf(currentStatus) > index;
 
@@ -650,6 +683,43 @@ export default function WorkFlow() {
                   })}
                 </View>
               </View>
+
+              {bookingStatus === 'PAYING' && (
+                <View style={styles.detailSection}>
+                  <Text style={styles.sectionTitle}>Chi phí dịch vụ</Text>
+                  <View style={[styles.detailRow, {justifyContent: 'space-between'}]}>
+                    <Text style={styles.detailText}>Phương thức thanh toán</Text>
+                    <TouchableOpacity onPress={() => setQrVisible(true)}>
+                      <MaterialCommunityIcons
+                        name={`${method === 'qr' ? 'qrcode-scan' : 'cash-multiple'}`}
+                        size={24}
+                        color={Colors.primary}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={[styles.detailRow, {justifyContent: 'space-between'}]}>
+                    <Text style={styles.detailText}>Giá chốt</Text>
+                    <Text style={styles.priceValue}>{formatPrice(bookingDetail?.totalAmount)}đ</Text>
+                  </View>
+                  <View style={[styles.detailRow, {justifyContent: 'space-between'}]}>
+                    <Text style={styles.detailText}>Phí sàn (10%)</Text>
+                    <Text style={styles.priceValue}>{formatPrice(bookingDetail?.totalAmount * 0.1)}đ</Text>
+                  </View>
+
+                  {jobDetail?.files?.length > 0 && (
+                    <View style={styles.imageSection}>
+                      <Text style={styles.sectionTitle}>Hình ảnh đính kèm</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        {jobDetail.files.map((file: any) => (
+                          <View key={file.id} style={styles.imageWrapper}>
+                            <Image source={{uri: file.fileUrl}} style={styles.imageItem} resizeMode='cover' />
+                          </View>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              )}
 
               <View style={styles.detailSection}>
                 <Text style={styles.sectionTitle}>Thông tin chi tiết</Text>
@@ -696,7 +766,7 @@ export default function WorkFlow() {
           </ScrollView>
         </View>
       ) : (
-        /* COMING và các trạng thái khác: Hiển thị hộp thông tin nhỏ */
+        /* COMING : Hiển thị hộp thông tin nhỏ */
         <View style={styles.compactInfoCard}>
           <View style={styles.compactHeader}>
             <Text style={styles.compactBookingCode}>#{bookingDetail?.bookingCode}</Text>
@@ -730,29 +800,62 @@ export default function WorkFlow() {
 
       {/* Floating Action Button cho chuyển trạng thái */}
       {(() => {
-        const currentStatus = bookingDetail?.bookingStatus || bookingStatus;
+        const currentStatus = bookingStatus;
         const nextStep = getNextStep(currentStatus);
-        const nextStepName = nextStep ? BOOKING_STATUS_MAP[nextStep as keyof typeof BOOKING_STATUS_MAP] : null;
 
         // Nếu đang ARRIVED và chưa confirm price
-        if (currentStatus === 'ARRIVED') {
+        // if (currentStatus === 'ARRIVED' || isPriceConfirmed === true) {
+        if (currentStatus === 'ARRIVED' || (currentStatus === 'NEGOTIATING' && isPriceConfirmed === false)) {
           return (
             <TouchableOpacity style={styles.floatingActionButton} onPress={handleOpenPriceModal}>
               <MaterialIcons name='attach-money' size={24} color='#fff' />
-              <Text style={styles.floatingActionButtonText}>Chốt giá dịch vụ</Text>
+              <Text style={[styles.floatingActionButtonText, {paddingVertical: 16}]}>Chốt giá dịch vụ</Text>
+            </TouchableOpacity>
+          );
+        }
+
+        if (method === 'qr' && currentStatus === 'PAYING') {
+          return (
+            <TouchableOpacity style={styles.floatingActionButton} onPress={() => setViewQRVisible(true)}>
+              <MaterialIcons name='qr-code' size={24} color='#fff' />
+              <Text style={[styles.floatingActionButtonText, {paddingVertical: 16}]}>QR code</Text>
             </TouchableOpacity>
           );
         }
 
         // Các trạng thái khác
-        return nextStep && nextStep !== 'PAID' && currentStatus !== 'NEGOTIATING' ? (
-          <TouchableOpacity style={styles.floatingActionButton} onPress={handleNextStep}>
+        return currentStatus &&
+          currentStatus !== 'PAID' &&
+          (currentStatus !== 'NEGOTIATING' || isPriceConfirmed !== false) ? (
+          <TouchableOpacity style={[styles.floatingActionButton, {paddingVertical: 16}]} onPress={handleNextStep}>
             <MaterialIcons name='arrow-forward' size={24} color='#fff' />
             <Text style={styles.floatingActionButtonText}>
-              {nextStep === 'COMING' ? 'Bắt đầu di chuyển' : `${nextStepName}`}
+              {nextStep === 'COMING' && 'Bắt đầu di chuyển'}
+              {nextStep === 'ARRIVED' && 'Xác nhận đã đến'}
+              {nextStep === 'NEGOTIATING' && 'Chốt giá dịch vụ'}
+              {nextStep === 'WORKING' && 'Bắt đầu làm việc'}
+              {nextStep === 'PAYING' && 'Hoàn tất công việc'}
+              {nextStep === 'PAID' && 'Đã thanh toán'}
             </Text>
           </TouchableOpacity>
-        ) : null;
+        ) : // <View style={styles.floatingActionButton}>
+        //   <SlideActionBar onSlideRight={handleNextStep} label={
+        //     nextStep === 'COMING'
+        //       ? 'Bắt đầu di chuyển'
+        //       : nextStep === 'ARRIVED'
+        //       ? 'Xác nhận đã đến'
+        //       : nextStep === 'NEGOTIATING'
+        //       ? 'Chốt giá dịch vụ'
+        //       : nextStep === 'WORKING'
+        //       ? 'Bắt đầu làm việc'
+        //       : nextStep === 'PAYING'
+        //       ? 'Hoàn tất công việc'
+        //       : nextStep === 'PAID'
+        //       ? 'Hoàn thành'
+        //       : null
+        //   }/>
+        // </View>
+        null;
       })()}
 
       {/* Price Confirmation Modal */}
@@ -817,6 +920,21 @@ export default function WorkFlow() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <PaymentMethodModal
+        visible={qrVisible}
+        onClose={() => setQrVisible(false)}
+        qrLink={qrLink?.linkTransaction || ''}
+        selectedMethod={method}
+        onSelectMethod={setMethod}
+        onCreateQR={handleCreateQR}
+      />
+
+      <PaymentQRModal
+        visible={viewQRVisible}
+        onClose={() => setViewQRVisible(false)}
+        qrLink={qrLink?.linkTransaction || ''}
+      />
     </View>
   );
 }
@@ -977,7 +1095,7 @@ const styles = StyleSheet.create({
   },
 
   timelineDotActive: {
-    backgroundColor: Colors.secondary,
+    backgroundColor: Colors.primary,
     transform: [{scale: 1.3}],
   },
 
@@ -1006,7 +1124,7 @@ const styles = StyleSheet.create({
   },
 
   timelineLabelActive: {
-    color: Colors.secondary,
+    color: Colors.primary,
     fontWeight: 'bold',
   },
 
@@ -1155,8 +1273,8 @@ const styles = StyleSheet.create({
 
   // Full info card for PENDING state
   infoCardFull: {
-    backgroundColor: '#fff',
-    padding: 16,
+    paddingHorizontal: 16,
+    marginBottom: 80,
     borderTopWidth: 1,
     borderColor: '#eee',
     flex: 1,
@@ -1214,8 +1332,6 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     backgroundColor: Colors.primary,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
     borderRadius: 50,
     flexDirection: 'row',
     alignItems: 'center',
