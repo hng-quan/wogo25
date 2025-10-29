@@ -5,7 +5,7 @@ import PaymentQRModal from '@/components/modal/QRCodeModal';
 import { ROLE } from '@/context/RoleContext';
 import { useSocket } from '@/context/SocketContext';
 import { jsonGettAPI, jsonPostAPI, jsonPutAPI } from '@/lib/apiService';
-import { BOOKING_STATUS_MAP, Colors } from '@/lib/common';
+import { Colors, WORKFLOW_STATUS_MAP } from '@/lib/common';
 import { displayDateVN, formatPrice } from '@/lib/utils';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import polyline from '@mapbox/polyline';
@@ -29,9 +29,9 @@ import {
 import MapView, { AnimatedRegion, Marker, Polyline } from 'react-native-maps';
 
 // API key OpenRouteService
-// const ORS_API_KEY = process.env.EXPO_PUBLIC_OPENROUTE_SERVICE_API_KEY || '';
-const ORS_API_KEY = '';
-const processSteps = ['PENDING', 'COMING', 'ARRIVED', 'NEGOTIATING', 'WORKING', 'PAYING', 'PAID'];
+const ORS_API_KEY = process.env.EXPO_PUBLIC_OPENROUTE_SERVICE_API_KEY || '';
+// const ORS_API_KEY = '';
+const processSteps = ['PENDING', 'COMING', 'ARRIVED', 'NEGOTIATING', 'WORKING', 'PAYING', 'PAID', 'COMPLETED'];
 
 // Tính khoảng cách giữa 2 điểm (mét)
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -71,8 +71,12 @@ export default function WorkFlow() {
   const [isSubmittingPrice, setIsSubmittingPrice] = React.useState<boolean>(false);
   const [qrVisible, setQrVisible] = React.useState<boolean>(false);
   const [method, setMethod] = React.useState<'cash' | 'qr'>('cash');
-  const [qrLink, setQrLink] = React.useState<string | null>(null);
+  const [qrLink, setQrLink] = React.useState<any | null>(null);
   const [viewQRVisible, setViewQRVisible] = React.useState<boolean>(false);
+  // Verify-payment polling refs / state
+  const verifyIntervalRef = useRef<any | null>(null);
+  const verifyTimeoutRef = useRef<any | null>(null);
+  const [isPollingVerify, setIsPollingVerify] = React.useState<boolean>(false);
 
   // Khởi tạo
   useEffect(() => {
@@ -378,6 +382,14 @@ export default function WorkFlow() {
     };
   }, []);
 
+  // Cleanup verify polling on unmount
+  useEffect(() => {
+    return () => {
+      console.log('🧹 Cleanup verify-payment polling');
+      stopVerifyPolling();
+    };
+  }, []);
+
   useEffect(() => {
     if (bookingDetail?.bookingStatus !== 'COMING' || bookingStatus !== 'COMING') {
       stopLocationTracking();
@@ -440,7 +452,10 @@ export default function WorkFlow() {
       const payload = {
         bookingCode: bookingDetail?.bookingCode,
         status: newStatus,
-      };
+      } as any;
+      if (newStatus === 'COMPLETED' && method === 'qr') {
+        payload['paymentMethod'] = 'BANK_TRANSFER';
+      }
 
       console.log('🔄 Cập nhật trạng thái booking:', payload);
       const response = await jsonPutAPI('/bookings/updateStatus', payload);
@@ -495,8 +510,84 @@ export default function WorkFlow() {
     try {
       const res = await jsonPostAPI('/bookings/create-payment/' + bookingDetail?.bookingCode, {});
       setQrLink(res?.result);
-    } catch (error) {
-      Alert.alert('Lỗi', error.message || 'Đã có lỗi xảy ra');
+      // Start polling verify-payment every 3s, stop when verified or after 5 minutes
+      startVerifyPolling(bookingDetail?.bookingCode);
+    } catch (error: any) {
+      Alert.alert('Lỗi', error?.message || 'Đã có lỗi xảy ra');
+    }
+  };
+
+  // Start polling verify-payment endpoint every 3 seconds.
+  // Stops when response.result === true or after 5 minutes.
+  const startVerifyPolling = (bookingCodeParam?: string) => {
+    const code = bookingCodeParam || bookingDetail?.bookingCode;
+    if (!code) {
+      console.warn('startVerifyPolling: missing booking code');
+      return;
+    }
+    if (isPollingVerify) {
+      console.log('startVerifyPolling: already polling for', code);
+      return;
+    }
+
+    setIsPollingVerify(true);
+
+    const POLL_INTERVAL_MS = 3000;
+    const MAX_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+
+    // One-off immediate check (optional), then interval
+    const checkOnce = async () => {
+      try {
+        const resp = await jsonPostAPI('/bookings/verify-payment/' + code, {});
+        console.log('verify-payment:', resp);
+        if (resp?.result === true) {
+          // stop polling and refresh booking detail
+          stopVerifyPolling();
+          // fetchBookingDetail();
+        }
+      } catch (err) {
+        console.error('Error checking payment verification:', err);
+      }
+    };
+
+    // immediate
+    checkOnce();
+
+    verifyIntervalRef.current = setInterval(async () => {
+      try {
+        console.log('Polling verify-payment for', code);
+        const resp = await jsonPostAPI('/bookings/verify-payment/' + code, {});
+        console.log('verify-payment:', resp);
+        if (resp?.result === true) {
+          console.log('Payment verified for', code);
+          stopVerifyPolling();
+          // await fetchBookingDetail();
+        }
+      } catch (err) {
+        console.error('Polling verify-payment error:', err);
+      }
+    }, POLL_INTERVAL_MS);
+
+    verifyTimeoutRef.current = setTimeout(() => {
+      console.log('Polling verify-payment timed out after', MAX_DURATION_MS, 'ms');
+      stopVerifyPolling();
+    }, MAX_DURATION_MS);
+  };
+
+  const stopVerifyPolling = () => {
+    try {
+      if (verifyIntervalRef.current) {
+        clearInterval(verifyIntervalRef.current);
+        verifyIntervalRef.current = null;
+      }
+      if (verifyTimeoutRef.current) {
+        clearTimeout(verifyTimeoutRef.current);
+        verifyTimeoutRef.current = null;
+      }
+    } catch (err) {
+      console.error('Error stopping verify polling:', err);
+    } finally {
+      setIsPollingVerify(false);
     }
   };
 
@@ -513,7 +604,7 @@ export default function WorkFlow() {
     const nextStep = getNextStep(currentStatus);
 
     if (nextStep) {
-      const stepName = BOOKING_STATUS_MAP[nextStep as keyof typeof BOOKING_STATUS_MAP];
+      const stepName = WORKFLOW_STATUS_MAP[nextStep as keyof typeof WORKFLOW_STATUS_MAP];
       console.log(`🚀 Chuyển sang bước tiếp theo: ${stepName}`);
 
       // Bắt đầu location tracking khi chuyển từ PENDING sang COMING
@@ -649,7 +740,7 @@ export default function WorkFlow() {
                 <Text style={styles.sectionTitle}>Quy trình làm việc</Text>
                 <View style={styles.timelineContainer}>
                   {processSteps.map((status, index) => {
-                    const label = BOOKING_STATUS_MAP[status as keyof typeof BOOKING_STATUS_MAP];
+                    const label = WORKFLOW_STATUS_MAP[status as keyof typeof WORKFLOW_STATUS_MAP];
                     const currentStatus = bookingStatus;
                     const isActive = status === currentStatus;
                     const isCompleted = processSteps.indexOf(currentStatus) > index;
@@ -684,12 +775,13 @@ export default function WorkFlow() {
                 </View>
               </View>
 
-              {bookingStatus === 'PAYING' && (
+              {['PAYING', 'PAID', 'COMPLETED'].includes(bookingStatus) && (
                 <View style={styles.detailSection}>
                   <Text style={styles.sectionTitle}>Chi phí dịch vụ</Text>
                   <View style={[styles.detailRow, {justifyContent: 'space-between'}]}>
                     <Text style={styles.detailText}>Phương thức thanh toán</Text>
-                    <TouchableOpacity onPress={() => setQrVisible(true)}>
+                    <TouchableOpacity disabled={bookingStatus !== 'PAYING'} onPress={() => setQrVisible(true)} style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
+                      <Text>{method === 'qr' ? 'QR Code' : 'Tiền mặt'}</Text>
                       <MaterialCommunityIcons
                         name={`${method === 'qr' ? 'qrcode-scan' : 'cash-multiple'}`}
                         size={24}
@@ -816,7 +908,14 @@ export default function WorkFlow() {
 
         if (method === 'qr' && currentStatus === 'PAYING') {
           return (
-            <TouchableOpacity style={styles.floatingActionButton} onPress={() => setViewQRVisible(true)}>
+            <TouchableOpacity style={styles.floatingActionButton} onPress={() => {
+              if (qrLink) {
+                setViewQRVisible(true);
+              } else {
+                handleCreateQR();
+                setViewQRVisible(true);
+              }
+            }}>
               <MaterialIcons name='qr-code' size={24} color='#fff' />
               <Text style={[styles.floatingActionButtonText, {paddingVertical: 16}]}>QR code</Text>
             </TouchableOpacity>
@@ -825,17 +924,12 @@ export default function WorkFlow() {
 
         // Các trạng thái khác
         return currentStatus &&
-          currentStatus !== 'PAID' &&
+          currentStatus !== 'COMPLETED' &&
           (currentStatus !== 'NEGOTIATING' || isPriceConfirmed !== false) ? (
           <TouchableOpacity style={[styles.floatingActionButton, {paddingVertical: 16}]} onPress={handleNextStep}>
             <MaterialIcons name='arrow-forward' size={24} color='#fff' />
             <Text style={styles.floatingActionButtonText}>
-              {nextStep === 'COMING' && 'Bắt đầu di chuyển'}
-              {nextStep === 'ARRIVED' && 'Xác nhận đã đến'}
-              {nextStep === 'NEGOTIATING' && 'Chốt giá dịch vụ'}
-              {nextStep === 'WORKING' && 'Bắt đầu làm việc'}
-              {nextStep === 'PAYING' && 'Hoàn tất công việc'}
-              {nextStep === 'PAID' && 'Đã thanh toán'}
+              {WORKFLOW_STATUS_MAP[nextStep as keyof typeof WORKFLOW_STATUS_MAP]}
             </Text>
           </TouchableOpacity>
         ) : // <View style={styles.floatingActionButton}>
@@ -924,10 +1018,10 @@ export default function WorkFlow() {
       <PaymentMethodModal
         visible={qrVisible}
         onClose={() => setQrVisible(false)}
-        qrLink={qrLink?.linkTransaction || ''}
+        // qrLink={qrLink?.linkTransaction || ''}
         selectedMethod={method}
         onSelectMethod={setMethod}
-        onCreateQR={handleCreateQR}
+        // onCreateQR={handleCreateQR}
       />
 
       <PaymentQRModal

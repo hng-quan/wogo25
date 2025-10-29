@@ -82,9 +82,10 @@ export default function OrderDetailScreen() {
     }, () => {}, () => {
       Alert.alert('Lỗi', 'Đặt thợ thất bại. Vui lòng thử lại sau.');
     });
+    console.log('response place order worker:', res);
     // Nếu đặt thành công, đăng ký để lắng nghe sự kiện confirmPrice
     try {
-      if (registerConfirmJob && res?.result) {
+      if (registerConfirmJob && res?.message === 'Place job successfully') {
         await registerConfirmJob(jobRequestCode as string);
         console.log('✅ Registered jobRequestCode for confirmPrice listening:', jobRequestCode);
       }

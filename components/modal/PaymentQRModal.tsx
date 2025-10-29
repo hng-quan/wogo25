@@ -1,16 +1,16 @@
 import { Colors } from '@/lib/common';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Modal, Portal, Surface, Text } from 'react-native-paper';
 import ButtonCustom from '../button/ButtonCustom';
 
 interface PaymentMethodModalProps {
   visible: boolean;
   onClose: () => void;
-  qrLink: string | null;
+  qrLink?: string | null;
   onSelectMethod: (method: 'cash' | 'qr') => void;
-  onCreateQR: () => Promise<void>; 
+  onCreateQR?: () => Promise<void>; 
   selectedMethod?: 'cash' | 'qr';
 }
 
@@ -29,7 +29,7 @@ export default function PaymentMethodModal({
     if (!qrLink) {
       try {
         setLoadingQR(true);
-        await onCreateQR(); // gọi API tạo QR
+        onCreateQR && await onCreateQR(); // gọi API tạo QR
       } catch (error) {
         console.error('❌ Lỗi tạo QR:', error);
       } finally {
@@ -84,7 +84,7 @@ export default function PaymentMethodModal({
           </View>
 
           {/* --- Hiển thị QR nếu đã chọn --- */}
-          {selectedMethod === 'qr' && (
+          {/* {selectedMethod === 'qr' && (
             <View style={styles.qrContainer}>
               {loadingQR ? (
                 <ActivityIndicator size="large" color={Colors.primary} />
@@ -98,7 +98,7 @@ export default function PaymentMethodModal({
                 <Text style={styles.emptyText}>Không có mã QR</Text>
               )}
             </View>
-          )}
+          )} */}
 
           <ButtonCustom
             mode="contained"

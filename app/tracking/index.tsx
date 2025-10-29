@@ -15,7 +15,7 @@ import MapView, { AnimatedRegion, Marker, Polyline } from 'react-native-maps';
 
 const ORS_API_KEY = process.env.EXPO_PUBLIC_OPENROUTE_SERVICE_API_KEY || '';
 // const ORS_API_KEY = '';
-const processSteps = ['PENDING', 'COMING', 'ARRIVED', 'NEGOTIATING', 'WORKING', 'PAYING', 'PAID'];
+const processSteps = ['PENDING', 'COMING', 'ARRIVED', 'NEGOTIATING', 'WORKING', 'PAYING', 'PAID', 'COMPLETED'];
 
 export default function Tracking() {
   const {currentTab, jobRequestCode} = useLocalSearchParams();
@@ -390,7 +390,7 @@ export default function Tracking() {
             />
             <Text style={{fontWeight: 'bold', fontSize: 16}}>{acceptedWorker?.worker?.user?.fullName}</Text>
             <View style={{marginLeft: 'auto', flexDirection: 'row'}}>
-              <TouchableOpacity style={styles.chatButton} onPress={() => registerConfirmJob('JR-C80E8DF8-2025')}>
+              <TouchableOpacity style={styles.chatButton} onPress={() => registerConfirmJob('JR2A57E7892025')}>
                 <MaterialIcons name='call' size={26} color={Colors.secondary} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.chatButton} onPress={handleChat}>
