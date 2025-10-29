@@ -13,29 +13,64 @@ const STATUS = {
   PENDING: 'PENDING',
   ACCEPTED: 'ACCEPTED',
   CANCELLED: 'CANCELLED',
+  HISTORY: 'HISTORY',
 };
 
 const filters = [
   {key: STATUS.ALL, label: 'Tất cả'},
-  {key: STATUS.PENDING, label: 'Đang báo giá'},
-  {key: STATUS.ACCEPTED, label: 'Đang tiến hành'},
+  {key: STATUS.PENDING, label: 'Báo giá'},
+  {key: STATUS.ACCEPTED, label: 'Đang thực hiện'},
+  {key: STATUS.HISTORY, label: 'Lịch sử'},
 ];
 
 export default function ActivityScreen() {
   const {currentTab} = useLocalSearchParams();
   const [myJobsRequest, setMyJobsRequest] = React.useState<JobRequest[]>([]);
   const [activeTab, setActiveTab] = useState(currentTab || STATUS.ALL);
-  
+  const [history, setHistory] = useState<any[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      if (activeTab !== STATUS.HISTORY) {
+        await fetchMyJobsRequest();
+      } else {
+        await fetchHistory();
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const fetchMyJobsRequest = async () => {
+    const endpoint = '/jobs/my-quotes/' + activeTab;
+    const res = await jsonGettAPI(endpoint);
+    // console.log('Fetched jobs request:', res);
+    setMyJobsRequest(res?.result || []);
+  };
+  useEffect(() => {
+    if (activeTab !== STATUS.HISTORY) {
+      fetchMyJobsRequest();
+    } else {
+      fetchHistory();
+    }
+  }, [activeTab]);
+
+  const fetchHistory = async () => {
+    const params = {
+      params: {
+        isWorker: 'true',
+      },
+    };
+    jsonGettAPI('/bookings/history', params, payload => {
+      setHistory(payload.result || []);
+    });
+  };
 
   useEffect(() => {
-    const fetchMyJobsRequest = async () => {
-      const endpoint = '/jobs/my-quotes/' + activeTab;
-      const res = await jsonGettAPI(endpoint);
-      // console.log('Fetched jobs request:', res);
-      setMyJobsRequest(res?.result || []);
-    };
-    fetchMyJobsRequest();
-  }, [activeTab]);
+    console.log('Lịch sử hoạt động:', history);
+  }, [history]);
 
   const renderEmptyState = (title: string) => (
     <View style={styles.emptySection}>
@@ -61,12 +96,46 @@ export default function ActivityScreen() {
         params: {
           currentTab: activeTab,
           jobRequestCode: item.job.jobRequestCode,
-        }
-      })
+        },
+      });
     }
   };
 
   const renderJobCard = ({item}: {item: any}) => {
+    const isHistory = item.type === 'BOOKING';
+    if (isHistory) {
+      return (
+        <TouchableOpacity
+          style={styles.card}
+          onPress={() => {
+            router.push({
+              pathname: '/workflow',
+              params: {
+                currentTab: activeTab,
+                jobRequestCode: item.code,
+              },
+            });
+          }}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.jobCode}>#{item.code}</Text>
+            <Text
+              style={[styles.status, item.status === 'COMPLETED' ? styles.statusCompleted : styles.statusCancelled]}>
+              {item.status === 'COMPLETED' ? 'Hoàn thành' : 'Đã hủy'}
+            </Text>
+          </View>
+
+          <Text style={styles.jobTitle}>{item.serviceName}</Text>
+
+          <View style={[styles.row, {justifyContent: 'space-between', marginTop: 4}]}>
+            <Text style={styles.time}>{displayDateVN(new Date(item.date))}</Text>
+          </View>
+
+          <Text numberOfLines={2} ellipsizeMode='tail' style={[styles.time, {marginTop: 4}]}>
+            📍 {item.address}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
     const job = item.job;
 
     return (
@@ -77,21 +146,21 @@ export default function ActivityScreen() {
         }}>
         <View style={styles.cardHeader}>
           <View style={[styles.row, {gap: 8}]}>
-            <Text style={styles.jobCode}>#{job.jobRequestCode}</Text>
+            <Text style={styles.jobCode}>#{job?.jobRequestCode}</Text>
           </View>
           <Text
             style={[
               styles.status,
               // SỬA: item.status -> job.status
-              job.status === STATUS.PENDING
+              job?.status === STATUS.PENDING
                 ? styles.statusPending
-                : job.status === STATUS.ACCEPTED
+                : job?.status === STATUS.ACCEPTED
                   ? styles.statusAccepted
                   : styles.statusCancelled,
             ]}>
-            {job.status === STATUS.PENDING
+            {job?.status === STATUS.PENDING
               ? 'Chờ xác nhận'
-              : job.status === STATUS.ACCEPTED
+              : job?.status === STATUS.ACCEPTED
                 ? 'Đang tiến hành'
                 : 'Đã hủy'}
           </Text>
@@ -102,12 +171,12 @@ export default function ActivityScreen() {
           <View style={{flex: 1}}>
             {/* SỬA: Thêm .job vào các truy cập */}
             <Text style={styles.jobTitle} numberOfLines={2} ellipsizeMode='tail'>
-              {job.service?.serviceName}
+              {job?.service?.serviceName}
             </Text>
 
             {/* Thời gian */}
             <View style={[styles.row, {justifyContent: 'space-between', alignItems: 'flex-end'}]}>
-              <Text style={styles.time}>{displayDateVN(new Date(job.bookingDate))}</Text>
+              <Text style={styles.time}>{displayDateVN(new Date(job?.bookingDate))}</Text>
               <Text style={[styles.priceLabel, {fontSize: 18}]}>{formatPrice(item.quotedPrice)} đ</Text>
             </View>
 
@@ -132,25 +201,33 @@ export default function ActivityScreen() {
       <Tabs tabs={filters} activeTab={activeTab as any} onChange={setActiveTab} />
 
       {/* Danh sách job */}
-      {myJobsRequest.length === 0 ? (
-        renderEmptyState('Chưa có hoạt động')
-      ) : (
+      {activeTab !== STATUS.HISTORY ? (
         <FlatList
           data={myJobsRequest}
           renderItem={renderJobCard}
           keyExtractor={(_, index) => index.toString()}
           contentContainerStyle={{paddingBottom: 50}}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          ListEmptyComponent={renderEmptyState('Không có hoạt động nào')}
+        />
+      ) : (
+        <FlatList
+          data={history}
+          renderItem={renderJobCard}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          ListEmptyComponent={renderEmptyState('Không có lịch sử')}
         />
       )}
-
-      {/* Lịch sử */}
-      {/* <Text style={styles.sectionTitle}>Lịch sử</Text>
-      {renderEmptyState('Chưa có hoạt động')} */}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  statusCompleted: {
+    color: '#4CAF50',
+  },
   container: {
     flex: 1,
     backgroundColor: '#F2F2F2',

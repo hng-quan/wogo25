@@ -1,6 +1,6 @@
 import { useRole } from '@/context/RoleContext';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 type TabItem = {
   key: string;
@@ -13,34 +13,48 @@ type TabsProps = {
   onChange: (key: string) => void;
 };
 
-export default function Tabs({tabs, activeTab, onChange}: TabsProps) {
-  const {role} = useRole();
+export default function Tabs({ tabs, activeTab, onChange }: TabsProps) {
+  const { role } = useRole();
   const bgColor = role === 'worker' ? styles.tabActiveBlue : styles.tabActiveGreen;
+
   return (
-    <View style={styles.tabs}>
-      {tabs.map(tab => (
+    <FlatList
+      data={tabs}
+      keyExtractor={(item) => item.key}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.tabs}
+      style={styles.container}
+      renderItem={({ item }) => (
         <TouchableOpacity
-          key={tab.key}
-          style={[styles.tab, activeTab === tab.key && bgColor]}
-          onPress={() => onChange(tab.key)}>
-          <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>{tab.label}</Text>
+          style={[styles.tab, activeTab === item.key && bgColor]}
+          onPress={() => onChange(item.key)}
+        >
+          <Text style={[styles.tabText, activeTab === item.key && styles.tabTextActive]}>
+            {item.label}
+          </Text>
         </TouchableOpacity>
-      ))}
-    </View>
+      )}
+    />
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    height: 56,
+    maxHeight: 56,
+  },
   tabs: {
-    flexDirection: 'row',
     paddingVertical: 12,
-    justifyContent: 'space-around',
+    paddingHorizontal: 8,
+    gap: 8,
   },
   tab: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#ffffff',
+    marginRight: 8, // để tránh overlap nếu không dùng gap
   },
   tabActiveGreen: {
     backgroundColor: '#4CAF50',
@@ -53,7 +67,7 @@ const styles = StyleSheet.create({
     color: '#555',
   },
   tabTextActive: {
-    color: '#000',
+    color: '#fff',
     fontWeight: '700',
   },
 });

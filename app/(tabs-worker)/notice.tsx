@@ -36,7 +36,7 @@ export default function Notice() {
   const [notices, setNotices] = React.useState([]);
 
   const fetchNotices = async () => {
-    jsonGettAPI('/notifications/my-notifications/CUSTOMER', {}, payload => {
+    jsonGettAPI('/notifications/my-notifications/WORKER', {}, payload => {
       console.log('Fetched notices:', payload);
       setNotices(payload.result || []);
     })
