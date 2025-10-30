@@ -25,8 +25,12 @@ const Profile = () => {
   const _goToProfessional = () => {
     router.replace('/ppi');
   };
+
+  const _gotoWallet = () => {
+    router.push('/wallet');
+  }
   const settingsOptions = [
-    {id: 1, title: 'Ví', icon: 'wallet', onPress: () => {}},
+    {id: 1, title: 'Ví', icon: 'wallet', onPress: _gotoWallet},
     {id: 2, title: 'Nghiệp vụ', icon: 'id-card', onPress: _goToProfessional},
     {id: 3, title: 'Ngôn ngữ', icon: 'web', onPress: () => setVisible(true)},
     {id: 4, title: 'Đăng xuất', icon: 'logout', onPress: () => setDialogVisible(true)},
