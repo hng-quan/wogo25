@@ -1,7 +1,8 @@
 import { AvatarWrapper } from '@/components/layout/ProfileContainer';
 import { Colors } from '@/constants/Colors';
 import { useRole } from '@/context/RoleContext';
-import React from 'react';
+import { jsonGettAPI } from '@/lib/apiService';
+import React, { useEffect } from 'react';
 import { ImageBackground, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
@@ -11,6 +12,31 @@ export default function HomeScreen() {
   const [ordersCount, setOrdersCount] = React.useState(0);
   const avatarUrl = user?.avatarUrl || '';
   const fullName = user?.fullName || 'No name';
+  const [expenses, setExpenses] = React.useState(0);
+  const [revenueBalance, setRevenueBalance] = React.useState(0);
+  const [counter, setCounter] = React.useState(0);
+
+  useEffect(() => {
+    fetchRevenueData();
+    fetchExpensesData();
+  }, [counter]);
+  // lấy doanh thu
+  const fetchRevenueData = async () => {
+    jsonGettAPI('/transactions/walletRevenueBalance', {}, payload => {
+      console.log('Fetched revenue data:', payload);
+      setRevenue(payload?.result || 0);
+      
+    });
+  };
+
+  // lấy số dư ví chi tiêu
+  const fetchExpensesData = async () => {
+    jsonGettAPI('/transactions/walletExpenseBalance', {}, payload => {
+      console.log('Fetched expenses data:', payload);
+      setRevenueBalance(payload?.result || 0);
+    });
+  };
+
   return (
     <View>
       <ScrollView contentContainerStyle={styles.container}>
@@ -23,15 +49,22 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.card}>
+          <Text style={{color: '#FFFFFF', fontSize: 16}}>Ví chi tiêu</Text>
+          <View style={[styles.row, {marginTop: 8, justifyContent: 'space-between', alignItems: 'center'}]}>
+            <Text style={{color: '#FFFFFF', fontSize: 20, fontWeight: 'bold'}}>{expenses} đ</Text>
+          </View>
+        </View>
+
+        <View style={styles.card}>
           <Text style={{color: '#FFFFFF', fontSize: 16}}>Doanh thu</Text>
           <View style={[styles.row, {marginTop: 8, justifyContent: 'space-between', alignItems: 'center'}]}>
-            <Text style={{color: '#FFFFFF', fontSize: 20, fontWeight: 'bold'}}>{revenue} đ</Text>
+            <Text style={{color: '#FFFFFF', fontSize: 20, fontWeight: 'bold'}}>{revenueBalance} đ</Text>
             <Text style={{color: '#FFFFFF', fontSize: 16}}>{ordersCount} đơn</Text>
           </View>
         </View>
 
         <View style={[styles.row, {gap: 12}]}>
-          <TouchableOpacity style={styles.button}>
+          <TouchableOpacity style={styles.button} onPress={() => setCounter(counter + 1)}>
             <Text style={{}}>Đang tiến hành</Text>
             <Text style={{fontSize: 16, color: '#1565C0', fontWeight: 'bold'}}>{ordersCount} đơn</Text>
           </TouchableOpacity>
@@ -57,10 +90,10 @@ export default function HomeScreen() {
 
           <View className='w-full h-48 rounded-2xl overflow-hidden'>
             <ImageBackground
-            source={require('../../assets/images/quynloitho.png')}
-            resizeMode='contain'
-            className='flex-1 p-4 justify-end'
-          />
+              source={require('../../assets/images/quynloitho.png')}
+              resizeMode='contain'
+              className='flex-1 p-4 justify-end'
+            />
           </View>
         </View>
       </ScrollView>

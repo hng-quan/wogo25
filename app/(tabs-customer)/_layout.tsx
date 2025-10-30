@@ -5,57 +5,83 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Platform } from 'react-native';
+import { Image, Platform } from 'react-native';
+import '../../assets/images/intelligence.png';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
-      <Tabs
-        screenOptions={{
-          tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-          headerShown: false,
-          tabBarButton: HapticTab,
-          tabBarBackground: TabBarBackground,
-          tabBarStyle: Platform.select({
-            ios: {
-              // Use a transparent background on iOS to show the blur effect
-              position: 'absolute',
-            },
-            default: {},
-          }),
-        }}>
-        <Tabs.Screen
-          name='index'
-          options={{
-            title: 'Trang chủ',
-            tabBarIcon: ({color}) => <IconSymbol size={28} name='house.fill' color={color} />,
-          }}
-        />
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        headerShown: false,
+        tabBarButton: HapticTab,
+        tabBarBackground: TabBarBackground,
+        tabBarStyle: Platform.select({
+          ios: {
+            // Use a transparent background on iOS to show the blur effect
+            position: 'absolute',
+          },
+          default: {},
+        }),
+      }}>
+      <Tabs.Screen
+        name='index'
+        options={{
+          title: 'Trang chủ',
+          tabBarIcon: ({color}) => <IconSymbol size={28} name='house.fill' color={color} />,
+        }}
+      />
 
-        <Tabs.Screen
-          name='activity'
-          options={{
-            title: 'Hoạt động',
-            tabBarIcon: ({color}) => <IconSymbol size={28} name='list.bullet' color={color} />,
-          }}
-        />
+      <Tabs.Screen
+        name='activity'
+        options={{
+          title: 'Hoạt động',
+          tabBarIcon: ({color}) => <IconSymbol size={28} name='list.bullet' color={color} />,
+        }}
+      />
 
-        <Tabs.Screen
-          name='notice'
-          options={{
-            title: 'Thông báo',
-            tabBarIcon: ({color}) => <IconSymbol size={28} name='bell.fill' color={color} />,
-          }}
-        />
+      <Tabs.Screen
+        name='chatbox'
+        options={{
+          tabBarLabel: () => null,
+          tabBarStyle: { display: 'none' },
+          tabBarIcon: ({focused}) => (
+            <Image
+              source={
+                focused
+                  ? require('../../assets/images/icons8-music-robot-94.png')
+                  : require('../../assets/images/icons8-music-robot-94.png')
+              }
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 100,
+                marginTop: 15,
+                padding: 2,
+              }}
+              resizeMode='contain'
+            />
+          ),
+        }}
+      />
 
-        <Tabs.Screen
-          name='profile'
-          options={{
-            title: 'Tài khoản',
-            tabBarIcon: ({color}) => <IconSymbol size={28} name='person.fill' color={color} />,
-          }}
-        />
-      </Tabs>
+      <Tabs.Screen
+        name='notice'
+        options={{
+          title: 'Thông báo',
+          tabBarIcon: ({color}) => <IconSymbol size={28} name='bell.fill' color={color} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name='profile'
+        options={{
+          title: 'Tài khoản',
+          tabBarIcon: ({color}) => <IconSymbol size={28} name='person.fill' color={color} />,
+        }}
+      />
+    </Tabs>
   );
 }

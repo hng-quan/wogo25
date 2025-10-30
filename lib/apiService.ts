@@ -98,9 +98,9 @@ export const jsonGettAPI = async (
 
     const response = await apiClient.get(endpoint, params);
     const data = response.data;
-
+    // console.log('API GET Response:', response.data);
     // Kiểm tra kết quả
-    if (data.result) {
+    if (data.result !== null && data.result !== undefined) {
       onSuccess?.(data);
     } else {
       isShowToast &&
