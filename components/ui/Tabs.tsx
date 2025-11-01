@@ -1,10 +1,11 @@
 import { useRole } from '@/context/RoleContext';
-import React from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type TabItem = {
   key: string;
   label: string;
+  icon?: React.ReactNode;
 };
 
 type TabsProps = {
@@ -15,59 +16,83 @@ type TabsProps = {
 
 export default function Tabs({ tabs, activeTab, onChange }: TabsProps) {
   const { role } = useRole();
-  const bgColor = role === 'worker' ? styles.tabActiveBlue : styles.tabActiveGreen;
+  const activeColor = role === 'worker' ? '#1565C0' : '#4CAF50';
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.sequence([
+      Animated.timing(scaleAnim, { toValue: 0.95, duration: 100, useNativeDriver: true }),
+      Animated.timing(scaleAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
+    ]).start();
+  }, [activeTab]);
 
   return (
-    <FlatList
-      data={tabs}
-      keyExtractor={(item) => item.key}
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.tabs}
-      style={styles.container}
-      renderItem={({ item }) => (
-        <TouchableOpacity
-          style={[styles.tab, activeTab === item.key && bgColor]}
-          onPress={() => onChange(item.key)}
-        >
-          <Text style={[styles.tabText, activeTab === item.key && styles.tabTextActive]}>
-            {item.label}
-          </Text>
-        </TouchableOpacity>
-      )}
-    />
+    <View style={styles.container}>
+      <FlatList
+        data={tabs}
+        keyExtractor={(item) => item.key}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tabs}
+        renderItem={({ item }) => {
+          const isActive = activeTab === item.key;
+          return (
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => onChange(item.key)}
+            >
+              <Animated.View
+                style={[
+                  styles.tab,
+                  isActive && { backgroundColor: activeColor, transform: [{ scale: scaleAnim }] },
+                ]}
+              >
+                {item.icon && <View style={styles.icon}>{item.icon}</View>}
+                <Text
+                  style={[
+                    styles.tabText,
+                    isActive && { color: '#fff', fontWeight: '700' },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </Animated.View>
+            </TouchableOpacity>
+          );
+        }}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     height: 56,
-    maxHeight: 56,
   },
   tabs: {
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 8,
-    gap: 8,
+    alignItems: 'center',
   },
   tab: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: '#ffffff',
-    marginRight: 8, // để tránh overlap nếu không dùng gap
-  },
-  tabActiveGreen: {
-    backgroundColor: '#4CAF50',
-  },
-  tabActiveBlue: {
-    backgroundColor: '#1565C0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 22,
+    marginRight: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   tabText: {
+    fontSize: 14,
     fontWeight: '500',
-    color: '#555',
+    color: '#444',
   },
-  tabTextActive: {
-    color: '#fff',
-    fontWeight: '700',
+  icon: {
+    marginRight: 6,
   },
 });

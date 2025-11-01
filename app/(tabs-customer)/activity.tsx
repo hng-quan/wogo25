@@ -158,6 +158,7 @@ export default function ActivityScreen() {
       {/* Danh sách job */}
       {activeTab !== STATUS.HISTORY ? (
         <FlatList
+          showsVerticalScrollIndicator={false}
           data={myJobsRequest}
           renderItem={renderJobCard}
           keyExtractor={item => item.id.toString()}

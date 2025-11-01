@@ -15,7 +15,7 @@ export default function SearchCustom({
 
   const handleChange = (query: string) => {
     setSearchQuery(query);
-    if (onSearch) onSearch(query); // callback cho parent
+    if (onSearch) onSearch(query);
   };
 
   return (
@@ -25,17 +25,27 @@ export default function SearchCustom({
       onChangeText={handleChange}
       editable={editable}
       value={searchQuery}
-      icon={props => <MaterialCommunityIcons name='magnify' size={24} color={props.color || 'gray'} />} // có thể đổi icon
-      clearIcon={props => <MaterialCommunityIcons name='close' size={24} color={props.color || 'gray'} />} // có thể đổi icon
+      icon={(props) => (
+        <MaterialCommunityIcons name="magnify" size={22} color={props.color || '#555'} />
+      )}
+      clearIcon={(props) => (
+        <MaterialCommunityIcons name="close" size={22} color={props.color || '#555'} />
+      )}
       style={[
         {
           borderRadius: 12,
-          backgroundColor: '#FFFFFF',
+          backgroundColor: '#fff',
+          borderWidth: 1,
+          borderColor: '#E0E0E0', // màu viền nhẹ
           elevation: 0, // bỏ shadow
         },
         style,
       ]}
-      inputStyle={{fontSize: 16}}
+      inputStyle={{
+        fontSize: 15,
+        color: '#333',
+        paddingVertical: 6,
+      }}
       {...props}
     />
   );
@@ -45,8 +55,8 @@ type SearchCustomProps = {
   placeholder?: string;
   onSearch?: (query: string) => void;
   style?: object;
-  [key: string]: any;
   className?: string;
   editable?: boolean;
   onPress?: () => void;
+  [key: string]: any;
 };

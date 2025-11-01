@@ -621,7 +621,7 @@ export default function WorkFlow() {
   };
   return (
     <View style={styles.container}>
-      <Appbar title='Tiến trình làm việc' onBackPress={goBack} />
+      <Appbar title='Chi tiết công việc' onBackPress={goBack} />
 
       {/* MAP - Chỉ hiển thị khi COMING */}
       {['COMING'].includes(bookingStatus) ? (
@@ -715,15 +715,41 @@ export default function WorkFlow() {
         /* PENDING & NEGOTIATING: Hiển thị toàn bộ thông tin chi tiết */
         <View style={styles.infoCardFull}>
           <ScrollView showsVerticalScrollIndicator={false}>
-            <Text>#{bookingDetail?.bookingCode}</Text>
-            <View style={{flexDirection: 'row', alignItems: 'center', marginVertical: 4}}>
-              <AvatarWrapper url={customer?.avatarUrl} role={ROLE.WORKER} size={48} className='mr-2' />
-              <Text style={{fontWeight: 'bold', fontSize: 16}}>{customer?.fullName}</Text>
-              <View style={{marginLeft: 'auto', flexDirection: 'row', gap: 8}}>
-                <TouchableOpacity style={styles.chatButton} onPress={handleChat}>
-                  <MaterialIcons name='chat' size={26} color={Colors.primary} />
-                </TouchableOpacity>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginVertical: 8,
+                padding: 12,
+                borderRadius: 12,
+                backgroundColor: '#fff',
+                shadowColor: '#000',
+                shadowOffset: {width: 0, height: 2},
+                shadowOpacity: 0.08,
+                shadowRadius: 4,
+                elevation: 2,
+              }}>
+              <AvatarWrapper url={customer?.avatarUrl} role={ROLE.WORKER} size={52} />
+              <View style={{marginLeft: 12, flex: 1}}>
+                <Text style={{fontWeight: '600', fontSize: 16, color: '#222'}}>{customer?.fullName}</Text>
+                <Text style={{fontSize: 13, color: '#777', marginTop: 2}}>Khách hàng</Text>
               </View>
+              <TouchableOpacity
+                onPress={handleChat}
+                style={{
+                  backgroundColor: Colors.primary || '#007AFF',
+                  borderRadius: 30,
+                  padding: 10,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  shadowColor: Colors.primary || '#007AFF',
+                  shadowOffset: {width: 0, height: 2},
+                  shadowOpacity: 0.2,
+                  shadowRadius: 3,
+                  elevation: 3,
+                }}>
+                <MaterialIcons name='chat' size={22} color='#fff' />
+              </TouchableOpacity>
             </View>
 
             {/* Location tracking status */}
@@ -738,39 +764,77 @@ export default function WorkFlow() {
             )}
 
             <View>
-              <View style={{marginTop: 16}}>
-                <Text style={styles.sectionTitle}>Quy trình làm việc</Text>
-                <View style={styles.timelineContainer}>
+              <View style={{marginTop: 8}}>
+                <Text style={{fontSize: 15, fontWeight: '700', color: '#222', marginBottom: 16}}>
+                  Quy trình làm việc
+                </Text>
+
+                <View style={{marginLeft: 12, paddingRight: 0}}>
                   {processSteps.map((status, index) => {
                     const label = WORKFLOW_STATUS_MAP[status as keyof typeof WORKFLOW_STATUS_MAP];
                     const currentStatus = bookingStatus;
                     const isActive = status === currentStatus;
                     const isCompleted = processSteps.indexOf(currentStatus) > index;
+                    const isLast = index === processSteps.length - 1;
 
                     return (
-                      <View key={status} style={styles.timelineItem}>
-                        <View style={styles.timelineLeft}>
+                      <View
+                        key={status}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          marginBottom: isLast ? 0 : 4,
+                        }}>
+                        {/* Cột trái (timeline) */}
+                        <View style={{alignItems: 'center', width: 30}}>
+                          {/* Vòng tròn trạng thái */}
                           <View
-                            style={[
-                              styles.timelineDot,
-                              isCompleted && styles.timelineDotCompleted,
-                              isActive && styles.timelineDotActive,
-                            ]}
-                          />
-                          {index !== processSteps.length - 1 && (
-                            <View
-                              style={[styles.timelineLine, (isCompleted || isActive) && styles.timelineLineActive]}
-                            />
+                            style={{
+                              width: 20,
+                              height: 20,
+                              borderRadius: 10,
+                              backgroundColor: isCompleted ? '#4CAF50' : isActive ? '#1565C0' : '#E0E0E0',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              shadowColor: isActive ? '#1565C0' : '#000',
+                              shadowOffset: {width: 0, height: 2},
+                              shadowOpacity: isActive ? 0.3 : 0.1,
+                              shadowRadius: 3,
+                              elevation: isActive ? 4 : 1,
+                            }}>
+                            {isCompleted ? (
+                              <MaterialIcons name='check' size={14} color='#fff' />
+                            ) : isActive ? (
+                              <MaterialIcons name='autorenew' size={14} color='#fff' />
+                            ) : null}
+                          </View>
+                        </View>
+
+                        {/* Phần mô tả bước */}
+                        <View
+                          style={{
+                            backgroundColor: isActive ? 'rgba(21, 101, 192, 0.1)' : 'rgba(0,0,0,0.02)',
+                            borderRadius: 4,
+                            paddingVertical: 4,
+                            paddingHorizontal: 14,
+                            flex: 1,
+                            shadowColor: '#000',
+                            shadowOffset: {width: 0, height: 1},
+                            shadowOpacity: 0.05,
+                            shadowRadius: 2,
+                          }}>
+                          <Text
+                            style={{
+                              fontSize: 15,
+                              fontWeight: isActive ? '700' : '500',
+                              color: isCompleted ? '#388E3C' : isActive ? '#1565C0' : '#555',
+                            }}>
+                            {label}
+                          </Text>
+                          {isActive && (
+                            <Text style={{fontSize: 13, color: '#666', marginTop: 2}}>(Đang thực hiện bước này)</Text>
                           )}
                         </View>
-                        <Text
-                          style={[
-                            styles.timelineLabel,
-                            isActive && styles.timelineLabelActive,
-                            isCompleted && styles.timelineLabelCompleted,
-                          ]}>
-                          {label}
-                        </Text>
                       </View>
                     );
                   })}
@@ -778,43 +842,147 @@ export default function WorkFlow() {
               </View>
 
               {['PAYING', 'PAID', 'COMPLETED'].includes(bookingStatus) && (
-                <View style={styles.detailSection}>
-                  <Text style={styles.sectionTitle}>Chi phí dịch vụ</Text>
-                  <View style={[styles.detailRow, {justifyContent: 'space-between'}]}>
-                    <Text style={styles.detailText}>Phương thức thanh toán</Text>
-                    <TouchableOpacity disabled={bookingStatus !== 'PAYING'} onPress={() => setQrVisible(true)} style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
-                      <Text>{method === 'qr' ? 'QR Code' : 'Tiền mặt'}</Text>
+                <View
+                  style={{
+                    backgroundColor: '#fff',
+                    padding: 16,
+                    borderRadius: 12,
+                    marginTop: 20,
+                    shadowColor: '#000',
+                    shadowOffset: {width: 0, height: 2},
+                    shadowOpacity: 0.08,
+                    shadowRadius: 4,
+                    elevation: 2,
+                  }}>
+                  <Text
+                    style={{
+                      fontSize: 15,
+                      fontWeight: '700',
+                      color: '#222',
+                      marginBottom: 14,
+                      borderBottomWidth: 1,
+                      borderBottomColor: '#eee',
+                      paddingBottom: 6,
+                    }}>
+                    💰 Chi phí dịch vụ
+                  </Text>
+
+                  {/* Phương thức thanh toán */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 12,
+                    }}>
+                    <Text style={{fontSize: 15, color: '#555'}}>Phương thức thanh toán</Text>
+                    <TouchableOpacity
+                      disabled={bookingStatus !== 'PAYING'}
+                      onPress={() => setQrVisible(true)}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: 'rgba(21,101,192,0.08)',
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        borderRadius: 8,
+                      }}>
+                      <Text style={{fontWeight: '600', marginRight: 6}}>
+                        {method === 'qr' ? 'QR Code' : 'Tiền mặt'}
+                      </Text>
                       <MaterialCommunityIcons
-                        name={`${method === 'qr' ? 'qrcode-scan' : 'cash-multiple'}`}
-                        size={24}
+                        name={method === 'qr' ? 'qrcode-scan' : 'cash-multiple'}
+                        size={22}
                         color={Colors.primary}
                       />
                     </TouchableOpacity>
                   </View>
-                  <View style={[styles.detailRow, {justifyContent: 'space-between'}]}>
-                    <Text style={styles.detailText}>Giá chốt</Text>
-                    <Text style={styles.priceValue}>{formatPrice(bookingDetail?.totalAmount)}đ</Text>
-                  </View>
-                  <View style={[styles.detailRow, {justifyContent: 'space-between'}]}>
-                    <Text style={styles.detailText}>Phí sàn (10%)</Text>
-                    <Text style={styles.priceValue}>{formatPrice(bookingDetail?.totalAmount * 0.1)}đ</Text>
-                  </View>
-                  <View style={[styles.detailRow, {justifyContent: 'space-between'}]}>
-                    <Text style={styles.detailText}>Khách phải trả</Text>
-                    <Text style={styles.priceValue}>{formatPrice(bookingDetail?.totalAmount)}đ</Text>
-                  </View>
-                  <View style={[styles.detailRow, {justifyContent: 'space-between'}]}>
-                    <Text style={styles.detailText}>Số tiền thực nhận</Text>
-                    <Text style={styles.priceValue}>{formatPrice(bookingDetail?.totalAmount * 0.9)}đ</Text>
+
+                  {/* Giá chốt */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      marginVertical: 6,
+                    }}>
+                    <Text style={{color: '#555', fontSize: 15}}>Giá chốt</Text>
+                    <Text style={{fontSize: 16, fontWeight: '600', color: '#222'}}>
+                      {formatPrice(bookingDetail?.totalAmount)}đ
+                    </Text>
                   </View>
 
+                  {/* Phí sàn */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      marginVertical: 6,
+                    }}>
+                    <Text style={{color: '#555', fontSize: 15}}>Phí sàn (10%)</Text>
+                    <Text style={{fontSize: 16, fontWeight: '600', color: '#E65100'}}>
+                      {formatPrice(bookingDetail?.totalAmount * 0.1)}đ
+                    </Text>
+                  </View>
+
+                  {/* Khách phải trả */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      marginVertical: 6,
+                    }}>
+                    <Text style={{color: '#555', fontSize: 15}}>Khách phải trả</Text>
+                    <Text style={{fontSize: 16, fontWeight: '700', color: '#1565C0'}}>
+                      {formatPrice(bookingDetail?.totalAmount)}đ
+                    </Text>
+                  </View>
+
+                  {/* Số tiền thực nhận */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      marginTop: 8,
+                      paddingTop: 8,
+                      borderTopWidth: 1,
+                      borderTopColor: '#eee',
+                    }}>
+                    <Text style={{color: '#333', fontSize: 15, fontWeight: '600'}}>Số tiền thực nhận</Text>
+                    <Text style={{fontSize: 18, fontWeight: '700', color: '#4CAF50'}}>
+                      {formatPrice(bookingDetail?.totalAmount * 0.9)}đ
+                    </Text>
+                  </View>
+
+                  {/* Hình ảnh đính kèm */}
                   {jobDetail?.files?.length > 0 && (
-                    <View style={styles.imageSection}>
-                      <Text style={styles.sectionTitle}>Hình ảnh đính kèm</Text>
+                    <View style={{marginTop: 20}}>
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: '600',
+                          marginBottom: 10,
+                          color: '#333',
+                        }}>
+                        📸 Hình ảnh đính kèm
+                      </Text>
                       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                         {jobDetail.files.map((file: any) => (
-                          <View key={file.id} style={styles.imageWrapper}>
-                            <Image source={{uri: file.fileUrl}} style={styles.imageItem} resizeMode='cover' />
+                          <View
+                            key={file.id}
+                            style={{
+                              width: 80,
+                              height: 80,
+                              borderRadius: 12,
+                              overflow: 'hidden',
+                              marginRight: 10,
+                              borderWidth: 1,
+                              borderColor: '#ddd',
+                            }}>
+                            <Image
+                              source={{uri: file.fileUrl}}
+                              style={{width: '100%', height: '100%'}}
+                              resizeMode='cover'
+                            />
                           </View>
                         ))}
                       </ScrollView>
@@ -823,41 +991,136 @@ export default function WorkFlow() {
                 </View>
               )}
 
-              <View style={styles.detailSection}>
-                <Text style={styles.sectionTitle}>Thông tin chi tiết</Text>
+              <View
+                style={{
+                  backgroundColor: '#fff',
+                  borderRadius: 12,
+                  padding: 16,
+                  marginTop: 16,
+                  shadowColor: '#000',
+                  shadowOffset: {width: 0, height: 1},
+                  shadowOpacity: 0.08,
+                  shadowRadius: 3,
+                  elevation: 2,
+                }}>
+                {/* Tiêu đề */}
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: '700',
+                    color: '#222',
+                    marginBottom: 12,
+                  }}>
+                  Thông tin chi tiết
+                </Text>
 
-                <View style={styles.detailRow}>
-                  <MaterialCommunityIcons name='tools' size={18} color={Colors.primary} />
-                  <Text style={styles.detailText}>{jobDetail?.service?.serviceName}</Text>
+                {/* Mã booking */}
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: '#666',
+                    marginBottom: 12,
+                  }}>
+                  Mã đặt: <Text style={{fontWeight: '600', color: '#333'}}>#{bookingDetail?.bookingCode}</Text>
+                </Text>
+
+                {/* Dòng thông tin */}
+                <View style={{rowGap: 10}}>
+                  {/* Dịch vụ */}
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <MaterialCommunityIcons name='tools' size={20} color={Colors.primary} />
+                    <Text style={{marginLeft: 8, fontSize: 15, color: '#333'}}>{jobDetail?.service?.serviceName}</Text>
+                  </View>
+
+                  {/* Mô tả */}
+                  <View style={{flexDirection: 'row', alignItems: 'flex-start'}}>
+                    <MaterialIcons name='description' size={20} color={Colors.primary} />
+                    <Text
+                      style={{
+                        marginLeft: 8,
+                        fontSize: 15,
+                        color: '#333',
+                        flex: 1,
+                        lineHeight: 20,
+                      }}>
+                      {jobDetail?.description || 'Không có mô tả'}
+                    </Text>
+                  </View>
+
+                  {/* Ngày đặt */}
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <MaterialIcons name='calendar-today' size={20} color={Colors.primary} />
+                    <Text style={{marginLeft: 8, fontSize: 15, color: '#333'}}>
+                      {displayDateVN(jobDetail?.bookingDate)}
+                    </Text>
+                  </View>
+
+                  {/* Địa chỉ */}
+                  <View style={{flexDirection: 'row', alignItems: 'flex-start'}}>
+                    <MaterialCommunityIcons name='map-marker' size={20} color={Colors.primary} />
+                    <Text
+                      style={{
+                        marginLeft: 8,
+                        fontSize: 15,
+                        color: '#333',
+                        flex: 1,
+                        lineHeight: 20,
+                      }}>
+                      {jobDetail?.bookingAddress}
+                    </Text>
+                  </View>
                 </View>
 
-                <View style={styles.detailRow}>
-                  <MaterialIcons name='description' size={18} color={Colors.primary} />
-                  <Text style={styles.detailText}>{jobDetail?.description || 'Không có mô tả'}</Text>
+                {/* Giá dự kiến */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    backgroundColor: '#F7F9FC',
+                    padding: 12,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: '#E5E9F0',
+                    marginTop: 16,
+                  }}>
+                  <Text style={{fontSize: 15, color: '#444', fontWeight: '600'}}>Giá dự kiến</Text>
+                  <Text style={{fontSize: 17, fontWeight: '700', color: Colors.primary}}>
+                    {formatPrice(bookingDetail?.totalAmount)} đ
+                  </Text>
                 </View>
 
-                <View style={styles.detailRow}>
-                  <MaterialIcons name='calendar-today' size={18} color={Colors.primary} />
-                  <Text style={styles.detailText}>{displayDateVN(jobDetail?.bookingDate)}</Text>
-                </View>
-
-                <View style={styles.detailRow}>
-                  <MaterialCommunityIcons name='map-marker' size={18} color={Colors.primary} />
-                  <Text style={styles.detailText}>{jobDetail?.bookingAddress}</Text>
-                </View>
-
-                <View style={styles.priceBox}>
-                  <Text style={styles.priceLabel}>Giá dự kiến</Text>
-                  <Text style={styles.priceValue}>{formatPrice(bookingDetail?.totalAmount)} đ</Text>
-                </View>
-
+                {/* Hình ảnh đính kèm */}
                 {jobDetail?.files?.length > 0 && (
-                  <View style={styles.imageSection}>
-                    <Text style={styles.sectionTitle}>Hình ảnh đính kèm</Text>
+                  <View style={{marginTop: 20}}>
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        fontWeight: '600',
+                        color: '#222',
+                        marginBottom: 10,
+                      }}>
+                      Hình ảnh đính kèm
+                    </Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                       {jobDetail.files.map((file: any) => (
-                        <View key={file.id} style={styles.imageWrapper}>
-                          <Image source={{uri: file.fileUrl}} style={styles.imageItem} resizeMode='cover' />
+                        <View
+                          key={file.id}
+                          style={{
+                            width: 80,
+                            height: 80,
+                            borderRadius: 10,
+                            overflow: 'hidden',
+                            marginRight: 10,
+                            backgroundColor: '#f2f2f2',
+                            borderWidth: 1,
+                            borderColor: '#e5e5e5',
+                          }}>
+                          <Image
+                            source={{uri: file.fileUrl}}
+                            style={{width: '100%', height: '100%'}}
+                            resizeMode='cover'
+                          />
                         </View>
                       ))}
                     </ScrollView>
@@ -918,14 +1181,16 @@ export default function WorkFlow() {
 
         if (method === 'qr' && currentStatus === 'PAYING') {
           return (
-            <TouchableOpacity style={styles.floatingActionButton} onPress={() => {
-              if (qrLink) {
-                setViewQRVisible(true);
-              } else {
-                handleCreateQR();
-                setViewQRVisible(true);
-              }
-            }}>
+            <TouchableOpacity
+              style={styles.floatingActionButton}
+              onPress={() => {
+                if (qrLink) {
+                  setViewQRVisible(true);
+                } else {
+                  handleCreateQR();
+                  setViewQRVisible(true);
+                }
+              }}>
               <MaterialIcons name='qr-code' size={24} color='#fff' />
               <Text style={[styles.floatingActionButtonText, {paddingVertical: 16}]}>QR code</Text>
             </TouchableOpacity>
@@ -941,8 +1206,9 @@ export default function WorkFlow() {
             <Text style={styles.floatingActionButtonText}>
               {WORKFLOW_STATUS_MAP[nextStep as keyof typeof WORKFLOW_STATUS_MAP]}
             </Text>
-          </TouchableOpacity>
-        ) : // <View style={styles.floatingActionButton}>
+          </TouchableOpacity>   
+        ) : 
+        // <View style={styles.floatingActionButton}>
         //   <SlideActionBar onSlideRight={handleNextStep} label={
         //     nextStep === 'COMING'
         //       ? 'Bắt đầu di chuyển'

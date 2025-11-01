@@ -1,17 +1,18 @@
 import Appbar from '@/components/layout/Appbar';
+import { Colors } from '@/lib/common';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-    Image,
-    Keyboard,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  Image,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
 
 export default function ChatbotScreen() {
@@ -27,7 +28,7 @@ export default function ChatbotScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: '#F2F2F2' }}
+      style={{ flex: 1, backgroundColor: Colors.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 45 : 0}
     >
@@ -187,7 +188,7 @@ export default function ChatbotScreen() {
               onPress={handleSend}
               style={{
                 marginLeft: 8,
-                backgroundColor: '#10B981',
+                backgroundColor: Colors.secondary,
                 width: 44,
                 height: 44,
                 borderRadius: 22,

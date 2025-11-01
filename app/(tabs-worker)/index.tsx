@@ -1,97 +1,122 @@
 import { AvatarWrapper } from '@/components/layout/ProfileContainer';
-import { Colors } from '@/constants/Colors';
 import { useRole } from '@/context/RoleContext';
 import { jsonGettAPI } from '@/lib/apiService';
+import { Colors } from '@/lib/common';
+import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect } from 'react';
 import { ImageBackground, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
 export default function HomeScreen() {
-  const {user, role} = useRole();
+  const { user, role } = useRole();
   const [revenue, setRevenue] = React.useState(0);
   const [ordersCount, setOrdersCount] = React.useState(0);
-  const avatarUrl = user?.avatarUrl || '';
-  const fullName = user?.fullName || 'No name';
   const [expenses, setExpenses] = React.useState(0);
   const [counter, setCounter] = React.useState(0);
+
+  const avatarUrl = user?.avatarUrl || '';
+  const fullName = user?.fullName || 'Người dùng';
 
   useEffect(() => {
     fetchRevenueData();
     fetchExpensesData();
   }, [counter]);
-  // lấy doanh thu
+
   const fetchRevenueData = async () => {
     jsonGettAPI('/transactions/walletRevenueBalance', {}, payload => {
-      console.log('Fetched revenue data:', payload);
       setRevenue(payload?.result || 0);
-      
     });
   };
 
-  // lấy số dư ví chi tiêu
   const fetchExpensesData = async () => {
     jsonGettAPI('/transactions/walletExpenseBalance', {}, payload => {
-      console.log('Fetched expenses data:', payload);
       setExpenses(payload?.result || 0);
     });
   };
 
   return (
-    <View>
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={[styles.row, {alignItems: 'center', marginBottom: 12, gap: 8}]}>
+    <View style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Header user */}
+        <View style={[styles.row, { alignItems: 'center', marginBottom: 20 }]}>
           <AvatarWrapper url={avatarUrl} role={role} />
-          <View style={{gap: 4}}>
-            <Text>Xin chào,</Text>
-            <Text style={{fontWeight: 'bold', fontSize: 16}}>{fullName}!</Text>
+          <View style={{ marginLeft: 12 }}>
+            <Text style={styles.greetingText}>Xin chào,</Text>
+            <Text style={styles.userName}>{fullName} 👋</Text>
           </View>
         </View>
 
-        <View style={styles.card}>
-          <Text style={{color: '#FFFFFF', fontSize: 16}}>Ví chi tiêu</Text>
-          <View style={[styles.row, {marginTop: 8, justifyContent: 'space-between', alignItems: 'center'}]}>
-            <Text style={{color: '#FFFFFF', fontSize: 20, fontWeight: 'bold'}}>{expenses}đ</Text>
+        {/* Ví chi tiêu */}
+        <LinearGradient
+          colors={['#1565C0', '#1E88E5']}
+          style={[styles.card, { marginBottom: 16 }]}
+        >
+          <View style={styles.rowBetween}>
+            <Text style={styles.cardTitle}>Ví chi tiêu</Text>
+            <MaterialIcons name="account-balance-wallet" size={22} color="#fff" />
           </View>
-        </View>
+          <Text style={styles.cardAmount}>{expenses.toLocaleString()} đ</Text>
+        </LinearGradient>
 
-        <View style={styles.card}>
-          <Text style={{color: '#FFFFFF', fontSize: 16}}>Doanh thu</Text>
-          <View style={[styles.row, {marginTop: 8, justifyContent: 'space-between', alignItems: 'center'}]}>
-            <Text style={{color: '#FFFFFF', fontSize: 20, fontWeight: 'bold'}}>{revenue}đ</Text>
-            <Text style={{color: '#FFFFFF', fontSize: 16}}>{ordersCount} đơn</Text>
+        {/* Doanh thu */}
+        <LinearGradient
+          colors={['#4CAF50', '#66BB6A']}
+          style={[styles.card, { marginBottom: 16 }]}
+        >
+          <View style={styles.rowBetween}>
+            <Text style={styles.cardTitle}>Doanh thu</Text>
+            <MaterialIcons name="attach-money" size={22} color="#fff" />
           </View>
-        </View>
+          <View style={styles.rowBetween}>
+            <Text style={styles.cardAmount}>{revenue.toLocaleString()} đ</Text>
+            <Text style={styles.orderText}>{ordersCount} đơn</Text>
+          </View>
+        </LinearGradient>
 
-        <View style={[styles.row, {gap: 12}]}>
-          <TouchableOpacity style={styles.button} onPress={() => setCounter(counter + 1)}>
-            <Text style={{}}>Đang tiến hành</Text>
-            <Text style={{fontSize: 16, color: '#1565C0', fontWeight: 'bold'}}>{ordersCount} đơn</Text>
+        {/* Nút thao tác nhanh */}
+        <View style={[styles.row, { gap: 12, marginBottom: 20 }]}>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={[styles.button, { borderColor: '#1565C0' }]}
+            onPress={() => setCounter(counter + 1)}
+          >
+            <MaterialIcons name="build-circle" size={20} color="#1565C0" />
+            <View>
+              <Text style={styles.buttonLabel}>Đang tiến hành</Text>
+              <Text style={styles.buttonValue}>{ordersCount} đơn</Text>
+            </View>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.button}>
-            <Text style={{}}>Đang báo giá</Text>
-            <Text style={{fontSize: 16, color: '#1565C0', fontWeight: 'bold'}}>{ordersCount} đơn</Text>
+
+          <TouchableOpacity activeOpacity={0.85} style={[styles.button, { borderColor: '#1565C0' }]}>
+            <MaterialIcons name="receipt-long" size={20} color="#1565C0" />
+            <View>
+              <Text style={styles.buttonLabel}>Đang báo giá</Text>
+              <Text style={styles.buttonValue}>{ordersCount} đơn</Text>
+            </View>
           </TouchableOpacity>
         </View>
 
+        {/* Sự kiện */}
         <View style={styles.section}>
-          <Text variant='titleMedium' style={styles.sectionTitle}>
-            Sự kiện nổi bật
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            🎉 Sự kiện nổi bật
           </Text>
-          {/* Có thể map danh sách sự kiện ở đây nếu có */}
-          <Text variant='bodyMedium' style={styles.eventText}>
+          <Text variant="bodyMedium" style={styles.eventText}>
             Hiện chưa có sự kiện nào.
           </Text>
         </View>
-        <View style={styles.section}>
-          <Text variant='titleMedium' style={styles.sectionTitle}>
-            Quyền lợi
-          </Text>
 
-          <View className='w-full h-48 rounded-2xl overflow-hidden'>
+        {/* Quyền lợi */}
+        <View style={styles.section}>
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            💎 Quyền lợi
+          </Text>
+          <View style={{ borderRadius: 16, overflow: 'hidden', marginTop: 8 }}>
             <ImageBackground
               source={require('../../assets/images/quynloitho.png')}
-              resizeMode='contain'
-              className='flex-1 p-4 justify-end'
+              resizeMode="cover"
+              style={{ height: 180 }}
             />
           </View>
         </View>
@@ -102,38 +127,78 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: '#F2F2F2',
-    flexGrow: 1,
+    flex: 1,
+    backgroundColor: Colors.background,
+    padding: 16,
   },
   row: {
     flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rowBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  greetingText: {
+    color: '#475569',
+    fontSize: 14,
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  card: {
+    borderRadius: 16,
+    padding: 16,
+    elevation: 3,
+  },
+  cardTitle: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  cardAmount: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginTop: 8,
+  },
+  orderText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   button: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 4,
-    gap: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1.5,
+    borderRadius: 12,
+    padding: 12,
+    backgroundColor: '#fff',
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
+  buttonLabel: {
+    fontSize: 14,
+    color: '#444',
   },
-  bannerText: {
-    color: Colors.light.tint,
-    textAlign: 'center',
+  buttonValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1565C0',
   },
   section: {
-    marginTop: 8,
+    marginBottom: 20,
   },
   sectionTitle: {
-    marginBottom: 8,
+    fontWeight: '700',
+    fontSize: 16,
+    marginBottom: 6,
+    color: '#1E293B',
   },
   eventText: {
-    color: Colors.light.icon,
+    color: '#64748B',
   },
-  card: {backgroundColor: '#1565C0', borderRadius: 4, padding: 12, marginBottom: 12},
 });

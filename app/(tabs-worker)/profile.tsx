@@ -2,6 +2,7 @@ import DialogConfirm from '@/components/dialog/DialogConfirm';
 import ProfileContainer from '@/components/layout/ProfileContainer';
 import LanguageModal from '@/components/modal/LanguageModal';
 import { useRole } from '@/context/RoleContext';
+import { Colors } from '@/lib/common';
 import { clearStorage } from '@/lib/storage';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -28,7 +29,7 @@ const Profile = () => {
 
   const _gotoWallet = () => {
     router.push('/wallet');
-  }
+  };
   const settingsOptions = [
     {id: 1, title: 'Ví', icon: 'wallet', onPress: _gotoWallet},
     {id: 2, title: 'Nghiệp vụ', icon: 'id-card', onPress: _goToProfessional},
@@ -37,16 +38,14 @@ const Profile = () => {
   ];
 
   return (
-    <View>
+    <View style={{flex: 1, backgroundColor: Colors.background}}>
       <ProfileContainer />
       <View>
         {settingsOptions.map(option => (
           <List.Item
             key={option.id}
             title={t(option.title)}
-            left={props => 
-            <List.Icon {...props} icon={option.icon} />
-          }
+            left={props => <List.Icon {...props} icon={option.icon} />}
             onPress={option?.onPress}
           />
         ))}

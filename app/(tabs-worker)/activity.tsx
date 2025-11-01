@@ -2,6 +2,7 @@ import Tabs from '@/components/ui/Tabs';
 import { ensureLocationEnabled } from '@/hooks/useLocation';
 import { JobRequest } from '@/interfaces/interfaces';
 import { jsonGettAPI } from '@/lib/apiService';
+import { Colors } from '@/lib/common';
 import { displayDateVN, formatPrice } from '@/lib/utils';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -68,10 +69,6 @@ export default function ActivityScreen() {
     });
   };
 
-  useEffect(() => {
-    console.log('Lịch sử hoạt động:', history);
-  }, [history]);
-
   const renderEmptyState = (title: string) => (
     <View style={styles.emptySection}>
       <Text style={styles.emptyText}>{title}</Text>
@@ -103,90 +100,155 @@ export default function ActivityScreen() {
 
   const renderJobCard = ({item}: {item: any}) => {
     const isHistory = item.type === 'BOOKING';
-    if (isHistory) {
-      return (
-        <TouchableOpacity
-          style={styles.card}
-          onPress={() => {
-            router.push({
-              pathname: '/workflow',
-              params: {
-                currentTab: activeTab,
-                jobRequestCode: item.code,
-              },
-            });
-          }}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.jobCode}>#{item.code}</Text>
-            <Text
-              style={[styles.status, item.status === 'COMPLETED' ? styles.statusCompleted : styles.statusCancelled]}>
-              {item.status === 'COMPLETED' ? 'Hoàn thành' : 'Đã hủy'}
-            </Text>
-          </View>
-
-          <Text style={styles.jobTitle}>{item.serviceName}</Text>
-
-          <View style={[styles.row, {justifyContent: 'space-between', marginTop: 4}]}>
-            <Text style={styles.time}>{displayDateVN(new Date(item.date))}</Text>
-          </View>
-
-          <Text numberOfLines={2} ellipsizeMode='tail' style={[styles.time, {marginTop: 4}]}>
-            📍 {item.address}
-          </Text>
-        </TouchableOpacity>
-      );
-    }
     const job = item.job;
+
+    const getStatusStyle = (status: string | undefined) => {
+      switch (status) {
+        case 'COMPLETED':
+        case 'ACCEPTED':
+          return {bg: '#E3FCEF', color: '#4CAF50', label: 'Hoàn thành'};
+        case 'PENDING':
+          return {bg: '#FFF4E5', color: '#FF9800', label: 'Chờ xác nhận'};
+        default:
+          return {bg: '#FFE3E3', color: '#F44336', label: 'Đã hủy'};
+      }
+    };
+
+    const statusStyle = isHistory ? getStatusStyle(item.status) : getStatusStyle(job?.status);
 
     return (
       <TouchableOpacity
-        style={styles.card}
+        activeOpacity={0.85}
         onPress={() => {
-          navigateToScreen(item);
+          if (isHistory) {
+            router.push({
+              pathname: '/workflow',
+              params: {currentTab: activeTab, jobRequestCode: item.code},
+            });
+          } else {
+            navigateToScreen(item);
+          }
+        }}
+        style={{
+          padding: 8,
+          marginBottom: 12,
+          borderRadius: 12,
+          borderLeftWidth: 4,
+          borderColor: Colors.primary,
         }}>
-        <View style={styles.cardHeader}>
-          <View style={[styles.row, {gap: 8}]}>
-            <Text style={styles.jobCode}>#{job?.jobRequestCode}</Text>
+        {/* Header */}
+        <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>
+          <View
+            style={{
+              backgroundColor: '#E3F2FD', // nền xanh nhạt
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              borderRadius: 8,
+              alignSelf: 'flex-start',
+              shadowColor: '#000',
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+              shadowOffset: {width: 0, height: 2},
+              elevation: 1,
+            }}>
+            <Text style={{fontSize: 14, fontWeight: '700', color: '#1565C0'}}>
+              {isHistory ? `#${item.code}` : `#${job?.jobRequestCode}`}
+            </Text>
           </View>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: statusStyle.bg,
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              borderRadius: 12,
+            }}>
+            <View
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: 3,
+                backgroundColor: statusStyle.color,
+                marginRight: 6,
+              }}
+            />
+            <Text style={{fontSize: 12, fontWeight: '600', color: statusStyle.color}}>
+              {isHistory ? (item.status === 'COMPLETED' ? 'Hoàn thành' : 'Đã hủy') : statusStyle.label}
+            </Text>
+          </View>
+        </View>
+
+        {/* Title */}
+        <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 6}}>
+          {/* Text */}
           <Text
-            style={[
-              styles.status,
-              // SỬA: item.status -> job.status
-              job?.status === STATUS.PENDING
-                ? styles.statusPending
-                : job?.status === STATUS.ACCEPTED
-                  ? styles.statusAccepted
-                  : styles.statusCancelled,
-            ]}>
-            {job?.status === STATUS.PENDING
-              ? 'Chờ xác nhận'
-              : job?.status === STATUS.ACCEPTED
-                ? 'Đang tiến hành'
-                : 'Đã hủy'}
+            numberOfLines={2}
+            style={{
+              fontSize: 15,
+              fontWeight: '700', // tăng độ đậm
+              color: '#111',
+              textShadowColor: 'rgba(0,0,0,0.05)',
+              textShadowOffset: {width: 0, height: 1},
+              textShadowRadius: 1,
+              lineHeight: 22,
+              flexShrink: 1,
+            }}>
+            {isHistory ? item.serviceName : job?.service?.serviceName}
           </Text>
         </View>
 
-        {/* Nội dung */}
-        <View style={{flexDirection: 'row', justifyContent: 'space-between', gap: 8}}>
-          <View style={{flex: 1}}>
-            {/* SỬA: Thêm .job vào các truy cập */}
-            <Text style={styles.jobTitle} numberOfLines={2} ellipsizeMode='tail'>
-              {job?.service?.serviceName}
+        {/* Time & Price / Address */}
+        <View style={{marginTop: 6}}>
+          <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6}}>
+            {/* Ngày */}
+            <Text
+              style={{
+                fontSize: 13,
+                color: '#555',
+                lineHeight: 18,
+                paddingVertical: 2,
+                paddingHorizontal: 4,
+                borderRadius: 4,
+                backgroundColor: '#F5F5F5', // nền nhạt để nổi bật hơn
+              }}>
+              {isHistory ? displayDateVN(new Date(item?.date)) : displayDateVN(new Date(job?.bookingDate))}
             </Text>
 
-            {/* Thời gian */}
-            <View style={[styles.row, {justifyContent: 'space-between', alignItems: 'flex-end'}]}>
-              <Text style={styles.time}>{displayDateVN(new Date(job?.bookingDate))}</Text>
-              <Text style={[styles.priceLabel, {fontSize: 18}]}>{formatPrice(item.quotedPrice)} đ</Text>
-            </View>
-
-            {/* <View>
-              <Text numberOfLines={1} ellipsizeMode='tail'>
-                {job?.description}
-              </Text>
-            </View> */}
+            {/* Giá tiền */}
+            {!isHistory && (
+              <View
+                style={{
+                  backgroundColor: '#E3F2FD', // xanh nhạt
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  borderRadius: 8,
+                  shadowColor: '#000',
+                  shadowOpacity: 0.05,
+                  shadowRadius: 3,
+                  shadowOffset: {width: 0, height: 1},
+                  elevation: 1,
+                }}>
+                <Text style={{fontSize: 14, fontWeight: '700', color: '#1565C0'}}>
+                  {formatPrice(item.quotedPrice)} đ
+                </Text>
+              </View>
+            )}
           </View>
-          {/* <Image source={require('../../assets/images/map.png')} style={{width: 50, height: 50}} /> */}
+
+          <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 4}}>
+            <Text
+              numberOfLines={2}
+              ellipsizeMode='tail'
+              style={{
+                fontSize: 13,
+                color: '#333',
+                lineHeight: 18,
+                flexShrink: 1,
+              }}>
+              {isHistory ? item.address : job?.bookingAddress}
+            </Text>
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -203,6 +265,7 @@ export default function ActivityScreen() {
       {/* Danh sách job */}
       {activeTab !== STATUS.HISTORY ? (
         <FlatList
+          showsVerticalScrollIndicator={false}
           data={myJobsRequest}
           renderItem={renderJobCard}
           keyExtractor={(_, index) => index.toString()}
@@ -230,7 +293,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F2',
+    backgroundColor: Colors.background,
     paddingHorizontal: 16,
   },
   filterRow: {

@@ -1,16 +1,17 @@
 import Appbar from '@/components/layout/Appbar';
 import { AvatarWrapper } from '@/components/layout/ProfileContainer';
+import JobDetailSection from '@/components/ui/JobDetailSection';
+import WorkflowTimeline from '@/components/ui/WorkFLowTimeLine';
 import { ROLE } from '@/context/RoleContext';
 import { useSocket } from '@/context/SocketContext';
 import { jsonGettAPI } from '@/lib/apiService';
-import { BOOKING_STATUS_MAP, Colors } from '@/lib/common';
-import { displayDateVN, formatPrice } from '@/lib/utils';
+import { Colors } from '@/lib/common';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import polyline from '@mapbox/polyline';
 import axios from 'axios';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { AnimatedRegion, Marker, Polyline } from 'react-native-maps';
 
 const ORS_API_KEY = process.env.EXPO_PUBLIC_OPENROUTE_SERVICE_API_KEY || '';
@@ -379,105 +380,51 @@ export default function Tracking() {
 
       {/* JOB INFO */}
       <View style={[styles.infoCard, {flex: 1}]}>
-        <ScrollView>
-          <Text>#{bookingDetail?.bookingCode}</Text>
-          <View style={{flexDirection: 'row', alignItems: 'center', marginVertical: 4}}>
-            <AvatarWrapper
-              url={acceptedWorker?.worker?.user?.avatarUrl}
-              role={ROLE.CUSTOMER}
-              size={48}
-              className='mr-2'
-            />
-            <Text style={{fontWeight: 'bold', fontSize: 16}}>{acceptedWorker?.worker?.user?.fullName}</Text>
-            <View style={{marginLeft: 'auto', flexDirection: 'row'}}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginVertical: 8,
+              padding: 12,
+              borderRadius: 12,
+              backgroundColor: '#fff',
+              shadowColor: '#000',
+              shadowOffset: {width: 0, height: 2},
+              shadowOpacity: 0.08,
+              shadowRadius: 4,
+              elevation: 2,
+            }}>
+            <AvatarWrapper url={acceptedWorker?.worker?.user?.avatarUrl} role={ROLE.CUSTOMER} size={52} />
+            <View style={{marginLeft: 12, flex: 1}}>
+              <Text style={{fontWeight: '600', fontSize: 16, color: '#222'}}>
+                {acceptedWorker?.worker?.user?.fullName}
+              </Text>
+              <Text style={{fontSize: 13, color: '#777', marginTop: 2}}>Thợ</Text>
+            </View>
+            <View style={{marginLeft: 'auto', flexDirection: 'row', gap: 12}}>
               <TouchableOpacity style={styles.chatButton} onPress={() => registerConfirmJob('JR2A57E7892025')}>
-                <MaterialIcons name='call' size={26} color={Colors.secondary} />
+                <MaterialIcons name='call' size={22} color='#fff' />
               </TouchableOpacity>
               <TouchableOpacity style={styles.chatButton} onPress={handleChat}>
-                <MaterialIcons name='chat' size={26} color={Colors.secondary} />
+                <MaterialIcons name='chat' size={22} color='#fff' />
               </TouchableOpacity>
             </View>
           </View>
 
           <View>
-            <View style={{marginTop: 16}}>
-              <Text style={styles.sectionTitle}>Quy trình làm việc</Text>
-              <View style={styles.timelineContainer}>
-                {processSteps.map((status, index) => {
-                  const label = BOOKING_STATUS_MAP[status as keyof typeof BOOKING_STATUS_MAP];
-                  const currentStatus = bookingStatus;
-                  const isActive = status === currentStatus;
-                  const isCompleted = processSteps.indexOf(currentStatus) > index;
-
-                  return (
-                    <View key={status} style={styles.timelineItem}>
-                      <View style={styles.timelineLeft}>
-                        <View
-                          style={[
-                            styles.timelineDot,
-                            isCompleted && styles.timelineDotCompleted,
-                            isActive && styles.timelineDotActive,
-                          ]}
-                        />
-                        {index !== processSteps.length - 1 && (
-                          <View style={[styles.timelineLine, (isCompleted || isActive) && styles.timelineLineActive]} />
-                        )}
-                      </View>
-                      <Text
-                        style={[
-                          styles.timelineLabel,
-                          isActive && styles.timelineLabelActive,
-                          isCompleted && styles.timelineLabelCompleted,
-                        ]}>
-                        {label}
-                      </Text>
-                    </View>
-                  );
-                })}
-              </View>
+            <View>
+              <WorkflowTimeline bookingStatus={bookingStatus} />
             </View>
 
-            <View style={styles.detailSection}>
-              <Text style={styles.sectionTitle}>Thông tin chi tiết</Text>
-
-              <View style={styles.detailRow}>
-                <MaterialCommunityIcons name='tools' size={18} color={Colors.secondary} />
-                <Text style={styles.detailText}>{jobDetail?.service?.serviceName}</Text>
-              </View>
-
-              <View style={styles.detailRow}>
-                <MaterialIcons name='description' size={18} color={Colors.secondary} />
-                <Text style={styles.detailText}>{jobDetail?.description || 'Không có mô tả'}</Text>
-              </View>
-
-              <View style={styles.detailRow}>
-                <MaterialIcons name='calendar-today' size={18} color={Colors.secondary} />
-                <Text style={styles.detailText}>{displayDateVN(jobDetail?.bookingDate)}</Text>
-              </View>
-
-              <View style={styles.detailRow}>
-                <MaterialCommunityIcons name='map-marker' size={18} color={Colors.secondary} />
-                <Text style={styles.detailText}>{jobDetail?.bookingAddress}</Text>
-              </View>
-
-              <View style={styles.priceBox}>
-                <Text style={styles.priceLabel}>Giá dự kiến</Text>
-                <Text style={styles.priceValue}>{formatPrice(bookingDetail?.totalAmount)} đ</Text>
-              </View>
-
-              {jobDetail?.files?.length > 0 && (
-                <View style={styles.imageSection}>
-                  <Text style={styles.sectionTitle}>Hình ảnh đính kèm</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    {jobDetail.files.map((file: any) => (
-                      <View key={file.id} style={styles.imageWrapper}>
-                        <Image source={{uri: file.fileUrl}} style={styles.imageItem} resizeMode='cover' />
-                      </View>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
+            <JobDetailSection
+              serviceName={jobDetail?.service?.serviceName}
+              description={jobDetail?.description}
+              bookingDate={jobDetail?.bookingDate}
+              bookingAddress={jobDetail?.bookingAddress}
+              totalAmount={bookingDetail?.totalAmount}
+              files={jobDetail?.files}
+            />
           </View>
         </ScrollView>
       </View>
@@ -489,20 +436,24 @@ export default function Tracking() {
  *  STYLE
  * --------------------------------*/
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F2F2F2'},
+  container: {flex: 1, backgroundColor: Colors.background},
   map: {flex: 1},
   infoCard: {
-    // backgroundColor: '#fff',
-    padding: 16,
+    paddingHorizontal: 16,
     borderTopWidth: 1,
     borderColor: '#eee',
   },
   chatButton: {
-    borderWidth: 1,
-    borderColor: Colors.secondary,
+    backgroundColor: Colors.secondary || '#007AFF',
+    borderRadius: 30,
     padding: 10,
-    borderRadius: 50,
-    marginRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: Colors.secondary || '#007AFF',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   step: {
     color: '#aaa',

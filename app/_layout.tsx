@@ -9,6 +9,7 @@ import '@/i18n';
 import { useFonts } from 'expo-font';
 import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PaperProvider, ThemeProvider } from 'react-native-paper';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
@@ -40,21 +41,23 @@ export default function RootLayout() {
   if (!loaded) return null;
 
   return (
-    <SafeAreaProvider>
-      <SafeAreaView className='flex flex-1'>
-        <NetworkProvider>
-          <RoleProvider>
-            <PaperProvider>
-              <ThemeProvider>
-                <AppContent />
-                {/* {history.length > 0 && <>{console.log('📜 History stack:', history)}</>} */}
-                <Toast config={toastConfig} topOffset={0} />
-                <StatusBar style='auto' />
-              </ThemeProvider>
-            </PaperProvider>
-          </RoleProvider>
-        </NetworkProvider>
-      </SafeAreaView>
-    </SafeAreaProvider>
+    <GestureHandlerRootView>
+      <SafeAreaProvider>
+        <SafeAreaView className='flex flex-1'>
+          <NetworkProvider>
+            <RoleProvider>
+              <PaperProvider>
+                <ThemeProvider>
+                  <AppContent />
+                  {/* {history.length > 0 && <>{console.log('📜 History stack:', history)}</>} */}
+                  <Toast config={toastConfig} topOffset={0} />
+                  <StatusBar style='auto' />
+                </ThemeProvider>
+              </PaperProvider>
+            </RoleProvider>
+          </NetworkProvider>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

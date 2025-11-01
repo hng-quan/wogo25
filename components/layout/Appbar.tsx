@@ -1,3 +1,4 @@
+import { ROLE, useRole } from '@/context/RoleContext';
 import { Colors } from '@/lib/common';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -15,6 +16,7 @@ const Appbar: React.FC<AppbarProps> = ({ title, onBackPress, style }) => {
     if (onBackPress) onBackPress();
     else router.back();
   };
+  const {role} = useRole();
 
   return (
     <View style={[styles.container, style]}>
@@ -23,7 +25,7 @@ const Appbar: React.FC<AppbarProps> = ({ title, onBackPress, style }) => {
         <MaterialCommunityIcons
           name="chevron-left"
           size={32}
-          color={Colors.primary || '#007AFF'}
+          color={role === ROLE.WORKER ? Colors.primary : Colors.secondary}
         />
       </TouchableOpacity>
 
@@ -46,13 +48,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     backgroundColor: Colors.background || '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#EEEEEE',
     shadowRadius: 3,
-    elevation: 2,
   },
   backButton: {
     width: 40,
@@ -63,9 +61,8 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 18,
-    fontWeight: '600',
-    // color: Colors.textPrimary || '#222222',
+    fontSize: 16,
+    fontWeight: '500',
     letterSpacing: 0.3,
   },
   rightPlaceholder: {

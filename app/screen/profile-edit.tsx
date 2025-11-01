@@ -3,6 +3,7 @@ import Appbar from '@/components/layout/Appbar';
 import { AvatarWrapper } from '@/components/layout/ProfileContainer';
 import { ROLE, useRole } from '@/context/RoleContext';
 import { formPutAPI } from '@/lib/apiService';
+import { Colors } from '@/lib/common';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -16,7 +17,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { Card, IconButton, Text, TextInput } from 'react-native-paper';
+import { IconButton, Text, TextInput } from 'react-native-paper';
 
 const ProfileDetail = () => {
   const {user, role, updateUser} = useRole();
@@ -57,35 +58,35 @@ const ProfileDetail = () => {
     await formPutAPI('/users/update', formData, res => updateUser(res.result));
   };
 
-  const renderStatistics = ({role}: {role: string}) => {
-    if (role === ROLE.WORKER) {
-      return (
-        <>
-          <View className='flex-row gap-4 m-6'>
-            <View className='flex-1'>
-              <Card>
-                <Card.Content className='items-center'>
-                  <Text>Tổng đơn</Text>
-                  <Text>0</Text>
-                </Card.Content>
-              </Card>
-            </View>
+  // const renderStatistics = ({role}: {role: string}) => {
+  //   if (role === ROLE.WORKER) {
+  //     return (
+  //       <>
+  //         <View className='flex-row gap-4 m-6'>
+  //           <View className='flex-1'>
+  //             <Card>
+  //               <Card.Content className='items-center'>
+  //                 <Text>Tổng đơn</Text>
+  //                 <Text>0</Text>
+  //               </Card.Content>
+  //             </Card>
+  //           </View>
 
-            <View className='flex-1'>
-              <Card>
-                <Card.Content className='items-center'>
-                  <Text>Tỉ lệ hoàn thành</Text>
-                  <Text>0%</Text>
-                </Card.Content>
-              </Card>
-            </View>
-          </View>
-          {/* Bài viết */}
-          <Text style={styles.postsTitle}>Bài viết</Text>
-        </>
-      );
-    }
-  };
+  //           <View className='flex-1'>
+  //             <Card>
+  //               <Card.Content className='items-center'>
+  //                 <Text>Tỉ lệ hoàn thành</Text>
+  //                 <Text>0%</Text>
+  //               </Card.Content>
+  //             </Card>
+  //           </View>
+  //         </View>
+  //         {/* Bài viết */}
+  //         <Text style={styles.postsTitle}>Bài viết</Text>
+  //       </>
+  //     );
+  //   }
+  // };
 
   const UpdateModal = ({fullName, isOpen, onClose}: {fullName: string; isOpen: boolean; onClose: () => void}) => {
     const {t} = useTranslation();
@@ -175,7 +176,7 @@ const ProfileDetail = () => {
         </View>
 
         {/* Thông tin thống kê */}
-        {renderStatistics({role})}
+        {/* {renderStatistics({role})} */}
 
         <UpdateModal fullName={fullName} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       </View>
@@ -188,9 +189,10 @@ export default ProfileDetail;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F2',
+    backgroundColor: Colors.background,
   },
   profileContainer: {
+    marginTop: 20,
     alignItems: 'center',
   },
   avatar: {

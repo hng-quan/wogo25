@@ -35,9 +35,14 @@ const Profile = () => {
       <View className='flex flex-row items-center'>
         <Text className='text-2xl !font-bold'>Tài khoản</Text>
         <View className='flex flex-row items-center ml-auto gap-2'>
-          <Text className='text-2xl' style={[{color: role === ROLE.WORKER ? '#1565C0' : '#4CAF50'}, {
-            fontWeight: 'bold',
-          }]}>
+          <Text
+            className='text-2xl'
+            style={[
+              {color: role === ROLE.WORKER ? '#1565C0' : '#4CAF50'},
+              {
+                fontWeight: 'bold',
+              },
+            ]}>
             {t(`${role === ROLE.WORKER ? 'Thợ' : 'Khách'}`)}
           </Text>
           <Switch
@@ -50,7 +55,14 @@ const Profile = () => {
       </View>
       <TouchableOpacity
         onPress={_navigateToEditProfile}
-        className='flex flex-row items-center gap-3 bg-white p-3 rounded-2xl my-2'>
+        className='flex flex-row items-center gap-3 bg-white p-3 rounded-2xl my-2'
+        style={{
+          shadowColor: '#000',
+          shadowOpacity: 0.08,
+          shadowRadius: 6,
+          shadowOffset: {width: 0, height: 2},
+          elevation: 2,
+        }}>
         <AvatarWrapper url={avatarUrl} role={role} />
         <View className='gap-1'>
           <Text className='text-xl !font-bold !text-black'>{fullName}</Text>
