@@ -1,10 +1,10 @@
 import { ServiceType } from '@/interfaces/interfaces';
 import { jsonGettAPI } from '@/lib/apiService';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Colors } from '@/lib/common';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, TouchableOpacity, View } from 'react-native';
-import { List, Modal, Portal, Text } from 'react-native-paper';
+import { Modal, Portal, Text } from 'react-native-paper';
 
 export default function ChildrenServiceModal({
   parentId,
@@ -42,9 +42,34 @@ export default function ChildrenServiceModal({
           backgroundColor: 'white',
           borderRadius: 8,
         }}>
-        <List.Subheader>
-          <Text variant='titleMedium'>{t('Chọn dịch vụ')}</Text>
-        </List.Subheader>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 12,
+            paddingVertical: 16,
+            borderBottomColor: '#eee',
+            borderBottomWidth: 1,
+          }}>
+          <View
+            style={{
+              width: 5,
+              height: 22,
+              borderRadius: 3,
+              backgroundColor: '#4CAF50',
+              marginRight: 10,
+            }}
+          />
+          <Text
+            variant='titleMedium'
+            style={{
+              fontSize: 18,
+              fontWeight: '700',
+              color: '#222',
+            }}>
+            {t('Chọn dịch vụ')}
+          </Text>
+        </View>
 
         {childrenServiceList.length === 0 ? (
           <Text style={{textAlign: 'center', padding: 12}}>Không có dịch vụ nào</Text>
@@ -52,25 +77,51 @@ export default function ChildrenServiceModal({
           <FlatList
             data={childrenServiceList}
             keyExtractor={item => item.id.toString()}
+            contentContainerStyle={{
+              paddingHorizontal: 12,
+              paddingVertical: 12,
+            }}
             renderItem={({item}) => (
               <TouchableOpacity
                 onPress={() => onSelect?.(item)}
+                activeOpacity={0.8}
                 style={{
+                  backgroundColor: '#fff',
+                  borderRadius: 12,
+                  paddingVertical: 14,
+                  paddingHorizontal: 16,
+                  marginBottom: 12,
+                  shadowColor: '#000',
+                  shadowOffset: {width: 0, height: 1},
+                  shadowOpacity: 0.08,
+                  shadowRadius: 3,
+                  elevation: 2,
                   flexDirection: 'row',
                   alignItems: 'center',
-                  padding: 12,
-                  borderBottomWidth: 1,
-                  borderBottomColor: '#eee',
+                  borderLeftColor: Colors.secondary,
+                  borderLeftWidth: 2,
                 }}>
-                <MaterialCommunityIcons
-                  name={(item.iconUrl as any) || 'account-wrench'}
-                  size={28}
-                  color='#4CAF50'
-                  style={{marginRight: 12}}
-                />
+                {/* Nội dung */}
                 <View style={{flex: 1}}>
-                  <Text style={{fontWeight: 'bold', fontSize: 16}}>{item.serviceName}</Text>
-                  {item.description ? <Text style={{color: '#666', fontSize: 12}}>{item.description}</Text> : null}
+                  <Text
+                    style={{
+                      fontWeight: '600',
+                      fontSize: 16,
+                      color: '#222',
+                      marginBottom: item.description ? 2 : 0,
+                    }}>
+                    {item.serviceName}
+                  </Text>
+                  {item.description ? (
+                    <Text
+                      style={{
+                        color: '#666',
+                        fontSize: 13,
+                        lineHeight: 18,
+                      }}>
+                      {item.description}
+                    </Text>
+                  ) : null}
                 </View>
               </TouchableOpacity>
             )}

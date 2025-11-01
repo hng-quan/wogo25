@@ -6,7 +6,6 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Image } from 'react-native';
-import '../../assets/images/intelligence.png';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();

@@ -5,7 +5,7 @@ import { ROLE, useRole } from '@/context/RoleContext';
 import { formPutAPI } from '@/lib/apiService';
 import { Colors } from '@/lib/common';
 import * as ImagePicker from 'expo-image-picker';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -20,6 +20,7 @@ import {
 import { IconButton, Text, TextInput } from 'react-native-paper';
 
 const ProfileDetail = () => {
+  const {prevPath} = useLocalSearchParams();
   const {user, role, updateUser} = useRole();
   const avatarUrl = user?.avatarUrl || '';
   const fullName = user?.fullName || 'No name';
@@ -57,36 +58,6 @@ const ProfileDetail = () => {
 
     await formPutAPI('/users/update', formData, res => updateUser(res.result));
   };
-
-  // const renderStatistics = ({role}: {role: string}) => {
-  //   if (role === ROLE.WORKER) {
-  //     return (
-  //       <>
-  //         <View className='flex-row gap-4 m-6'>
-  //           <View className='flex-1'>
-  //             <Card>
-  //               <Card.Content className='items-center'>
-  //                 <Text>Tổng đơn</Text>
-  //                 <Text>0</Text>
-  //               </Card.Content>
-  //             </Card>
-  //           </View>
-
-  //           <View className='flex-1'>
-  //             <Card>
-  //               <Card.Content className='items-center'>
-  //                 <Text>Tỉ lệ hoàn thành</Text>
-  //                 <Text>0%</Text>
-  //               </Card.Content>
-  //             </Card>
-  //           </View>
-  //         </View>
-  //         {/* Bài viết */}
-  //         <Text style={styles.postsTitle}>Bài viết</Text>
-  //       </>
-  //     );
-  //   }
-  // };
 
   const UpdateModal = ({fullName, isOpen, onClose}: {fullName: string; isOpen: boolean; onClose: () => void}) => {
     const {t} = useTranslation();
@@ -146,7 +117,9 @@ const ProfileDetail = () => {
   };
 
   const goBack = () => {
-    if (role === ROLE.WORKER) {
+    if (prevPath) {
+      router.replace(prevPath as any);
+    } else if (role === ROLE.WORKER) {
       router.replace('/(tabs-worker)/profile');
     } else {
       router.replace('/(tabs-customer)/profile');

@@ -33,11 +33,11 @@ export default function SearchCustom({
       )}
       style={[
         {
-          borderRadius: 12,
+          borderRadius: 100,
           backgroundColor: '#fff',
           borderWidth: 1,
-          borderColor: '#E0E0E0', // màu viền nhẹ
-          elevation: 0, // bỏ shadow
+          borderColor: '#4FAF50',
+          elevation: 0,
         },
         style,
       ]}

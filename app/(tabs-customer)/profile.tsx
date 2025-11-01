@@ -2,6 +2,7 @@ import DialogConfirm from '@/components/dialog/DialogConfirm';
 import ProfileContainer from '@/components/layout/ProfileContainer';
 import LanguageModal from '@/components/modal/LanguageModal';
 import { useRole } from '@/context/RoleContext';
+import { Colors } from '@/lib/common';
 import { clearStorage } from '@/lib/storage';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -29,7 +30,7 @@ const Profile = () => {
   ];
 
   return (
-    <View>
+    <View style={{flex: 1, backgroundColor: Colors.background}}>
       <ProfileContainer />
       <View>
         {settingsOptions.map(option => (
