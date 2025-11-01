@@ -13,7 +13,6 @@ export default function HomeScreen() {
   const avatarUrl = user?.avatarUrl || '';
   const fullName = user?.fullName || 'No name';
   const [expenses, setExpenses] = React.useState(0);
-  const [revenueBalance, setRevenueBalance] = React.useState(0);
   const [counter, setCounter] = React.useState(0);
 
   useEffect(() => {
@@ -33,7 +32,7 @@ export default function HomeScreen() {
   const fetchExpensesData = async () => {
     jsonGettAPI('/transactions/walletExpenseBalance', {}, payload => {
       console.log('Fetched expenses data:', payload);
-      setRevenueBalance(payload?.result || 0);
+      setExpenses(payload?.result || 0);
     });
   };
 
@@ -51,14 +50,14 @@ export default function HomeScreen() {
         <View style={styles.card}>
           <Text style={{color: '#FFFFFF', fontSize: 16}}>Ví chi tiêu</Text>
           <View style={[styles.row, {marginTop: 8, justifyContent: 'space-between', alignItems: 'center'}]}>
-            <Text style={{color: '#FFFFFF', fontSize: 20, fontWeight: 'bold'}}>{expenses} đ</Text>
+            <Text style={{color: '#FFFFFF', fontSize: 20, fontWeight: 'bold'}}>{expenses}đ</Text>
           </View>
         </View>
 
         <View style={styles.card}>
           <Text style={{color: '#FFFFFF', fontSize: 16}}>Doanh thu</Text>
           <View style={[styles.row, {marginTop: 8, justifyContent: 'space-between', alignItems: 'center'}]}>
-            <Text style={{color: '#FFFFFF', fontSize: 20, fontWeight: 'bold'}}>{revenueBalance} đ</Text>
+            <Text style={{color: '#FFFFFF', fontSize: 20, fontWeight: 'bold'}}>{revenue}đ</Text>
             <Text style={{color: '#FFFFFF', fontSize: 16}}>{ordersCount} đơn</Text>
           </View>
         </View>

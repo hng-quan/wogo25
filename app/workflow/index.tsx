@@ -455,6 +455,8 @@ export default function WorkFlow() {
       } as any;
       if (newStatus === 'COMPLETED' && method === 'qr') {
         payload['paymentMethod'] = 'BANK_TRANSFER';
+      } else if (newStatus === 'COMPLETED') {
+        payload['paymentMethod'] = 'CASH';
       }
 
       console.log('🔄 Cập nhật trạng thái booking:', payload);
@@ -797,6 +799,14 @@ export default function WorkFlow() {
                     <Text style={styles.detailText}>Phí sàn (10%)</Text>
                     <Text style={styles.priceValue}>{formatPrice(bookingDetail?.totalAmount * 0.1)}đ</Text>
                   </View>
+                  <View style={[styles.detailRow, {justifyContent: 'space-between'}]}>
+                    <Text style={styles.detailText}>Khách phải trả</Text>
+                    <Text style={styles.priceValue}>{formatPrice(bookingDetail?.totalAmount)}đ</Text>
+                  </View>
+                  <View style={[styles.detailRow, {justifyContent: 'space-between'}]}>
+                    <Text style={styles.detailText}>Số tiền thực nhận</Text>
+                    <Text style={styles.priceValue}>{formatPrice(bookingDetail?.totalAmount * 0.9)}đ</Text>
+                  </View>
 
                   {jobDetail?.files?.length > 0 && (
                     <View style={styles.imageSection}>
@@ -1036,7 +1046,7 @@ export default function WorkFlow() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F2',
+    backgroundColor: Colors.background,
   },
   map: {flex: 1},
   infoCard: {
