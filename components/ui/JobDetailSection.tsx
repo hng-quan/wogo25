@@ -92,7 +92,7 @@ const JobDetailSection: React.FC<JobDetailProps> = ({
       {/* === Giá dự kiến === */}
       <View
         style={{
-          backgroundColor: 'rgba(21,101,192,0.05)',
+          backgroundColor: accentColor + '10',
           borderRadius: 12,
           paddingVertical: 12,
           paddingHorizontal: 16,
@@ -107,13 +107,13 @@ const JobDetailSection: React.FC<JobDetailProps> = ({
             fontWeight: '600',
             color: accentColor,
           }}>
-          Giá dự kiến
+          Giá dịch vụ
         </Text>
         <Text
           style={{
             fontSize: 17,
             fontWeight: '700',
-            color: '#1E293B',
+            color: role === ROLE.WORKER ? Colors.primary : Colors.secondary,
           }}>
           {formatPrice(totalAmount || 0)} đ
         </Text>

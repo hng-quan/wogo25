@@ -398,7 +398,7 @@ export default function Tracking() {
               shadowOffset: {width: 0, height: 2},
               shadowOpacity: 0.08,
               shadowRadius: 8,
-              elevation: 4,
+              borderWidth: 0.1,
             }}>
             <AvatarWrapper url={acceptedWorker?.worker?.user?.avatarUrl} role={ROLE.CUSTOMER} size={52} />
             <View style={{marginLeft: 12, flex: 1}}>

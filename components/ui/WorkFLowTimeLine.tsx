@@ -1,3 +1,5 @@
+import { ROLE, useRole } from '@/context/RoleContext';
+import { Colors } from '@/lib/common';
 import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Text, View } from 'react-native';
@@ -33,8 +35,10 @@ const WORKFLOW_LABEL: Record<WorkflowStep | 'CANCELLED', string> = {
 };
 
 const WorkflowTimeline: React.FC<WorkflowTimelineProps> = ({bookingStatus}) => {
+  const {role} = useRole();
   const group = STATUS_GROUP_MAP[bookingStatus] || 'PENDING';
   const currentIndex = WORKFLOW_STEPS.indexOf(group as WorkflowStep);
+  const colorAccent = role === ROLE.WORKER ? Colors.primary : Colors.secondary;
 
   return (
     <View style={{paddingHorizontal: 4}}>
@@ -75,7 +79,7 @@ const WorkflowTimeline: React.FC<WorkflowTimelineProps> = ({bookingStatus}) => {
                       left: 16,
                       width: 3,
                       borderRadius: 3,
-                      backgroundColor: isCompleted ? '#4CAF50' : '#E0E0E0',
+                      backgroundColor: isCompleted ? colorAccent : '#E0E0E0',
                       opacity: isCompleted ? 0.9 : 0.4,
                     }}
                   />
@@ -87,7 +91,7 @@ const WorkflowTimeline: React.FC<WorkflowTimelineProps> = ({bookingStatus}) => {
                     width: 20,
                     height: 20,
                     borderRadius: 14,
-                    backgroundColor: isCompleted ? '#4CAF50' : isActive ? '#FF9800' : '#E0E0E0',
+                    backgroundColor: isCompleted ? colorAccent : isActive ? '#FF9800' : '#E0E0E0',
                     justifyContent: 'center',
                     alignItems: 'center',
                     // màu cam
@@ -116,7 +120,8 @@ const WorkflowTimeline: React.FC<WorkflowTimelineProps> = ({bookingStatus}) => {
                     ? 'rgba(255, 152, 0, 0.08)'
                     //   ? 'rgba(21, 101, 192, 0.08)'
                       : isCompleted
-                        ? 'rgba(76, 175, 80, 0.05)'
+                        // ? 'rgba(76, 175, 80, 0.05)'
+                        ? 'rgba(0, 150, 136, 0.05)'
                         : 'rgba(0,0,0,0.02)',
                   paddingVertical: 8,
                   paddingHorizontal: 14,
@@ -128,7 +133,7 @@ const WorkflowTimeline: React.FC<WorkflowTimelineProps> = ({bookingStatus}) => {
                   style={{
                     fontSize: 15,
                     fontWeight: isActive ? '700' : '500',
-                    color: isCompleted ? '#2E7D32' : isActive ? '#FF9800' : '#555',
+                    color: isCompleted ? colorAccent : isActive ? '#FF9800' : '#555',
                   }}>
                   {label}
                   {/* {isActive && bookingStatus !== 'COMPLETED' && (

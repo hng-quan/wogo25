@@ -872,7 +872,7 @@ export default function WorkFlow() {
                       marginVertical: 6,
                     }}>
                     <Text style={{color: '#555', fontSize: 15}}>Khách phải trả</Text>
-                    <Text style={{fontSize: 16, fontWeight: '700', color: '#1565C0'}}>
+                    <Text style={{fontSize: 16, fontWeight: '700', color: Colors.secondary}}>
                       {formatPrice(bookingDetail?.totalAmount)}đ
                     </Text>
                   </View>
@@ -888,7 +888,7 @@ export default function WorkFlow() {
                       borderTopColor: '#eee',
                     }}>
                     <Text style={{color: '#333', fontSize: 15, fontWeight: '600'}}>Số tiền thực nhận</Text>
-                    <Text style={{fontSize: 18, fontWeight: '700', color: '#4CAF50'}}>
+                    <Text style={{fontSize: 18, fontWeight: '700', color: Colors.primary}}>
                       {formatPrice(bookingDetail?.totalAmount * 0.9)}đ
                     </Text>
                   </View>
