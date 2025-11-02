@@ -1,4 +1,6 @@
+import NoticeCard from '@/components/ui/NotionCard';
 import { jsonGettAPI } from '@/lib/apiService';
+import { Colors } from '@/lib/common';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -38,31 +40,6 @@ export default function Notice() {
     setModalVisible(true);
   };
 
-  // 🔹 Hiển thị từng item
-  const renderItem = ({item}: {item: NoticeItem}) => {
-    const isUnread = !item.read;
-    const iconColor = item.type === 'PROMO' ? '#60A5FA' : item.type === 'SERVICE' ? '#F59E0B' : '#9CA3AF';
-
-    return (
-      <TouchableOpacity
-        style={[styles.noticeItem, isUnread && styles.unreadItem]}
-        onPress={() => handlePressNotice(item)}>
-        <View style={[styles.iconContainer, {backgroundColor: iconColor + '22'}]}>
-          <MaterialIcons name='notifications' size={22} color={iconColor} />
-        </View>
-
-        <View style={styles.textContainer}>
-          <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.description} numberOfLines={2}>
-            {item.description || 'Không có mô tả'}
-          </Text>
-        </View>
-
-        {isUnread && <View style={styles.dot} />}
-      </TouchableOpacity>
-    );
-  };
-
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Thông báo</Text>
@@ -70,7 +47,7 @@ export default function Notice() {
       <FlatList
         data={notices}
         keyExtractor={(item, index) => `${item.id}-${index}`}
-        renderItem={renderItem}
+        renderItem={item => <NoticeCard item={item.item} onPress={() => handlePressNotice(item.item)} />}
         refreshing={loading}
         onRefresh={fetchNotices}
         contentContainerStyle={{paddingVertical: 8, paddingBottom: 20}}
@@ -82,7 +59,7 @@ export default function Notice() {
       />
 
       {/* 🔹 Modal hiển thị chi tiết thông báo */}
-      <Modal visible={modalVisible} animationType='slide' transparent onRequestClose={() => setModalVisible(false)}>
+      <Modal visible={modalVisible} animationType='fade' transparent onRequestClose={() => setModalVisible(false)}>
         <View style={styles.overlay}>
           <View style={styles.modalCard}>
             {/* Header */}
@@ -125,7 +102,7 @@ export default function Notice() {
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F9FAFB', paddingHorizontal: 16},
+  container: {flex: 1, backgroundColor: Colors.background, paddingHorizontal: 16},
   header: {
     fontSize: 22,
     fontWeight: 'bold',
@@ -133,43 +110,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     color: '#111827',
   },
-  noticeItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  unreadItem: {
-    backgroundColor: '#FFF',
-  },
-  iconContainer: {
-    borderRadius: 25,
-    padding: 8,
-    marginRight: 12,
-  },
-  textContainer: {flex: 1},
-  title: {fontWeight: '700', fontSize: 12, color: '#111827', marginBottom: 4},
-  description: {color: '#4B5563', fontSize: 11},
-  dot: {
-    width: 10,
-    height: 10,
-    backgroundColor: '#EF4444',
-    borderRadius: 5,
-    marginLeft: 8,
-  },
   emptySection: {
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: 40,
   },
   emptyText: {fontSize: 15, color: '#9CA3AF'},
-  modalContainer: {flex: 1, backgroundColor: '#FFF'},
   detailType: {fontSize: 14, color: '#6B7280', marginBottom: 12},
   overlay: {
     flex: 1,

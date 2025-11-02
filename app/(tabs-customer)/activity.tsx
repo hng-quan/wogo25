@@ -99,67 +99,66 @@ export default function ActivityScreen() {
   };
 
   const renderJobCard = ({item}: {item: JobRequest}) => (
-  <TouchableOpacity
-    style={styles.card}
-    activeOpacity={0.9}
-    onPress={() => navigateToFindWorker(item)}>
-    {/* Header */}
-    <View style={styles.cardHeader}>
-      <View style={[styles.row, {gap: 8}]}>
-        <Text style={styles.jobCode}>#{item.jobRequestCode}</Text>
-        <View style={stylesCard.badgeQuote}>
-          <Text style={stylesCard.badgeQuoteText}>{item.workerQuotes?.length} báo giá</Text>
-        </View>
-      </View>
+    (
+      <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={() => navigateToFindWorker(item)}>
+        {/* Header */}
+        <View style={styles.cardHeader}>
+          <View style={[styles.row, {gap: 8}]}>
+            <Text style={styles.jobCode}>#{item.jobRequestCode}</Text>
+            <View style={stylesCard.badgeQuote}>
+              <Text style={stylesCard.badgeQuoteText}>{item.workerQuotes?.length} báo giá</Text>
+            </View>
+          </View>
 
-      <Text
-        style={[
-          styles.status,
-          item.status === STATUS.PENDING
-            ? styles.statusPending
-            : item.status === STATUS.ACCEPTED
-              ? styles.statusAccepted
-              : styles.statusCancelled,
-        ]}>
-        {item.status === STATUS.PENDING
-          ? 'Đang tìm thợ'
-          : item.status === STATUS.ACCEPTED
-            ? 'Đang tiến hành'
-            : 'Đã hủy'}
-      </Text>
-    </View>
-
-    {/* Nội dung chính */}
-    <View style={stylesCard.content}>
-      <View style={{flex: 1}}>
-        <Text style={styles.jobTitle} numberOfLines={1}>
-          {item?.service?.serviceName}
-        </Text>
-
-        <View style={[styles.row, {marginTop: 6}]}>
-          <Text style={styles.time}>{displayDateVN(new Date(item.bookingDate))}</Text>
-        </View>
-
-        {item.description ? (
-          <Text style={stylesCard.description} numberOfLines={2}>
-            {item.description}
+          <Text
+            style={[
+              styles.status,
+              item.status === STATUS.PENDING
+                ? styles.statusPending
+                : item.status === STATUS.ACCEPTED
+                  ? styles.statusAccepted
+                  : styles.statusCancelled,
+            ]}>
+            {item.status === STATUS.PENDING
+              ? 'Đang tìm thợ'
+              : item.status === STATUS.ACCEPTED
+                ? 'Đang tiến hành'
+                : 'Đã hủy'}
           </Text>
-        ) : null}
-      </View>
+        </View>
 
-      <Image
+        {/* Nội dung chính */}
+        <View style={stylesCard.content}>
+          <View style={{flex: 1}}>
+            <Text style={styles.jobTitle} numberOfLines={1}>
+              {item?.service?.serviceName}
+            </Text>
+
+            <View style={[styles.row, {marginTop: 4}]}>
+              <Text style={styles.time}>{displayDateVN(new Date(item.bookingDate))}</Text>
+            </View>
+
+            {item.description ? (
+              <Text style={stylesCard.description} numberOfLines={2}>
+                {item.description}
+              </Text>
+            ) : null}
+            <Text style={historyStyles.address} numberOfLines={2} ellipsizeMode='tail'>
+              {item.bookingAddress}
+            </Text>
+          </View>
+
+          {/* <Image
         source={require('../../assets/images/map.png')}
         style={stylesCard.mapImage}
-      />
-    </View>
+      /> */}
+        </View>
 
-    {/* Hình ảnh minh họa */}
-    {item?.files?.length > 0 ? (
-      <Image source={{uri: item.files[0].fileUrl}} style={styles.jobImage} />
-    ) : null}
-  </TouchableOpacity>
-);
-
+        {/* Hình ảnh minh họa */}
+        {item?.files?.length > 0 ? <Image source={{uri: item.files[0].fileUrl}} style={styles.jobImage} /> : null}
+      </TouchableOpacity>
+    )
+  );
 
   return (
     <View style={styles.container}>
@@ -183,6 +182,7 @@ export default function ActivityScreen() {
         />
       ) : (
         <FlatList
+          showsVerticalScrollIndicator={false}
           data={history}
           renderItem={({item}) =>
             renderHistoryCard({
@@ -215,7 +215,7 @@ type HistoryItem = {
   status: string;
   serviceName: string;
 };
-export const renderHistoryCard = ({ item, onPress }: { item: HistoryItem; onPress: (item: HistoryItem) => void }) => {
+export const renderHistoryCard = ({item, onPress}: {item: HistoryItem; onPress: (item: HistoryItem) => void}) => {
   const formattedDate = new Date(item.date).toLocaleString('vi-VN', {
     hour: '2-digit',
     minute: '2-digit',
@@ -225,13 +225,10 @@ export const renderHistoryCard = ({ item, onPress }: { item: HistoryItem; onPres
   });
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.85}
-      style={historyStyles.card}
-      onPress={() => onPress(item)}>
+    <TouchableOpacity activeOpacity={0.85} style={historyStyles.card} onPress={() => onPress(item)}>
       {/* Header */}
       <View style={historyStyles.cardHeader}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{flexDirection: 'row', alignItems: 'center', gap: 8}}>
           <Text style={historyStyles.jobCode}>#{item.code}</Text>
         </View>
         <Text
@@ -240,46 +237,32 @@ export const renderHistoryCard = ({ item, onPress }: { item: HistoryItem; onPres
             item.status === 'COMPLETED'
               ? historyStyles.statusCompleted
               : item.status === 'CANCELLED'
-              ? historyStyles.statusCancelled
-              : historyStyles.statusPending,
+                ? historyStyles.statusCancelled
+                : historyStyles.statusPending,
           ]}>
-          {item.status === 'COMPLETED'
-            ? 'Hoàn thành'
-            : item.status === 'CANCELLED'
-            ? 'Đã hủy'
-            : 'Đang xử lý'}
+          {item.status === 'COMPLETED' ? 'Hoàn thành' : item.status === 'CANCELLED' ? 'Đã hủy' : 'Đang xử lý'}
         </Text>
       </View>
 
       {/* Nội dung */}
       <View style={historyStyles.cardBody}>
-        <View style={{ flex: 1 }}>
-          <Text
-            style={historyStyles.jobTitle}
-            numberOfLines={1}
-            ellipsizeMode="tail">
+        <View style={{flex: 1}}>
+          <Text style={historyStyles.jobTitle} numberOfLines={1} ellipsizeMode='tail'>
             {item.serviceName}
           </Text>
 
           <Text style={historyStyles.time}>{formattedDate}</Text>
 
-          <Text
-            style={historyStyles.address}
-            numberOfLines={2}
-            ellipsizeMode="tail">
+          <Text style={historyStyles.address} numberOfLines={2} ellipsizeMode='tail'>
             {item.address}
           </Text>
         </View>
 
-        <Image
-          source={require('../../assets/images/map.png')}
-          style={{ width: 54, height: 54, borderRadius: 8 }}
-        />
+        {/* <Image source={require('../../assets/images/map.png')} style={{width: 54, height: 54, borderRadius: 8}} /> */}
       </View>
     </TouchableOpacity>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
@@ -330,9 +313,9 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 4,
-    borderLeftWidth: 2,
-    borderLeftColor: Colors.secondary,
+    borderColor: Colors.secondary,
+    borderWidth: 0.6,
+    borderLeftWidth: 3,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -365,7 +348,6 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
   },
   time: {
     fontSize: 13,
@@ -400,9 +382,9 @@ const historyStyles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     shadowOffset: {width: 0, height: 4},
-    elevation: 2,
-    borderLeftWidth: 2,
-    borderLeftColor: Colors.secondary,
+    borderWidth: 0.6,
+    borderLeftWidth: 3,
+    borderColor: Colors.secondary,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -511,7 +493,6 @@ const stylesCard = StyleSheet.create({
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
   },
   jobTitle: {
     fontSize: 15,
@@ -525,7 +506,6 @@ const stylesCard = StyleSheet.create({
   description: {
     fontSize: 13,
     color: '#666',
-    marginTop: 4,
   },
   mapImage: {
     width: 60,
@@ -540,4 +520,3 @@ const stylesCard = StyleSheet.create({
     marginTop: 8,
   },
 });
-

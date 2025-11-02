@@ -131,15 +131,16 @@ export default function ActivityScreen() {
         }}
         style={{
           padding: 8,
+          borderWidth: 0.6,
           marginBottom: 12,
-          borderLeftWidth: 2,
+          borderLeftWidth: 3,
           borderColor: Colors.primary,
           backgroundColor: '#fff',
           shadowColor: '#000',
           shadowOffset: {width: 0, height: 2},
           shadowOpacity: 0.08,
           shadowRadius: 8,
-          elevation: 4,
+          // elevation: 4,
         }}>
         {/* Header */}
         <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>
@@ -281,6 +282,7 @@ export default function ActivityScreen() {
         />
       ) : (
         <FlatList
+          showsVerticalScrollIndicator={false}
           data={history}
           renderItem={renderJobCard}
           refreshing={refreshing}

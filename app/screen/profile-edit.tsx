@@ -147,10 +147,6 @@ const ProfileDetail = () => {
           </View>
           <Text style={styles.phone}>{phone}</Text>
         </View>
-
-        {/* Thông tin thống kê */}
-        {/* {renderStatistics({role})} */}
-
         <UpdateModal fullName={fullName} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       </View>
     </KeyboardAvoidingView>
@@ -208,7 +204,6 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '90%',
-    // height: 100,
     gap: 10,
     padding: 10,
     margin: 'auto',

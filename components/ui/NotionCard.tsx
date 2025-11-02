@@ -1,4 +1,5 @@
-import { MaterialIcons } from '@expo/vector-icons';
+import { ROLE, useRole } from '@/context/RoleContext';
+import { Colors } from '@/lib/common';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -16,21 +17,19 @@ interface NoticeCardProps {
 }
 
 const NoticeCard: React.FC<NoticeCardProps> = ({ item, onPress }) => {
+  const {role} = useRole();
+  const borderColor = role === ROLE.CUSTOMER ? Colors.secondary : Colors.primary;
   const isUnread = !item.read;
-  const iconColor =
-    item.type === 'PROMO' ? '#60A5FA' :
-    item.type === 'SERVICE' ? '#F59E0B' :
-    '#9CA3AF';
+  // const iconColor =
+  //   item.type === 'PROMO' ? '#60A5FA' :
+  //   item.type === 'SERVICE' ? '#F59E0B' :
+  //   '#9CA3AF';
 
   return (
     <TouchableOpacity
       activeOpacity={0.85}
-      style={[styles.noticeItem, isUnread && styles.unreadItem]}
+      style={[styles.noticeItem, isUnread && styles.unreadItem, { borderLeftColor: borderColor }]}
       onPress={() => onPress?.(item)}>
-      {/* Icon */}
-      <View style={[styles.iconContainer, { backgroundColor: iconColor + '22' }]}>
-        <MaterialIcons name="notifications" size={22} color={iconColor} />
-      </View>
 
       {/* Nội dung */}
       <View style={styles.textContainer}>
@@ -40,8 +39,10 @@ const NoticeCard: React.FC<NoticeCardProps> = ({ item, onPress }) => {
         </Text>
       </View>
 
-      {/* Dot chưa đọc */}
-      {/* {isUnread && <View style={styles.dot} />} */}
+      {/* Icon */}
+      {/* <View style={[styles.iconContainer, { backgroundColor: iconColor + '22' }]}>
+        <MaterialIcons name="notifications" size={16} color={iconColor} />
+      </View> */}
     </TouchableOpacity>
   );
 };
@@ -50,18 +51,20 @@ export default NoticeCard;
 
 const styles = StyleSheet.create({
   noticeItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 12,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 1,
-    borderLeftWidth: 2,
-    borderLeftColor: '#4FAF50',
-  },
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#fff',
+  padding: 12,
+  marginBottom: 10,
+  borderWidth: 0.6,
+  borderColor: 'rgba(0,0,0,0.08)',
+  shadowColor: '#000',
+  shadowOpacity: 0.08,
+  shadowRadius: 3,
+  shadowOffset: { width: 0, height: 1 },
+  borderLeftWidth: 3,
+}
+,
   unreadItem: {
     backgroundColor: '#FFF',
   },
