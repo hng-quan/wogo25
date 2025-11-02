@@ -3,6 +3,7 @@ import { useRole } from '@/context/RoleContext';
 import { jsonGettAPI } from '@/lib/apiService';
 import { Colors } from '@/lib/common';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect } from 'react';
@@ -12,13 +13,12 @@ import { Text } from 'react-native-paper';
 export default function HomeScreen() {
   const {user, role} = useRole();
   const [revenue, setRevenue] = React.useState(0);
-  const [ordersCount, setOrdersCount] = React.useState(0);
   const [expenses, setExpenses] = React.useState(0);
   const [counter, setCounter] = React.useState(0);
   const [refreshing, setRefreshing] = React.useState(false);
-
   const avatarUrl = user?.avatarUrl || '';
   const fullName = user?.fullName || 'Người dùng';
+  const tabbarHeight = useBottomTabBarHeight();
 
   useEffect(() => {
     fetchRevenueData();
@@ -40,7 +40,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {paddingBottom: tabbarHeight}]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -90,7 +90,7 @@ export default function HomeScreen() {
           </View>
           <View style={styles.rowBetween}>
             <Text style={styles.cardAmount}>{revenue.toLocaleString()} đ</Text>
-            <Text style={styles.orderText}>{ordersCount} đơn</Text>
+            {/* <Text style={styles.orderText}>{ordersCount} đơn</Text> */}
           </View>
         </LinearGradient>
 
@@ -103,7 +103,7 @@ export default function HomeScreen() {
             <MaterialIcons name='build-circle' size={20} color='#1565C0' />
             <View>
               <Text style={styles.buttonLabel}>Đang tiến hành</Text>
-              <Text style={styles.buttonValue}>{ordersCount} đơn</Text>
+              {/* <Text style={styles.buttonValue}>{ordersCount} đơn</Text> */}
             </View>
           </TouchableOpacity>
 
@@ -111,7 +111,7 @@ export default function HomeScreen() {
             <MaterialIcons name='receipt-long' size={20} color='#1565C0' />
             <View>
               <Text style={styles.buttonLabel}>Đang báo giá</Text>
-              <Text style={styles.buttonValue}>{ordersCount} đơn</Text>
+              {/* <Text style={styles.buttonValue}>{ordersCount} đơn</Text> */}
             </View>
           </TouchableOpacity>
         </View>
