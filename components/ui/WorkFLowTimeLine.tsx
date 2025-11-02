@@ -14,7 +14,7 @@ const STATUS_GROUP_MAP: Record<string, WorkflowStep | 'CANCELLED'> = {
   PENDING: 'PENDING',
   COMING: 'IN_PROGRESS',
   ARRIVED: 'IN_PROGRESS',
-  NEGOTIATING: 'IN_PROGRESS',
+  NEGOTIATING: 'NEGOTIATING',
   WORKING: 'WORKING',
   PAYING: 'PAYMENT',
   PAID: 'PAYMENT',
@@ -52,7 +52,7 @@ const WorkflowTimeline: React.FC<WorkflowTimelineProps> = ({bookingStatus}) => {
         {WORKFLOW_STEPS.map((step, index) => {
           const label = WORKFLOW_LABEL[step];
           const isActive = index === currentIndex;
-          const isCompleted = index < currentIndex;
+          const isCompleted = index < currentIndex || bookingStatus === 'COMPLETED';
           const isLast = index === WORKFLOW_STEPS.length - 1;
 
           return (
@@ -71,7 +71,7 @@ const WorkflowTimeline: React.FC<WorkflowTimelineProps> = ({bookingStatus}) => {
                     style={{
                       position: 'absolute',
                       top: 24,
-                      bottom: -24,
+                      bottom: -14,
                       left: 16,
                       width: 3,
                       borderRadius: 3,
@@ -87,10 +87,11 @@ const WorkflowTimeline: React.FC<WorkflowTimelineProps> = ({bookingStatus}) => {
                     width: 20,
                     height: 20,
                     borderRadius: 14,
-                    backgroundColor: isCompleted ? '#4CAF50' : isActive ? '#1565C0' : '#E0E0E0',
+                    backgroundColor: isCompleted ? '#4CAF50' : isActive ? '#FF9800' : '#E0E0E0',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    shadowColor: isActive ? '#1565C0' : '#000',
+                    // màu cam
+                    shadowColor: isActive ? '#FF9800' : '#000',
                     shadowOffset: {width: 0, height: 2},
                     shadowOpacity: isActive ? 0.3 : 0.05,
                     shadowRadius: 3,
@@ -110,27 +111,30 @@ const WorkflowTimeline: React.FC<WorkflowTimelineProps> = ({bookingStatus}) => {
               {/* ==== Nội dung bên phải ==== */}
               <View
                 style={{
-                  backgroundColor: isActive
-                    ? 'rgba(21, 101, 192, 0.08)'
-                    : isCompleted
-                      ? 'rgba(76, 175, 80, 0.05)'
-                      : 'rgba(0,0,0,0.02)',
-                  borderRadius: 10,
+                  backgroundColor:
+                    isActive && bookingStatus !== 'COMPLETED'
+                    ? 'rgba(255, 152, 0, 0.08)'
+                    //   ? 'rgba(21, 101, 192, 0.08)'
+                      : isCompleted
+                        ? 'rgba(76, 175, 80, 0.05)'
+                        : 'rgba(0,0,0,0.02)',
                   paddingVertical: 8,
                   paddingHorizontal: 14,
                   flex: 1,
                   borderLeftWidth: isActive ? 3 : 0,
-                  borderLeftColor: isActive ? '#1565C0' : 'transparent',
+                  borderLeftColor: isActive && bookingStatus !== 'COMPLETED' ? '#FF9800' : 'transparent',
                 }}>
                 <Text
                   style={{
                     fontSize: 15,
                     fontWeight: isActive ? '700' : '500',
-                    color: isCompleted ? '#2E7D32' : isActive ? '#1565C0' : '#555',
+                    color: isCompleted ? '#2E7D32' : isActive ? '#FF9800' : '#555',
                   }}>
                   {label}
+                  {/* {isActive && bookingStatus !== 'COMPLETED' && (
+                  <Text style={{fontSize: 13, color: '#666', marginTop: 2}}>(Đang thực hiện)</Text>
+                )} */}
                 </Text>
-                {isActive && <Text style={{fontSize: 13, color: '#666', marginTop: 2}}>(Đang thực hiện bước này)</Text>}
               </View>
             </View>
           );

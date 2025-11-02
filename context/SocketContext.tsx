@@ -14,27 +14,29 @@ type SocketContextType = {
   subscribe: (topic: string, cb: (msg: IMessage) => void) => StompSubscription | null;
   send: (destination: string, body: any) => void;
   registerConfirmJob: (jobRequestCode: string) => Promise<void>;
+  trigger: number;
 };
 
 const SocketContext = createContext<SocketContextType | undefined>(undefined);
 
-export const SocketProvider: React.FC<{userId: string; children: React.ReactNode}> = ({
-  userId,
-  children,
-}) => {
+export const SocketProvider: React.FC<{userId: string; children: React.ReactNode}> = ({userId, children}) => {
   const [client, setClient] = useState<Client | null>(null);
   const [connected, setConnected] = useState(false);
-  const { role } = useRole();
+  const {role} = useRole();
   // For handling confirm-price realtime for customers
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [confirmPayload, setConfirmPayload] = useState<any>(null);
   const confirmSubsRef = useRef<Record<string, StompSubscription | null>>({});
   const PLACED_JOBS_KEY = 'placed_job_codes';
+  const [trigger, setTrigger] = useState(0);
+  useEffect(() => {
+    console.log('🔄 trigger changed in SocketProvider:', trigger);
+  }, [trigger])
 
   useEffect(() => {
     const stompClient = new Client({
       webSocketFactory: () => new SockJS(process.env.EXPO_PUBLIC_WS_URL ?? '/ws'),
-      connectHeaders: { userId },
+      connectHeaders: {userId},
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
@@ -118,12 +120,11 @@ export const SocketProvider: React.FC<{userId: string; children: React.ReactNode
 
   const send = (destination: string, body: any) => {
     if (!client || !client.connected) return;
-    client.publish({ destination, body: JSON.stringify(body) });
+    client.publish({destination, body: JSON.stringify(body)});
   };
 
   // Register a jobRequestCode to listen for confirmPrice events and persist the list
   const registerConfirmJob = async (jobRequestCode: string) => {
-
     try {
       // Persist
       const existing: string[] | null = await getItem(PLACED_JOBS_KEY);
@@ -184,14 +185,17 @@ export const SocketProvider: React.FC<{userId: string; children: React.ReactNode
         finalPrice: confirmPayload?.finalPrice,
         notes: confirmPayload?.notes,
         acceptTerms: Option === 'ACCEPT' ? true : false,
-      }
+      };
       console.log('Sending confirmPrice with params:', params);
       const response = await jsonPostAPI('/bookings/confirm-price', params);
       console.log('response confirm price:', response);
       if (response?.result) {
         console.log('✅ Confirmed price for booking', bookingCode, 'Option:', Option);
-        await _removePlacedJob(bookingCode);
+        if (Option === 'ACCEPT') {
+          await _removePlacedJob(bookingCode);
+        }
         setConfirmModalVisible(false);
+        setTrigger(prev => (prev >= 1_000_000 ? 1 : prev + 1));
       } else {
         console.log('Failed to confirm price', response);
         alert('Xác nhận giá thất bại. Vui lòng thử lại.');
@@ -203,93 +207,88 @@ export const SocketProvider: React.FC<{userId: string; children: React.ReactNode
   };
 
   return (
-  <SocketContext.Provider value={{ client, subscribe, send, connected, registerConfirmJob }}>
-    {children}
+    <SocketContext.Provider value={{client, subscribe, send, connected, registerConfirmJob, trigger}}>
+      {children}
 
-    {/* Confirm price modal for customers */}
-    <Portal>
-      <Dialog
-        visible={confirmModalVisible}
-        onDismiss={() => setConfirmModalVisible(false)}
-        style={{
-          borderRadius: 16,
-          backgroundColor: '#fff',
-          marginHorizontal: 20,
-          elevation: 6,
-        }}
-      >
-        <Dialog.Title
+      {/* Confirm price modal for customers */}
+      <Portal>
+        <Dialog
+          visible={confirmModalVisible}
+          onDismiss={() => setConfirmModalVisible(false)}
           style={{
-            textAlign: 'center',
-            fontSize: 20,
-            fontWeight: '700',
-            color: '#333',
-            marginBottom: 4,
-          }}
-        >
-          Xác nhận giá
-        </Dialog.Title>
+            borderRadius: 16,
+            backgroundColor: '#fff',
+            marginHorizontal: 20,
+            elevation: 6,
+          }}>
+          <Dialog.Title
+            style={{
+              textAlign: 'center',
+              fontSize: 20,
+              fontWeight: '700',
+              color: '#333',
+              marginBottom: 4,
+            }}>
+            Xác nhận giá
+          </Dialog.Title>
 
-        <Dialog.Content style={{ paddingVertical: 8 }}>
-          <Text>#{confirmPayload?.bookingCode}</Text>
-          <Paragraph style={{ fontSize: 16, marginBottom: 6}}>
-            <Text style={{ fontWeight: '600', color: '#007AFF' }}>
-              Mức giá thợ yêu cầu: {formatPrice(confirmPayload?.finalPrice) ?? formatPrice(confirmPayload?.price) ?? ''}đ
-            </Text>
-          </Paragraph>
-
-          {confirmPayload?.notes && (
-            <Paragraph
-              style={{
-                fontSize: 14,
-                color: '#555',
-                backgroundColor: '#f9f9f9',
-                padding: 10,
-                borderRadius: 8,
-              }}
-            >
-              Ghi chú: {confirmPayload.notes}
+          <Dialog.Content style={{paddingVertical: 8}}>
+            <Text>#{confirmPayload?.bookingCode}</Text>
+            <Paragraph style={{fontSize: 16, marginBottom: 6}}>
+              <Text style={{fontWeight: '600', color: '#007AFF'}}>
+                Mức giá thợ yêu cầu:{' '}
+                {formatPrice(confirmPayload?.finalPrice) ?? formatPrice(confirmPayload?.price) ?? ''}đ
+              </Text>
             </Paragraph>
-          )}
-        </Dialog.Content>
 
-        <Dialog.Actions
-          style={{
-            justifyContent: 'space-between',
-            paddingHorizontal: 16,
-            paddingBottom: 12,
-          }}
-        >
-          <ButtonCustom
-            mode="outlined"
-            onPress={() => {
-              handleConfirmPrice('REJECT');
-              setConfirmModalVisible(false);
-            }}
-            style={{
-              flex: 1,
-              marginRight: 8,
-              borderColor: '#ccc',
-            }}
-          >
-            Hủy
-          </ButtonCustom>
+            {confirmPayload?.notes && (
+              <Paragraph
+                style={{
+                  fontSize: 14,
+                  color: '#555',
+                  backgroundColor: '#f9f9f9',
+                  padding: 10,
+                  borderRadius: 8,
+                }}>
+                Ghi chú: {confirmPayload.notes}
+              </Paragraph>
+            )}
+          </Dialog.Content>
 
-          <ButtonCustom
-            mode="contained"
-            onPress={() => handleConfirmPrice('ACCEPT')}
+          <Dialog.Actions
             style={{
-              flex: 1,
-              marginLeft: 8,
-            }}
-          >
-            Xác nhận
-          </ButtonCustom>
-        </Dialog.Actions>
-      </Dialog>
-    </Portal>
-  </SocketContext.Provider>
-);
+              justifyContent: 'space-between',
+              paddingHorizontal: 16,
+              paddingBottom: 12,
+            }}>
+            <ButtonCustom
+              mode='outlined'
+              onPress={() => {
+                handleConfirmPrice('REJECT');
+                setConfirmModalVisible(false);
+              }}
+              style={{
+                flex: 1,
+                marginRight: 8,
+                borderColor: '#ccc',
+              }}>
+              Hủy
+            </ButtonCustom>
+
+            <ButtonCustom
+              mode='contained'
+              onPress={() => handleConfirmPrice('ACCEPT')}
+              style={{
+                flex: 1,
+                marginLeft: 8,
+              }}>
+              Xác nhận
+            </ButtonCustom>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+    </SocketContext.Provider>
+  );
 };
 
 export const useSocket = () => {
@@ -297,4 +296,3 @@ export const useSocket = () => {
   if (!ctx) throw new Error('useSocket must be used within SocketProvider');
   return ctx;
 };
-

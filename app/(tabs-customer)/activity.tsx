@@ -1,6 +1,7 @@
 import Tabs from '@/components/ui/Tabs';
 import { JobRequest } from '@/interfaces/interfaces';
 import { jsonGettAPI } from '@/lib/apiService';
+import { Colors } from '@/lib/common';
 import { displayDateVN } from '@/lib/utils';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -98,54 +99,67 @@ export default function ActivityScreen() {
   };
 
   const renderJobCard = ({item}: {item: JobRequest}) => (
-    <TouchableOpacity style={styles.card} onPress={() => navigateToFindWorker(item)}>
-      {/* Header: Mã job + Trạng thái */}
-      <View style={styles.cardHeader}>
-        <View style={[styles.row, {gap: 8}]}>
-          <Text style={styles.jobCode}>#{item.jobRequestCode}</Text>
-          <Text style={styles.priceLabel}>{item.workerQuotes?.length} báo giá</Text>
+  <TouchableOpacity
+    style={styles.card}
+    activeOpacity={0.9}
+    onPress={() => navigateToFindWorker(item)}>
+    {/* Header */}
+    <View style={styles.cardHeader}>
+      <View style={[styles.row, {gap: 8}]}>
+        <Text style={styles.jobCode}>#{item.jobRequestCode}</Text>
+        <View style={stylesCard.badgeQuote}>
+          <Text style={stylesCard.badgeQuoteText}>{item.workerQuotes?.length} báo giá</Text>
         </View>
-        <Text
-          style={[
-            styles.status,
-            item.status === STATUS.PENDING
-              ? styles.statusPending
-              : item.status === STATUS.ACCEPTED
-                ? styles.statusAccepted
-                : styles.statusCancelled,
-          ]}>
-          {item.status === STATUS.PENDING
-            ? 'Đang tìm thợ'
+      </View>
+
+      <Text
+        style={[
+          styles.status,
+          item.status === STATUS.PENDING
+            ? styles.statusPending
             : item.status === STATUS.ACCEPTED
-              ? 'Đang tiến hành'
-              : 'Đã hủy'}
+              ? styles.statusAccepted
+              : styles.statusCancelled,
+        ]}>
+        {item.status === STATUS.PENDING
+          ? 'Đang tìm thợ'
+          : item.status === STATUS.ACCEPTED
+            ? 'Đang tiến hành'
+            : 'Đã hủy'}
+      </Text>
+    </View>
+
+    {/* Nội dung chính */}
+    <View style={stylesCard.content}>
+      <View style={{flex: 1}}>
+        <Text style={styles.jobTitle} numberOfLines={1}>
+          {item?.service?.serviceName}
         </Text>
-      </View>
 
-      {/* Nội dung */}
-      <View style={{flexDirection: 'row', justifyContent: 'space-between', gap: 8}}>
-        <View>
-          <Text style={styles.jobTitle} numberOfLines={1} ellipsizeMode='tail'>
-            {item?.service?.serviceName}
-          </Text>
-
-          {/* Thời gian + số lượng báo giá */}
-          <View style={styles.row}>
-            <Text style={styles.time}>{displayDateVN(new Date(item.bookingDate))}</Text>
-          </View>
-          <View>
-            <Text numberOfLines={1} ellipsizeMode='tail'>
-              {item.description}
-            </Text>
-          </View>
+        <View style={[styles.row, {marginTop: 6}]}>
+          <Text style={styles.time}>{displayDateVN(new Date(item.bookingDate))}</Text>
         </View>
-        <Image source={require('../../assets/images/map.png')} style={{width: 50, height: 50}} />
+
+        {item.description ? (
+          <Text style={stylesCard.description} numberOfLines={2}>
+            {item.description}
+          </Text>
+        ) : null}
       </View>
 
-      {/* Hình ảnh hoặc bản đồ */}
-      {item?.files?.length > 0 ? <Image source={{uri: item.files[0].fileUrl}} style={styles.jobImage} /> : null}
-    </TouchableOpacity>
-  );
+      <Image
+        source={require('../../assets/images/map.png')}
+        style={stylesCard.mapImage}
+      />
+    </View>
+
+    {/* Hình ảnh minh họa */}
+    {item?.files?.length > 0 ? (
+      <Image source={{uri: item.files[0].fileUrl}} style={styles.jobImage} />
+    ) : null}
+  </TouchableOpacity>
+);
+
 
   return (
     <View style={styles.container}>
@@ -201,8 +215,7 @@ type HistoryItem = {
   status: string;
   serviceName: string;
 };
-
-export const renderHistoryCard = ({item, onPress}: {item: HistoryItem; onPress: (item: HistoryItem) => void}) => {
+export const renderHistoryCard = ({ item, onPress }: { item: HistoryItem; onPress: (item: HistoryItem) => void }) => {
   const formattedDate = new Date(item.date).toLocaleString('vi-VN', {
     hour: '2-digit',
     minute: '2-digit',
@@ -212,47 +225,66 @@ export const renderHistoryCard = ({item, onPress}: {item: HistoryItem; onPress: 
   });
 
   return (
-    <TouchableOpacity style={historyStyles.card} onPress={() => onPress(item)}>
+    <TouchableOpacity
+      activeOpacity={0.85}
+      style={historyStyles.card}
+      onPress={() => onPress(item)}>
       {/* Header */}
       <View style={historyStyles.cardHeader}>
-        <Text style={historyStyles.jobCode}>#{item.code}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={historyStyles.jobCode}>#{item.code}</Text>
+        </View>
         <Text
           style={[
             historyStyles.status,
             item.status === 'COMPLETED'
               ? historyStyles.statusCompleted
               : item.status === 'CANCELLED'
-                ? historyStyles.statusCancelled
-                : historyStyles.statusPending,
+              ? historyStyles.statusCancelled
+              : historyStyles.statusPending,
           ]}>
-          {item.status === 'COMPLETED' ? 'Hoàn thành' : item.status === 'CANCELLED' ? 'Đã hủy' : 'Đang xử lý'}
+          {item.status === 'COMPLETED'
+            ? 'Hoàn thành'
+            : item.status === 'CANCELLED'
+            ? 'Đã hủy'
+            : 'Đang xử lý'}
         </Text>
       </View>
 
       {/* Nội dung */}
       <View style={historyStyles.cardBody}>
-        <View style={{flex: 1}}>
-          <Text style={historyStyles.jobTitle} numberOfLines={1} ellipsizeMode='tail'>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={historyStyles.jobTitle}
+            numberOfLines={1}
+            ellipsizeMode="tail">
             {item.serviceName}
           </Text>
 
           <Text style={historyStyles.time}>{formattedDate}</Text>
 
-          <Text style={historyStyles.address} numberOfLines={2} ellipsizeMode='tail'>
+          <Text
+            style={historyStyles.address}
+            numberOfLines={2}
+            ellipsizeMode="tail">
             {item.address}
           </Text>
         </View>
 
-        <Image source={require('../../assets/images/map.png')} style={{width: 50, height: 50}} />
+        <Image
+          source={require('../../assets/images/map.png')}
+          style={{ width: 54, height: 54, borderRadius: 8 }}
+        />
       </View>
     </TouchableOpacity>
   );
 };
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F2',
+    backgroundColor: Colors.background,
     paddingHorizontal: 16,
   },
   filterRow: {
@@ -293,13 +325,14 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 8,
     padding: 12,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+    borderLeftWidth: 2,
+    borderLeftColor: Colors.secondary,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -325,7 +358,7 @@ const styles = StyleSheet.create({
     color: '#F44336',
   },
   jobTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     marginBottom: 4,
   },
@@ -360,13 +393,16 @@ const styles = StyleSheet.create({
 const historyStyles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
+    padding: 16,
+    marginVertical: 8,
+    marginHorizontal: 4,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: {width: 0, height: 4},
     elevation: 2,
+    borderLeftWidth: 2,
+    borderLeftColor: Colors.secondary,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -397,7 +433,7 @@ const historyStyles = StyleSheet.create({
     gap: 8,
   },
   jobTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     marginBottom: 4,
   },
@@ -411,3 +447,97 @@ const historyStyles = StyleSheet.create({
     color: '#444',
   },
 });
+
+const stylesCard = StyleSheet.create({
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginVertical: 8,
+    marginHorizontal: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: {width: 0, height: 4},
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  jobCode: {
+    fontWeight: '700',
+    fontSize: 16,
+    color: '#1C1C1E',
+  },
+  badgeQuote: {
+    backgroundColor: '#E8F3FF',
+    borderRadius: 12,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+  },
+  badgeQuoteText: {
+    color: '#007AFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  status: {
+    fontSize: 12,
+    fontWeight: '600',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    overflow: 'hidden',
+    textTransform: 'capitalize',
+  },
+  statusPending: {
+    backgroundColor: '#FFF4E5',
+    color: '#FF9500',
+  },
+  statusAccepted: {
+    backgroundColor: '#E5F9ED',
+    color: '#34C759',
+  },
+  statusCancelled: {
+    backgroundColor: '#FDECEC',
+    color: '#FF3B30',
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  jobTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111',
+  },
+  time: {
+    fontSize: 13,
+    color: '#555',
+  },
+  description: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 4,
+  },
+  mapImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  jobImage: {
+    width: '100%',
+    height: 140,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+});
+

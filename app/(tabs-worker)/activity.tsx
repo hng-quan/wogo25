@@ -132,9 +132,14 @@ export default function ActivityScreen() {
         style={{
           padding: 8,
           marginBottom: 12,
-          borderRadius: 12,
-          borderLeftWidth: 4,
+          borderLeftWidth: 2,
           borderColor: Colors.primary,
+          backgroundColor: '#fff',
+          shadowColor: '#000',
+          shadowOffset: {width: 0, height: 2},
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
+          elevation: 4,
         }}>
         {/* Header */}
         <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>

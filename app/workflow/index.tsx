@@ -2,11 +2,13 @@ import Appbar from '@/components/layout/Appbar';
 import { AvatarWrapper } from '@/components/layout/ProfileContainer';
 import PaymentMethodModal from '@/components/modal/PaymentQRModal';
 import PaymentQRModal from '@/components/modal/QRCodeModal';
+import JobDetailSection from '@/components/ui/JobDetailSection';
+import WorkflowTimeline from '@/components/ui/WorkFLowTimeLine';
 import { ROLE } from '@/context/RoleContext';
 import { useSocket } from '@/context/SocketContext';
 import { jsonGettAPI, jsonPostAPI, jsonPutAPI } from '@/lib/apiService';
-import { Colors, WORKFLOW_STATUS_MAP } from '@/lib/common';
-import { displayDateVN, formatPrice } from '@/lib/utils';
+import { Colors } from '@/lib/common';
+import { formatPrice } from '@/lib/utils';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import polyline from '@mapbox/polyline';
 import axios from 'axios';
@@ -15,7 +17,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import {
   Alert,
-  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -24,14 +25,27 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import MapView, { AnimatedRegion, Marker, Polyline } from 'react-native-maps';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // API key OpenRouteService
 const ORS_API_KEY = process.env.EXPO_PUBLIC_OPENROUTE_SERVICE_API_KEY || '';
 // const ORS_API_KEY = '';
 const processSteps = ['PENDING', 'COMING', 'ARRIVED', 'NEGOTIATING', 'WORKING', 'PAYING', 'PAID', 'COMPLETED'];
+
+const WORKFLOW_STATUS_MAP = {
+  COMING: 'Bắt đầu đi',
+  ARRIVED: 'Đã đến nhà',
+  NEGOTIATING: 'Thỏa thuận',
+  WORKING: 'Bắt đầu làm việc',
+  PAYING: 'Thanh toán',
+  PAID: 'Đã thanh toán',
+  COMPLETED: 'Hoàn tất công việc',
+  CANCELLED: 'Đã hủy',
+  PENDING: 'Đang chờ xử lý',
+};
 
 // Tính khoảng cách giữa 2 điểm (mét)
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -46,6 +60,7 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 };
 
 export default function WorkFlow() {
+  const insets = useSafeAreaInsets();
   const {currentTab, jobRequestCode} = useLocalSearchParams();
   const {subscribe, connected} = useSocket();
   const mapRef = useRef<MapView>(null);
@@ -713,7 +728,7 @@ export default function WorkFlow() {
       {/* JOB INFO - Layout khác nhau cho PENDING, NEGOTIATING */}
       {bookingStatus !== 'COMING' ? (
         /* PENDING & NEGOTIATING: Hiển thị toàn bộ thông tin chi tiết */
-        <View style={styles.infoCardFull}>
+        <View style={[styles.infoCardFull, bookingStatus !== 'COMPLETED' && {paddingBottom: insets.bottom || 80}]}>
           <ScrollView showsVerticalScrollIndicator={false}>
             <View
               style={{
@@ -726,8 +741,8 @@ export default function WorkFlow() {
                 shadowColor: '#000',
                 shadowOffset: {width: 0, height: 2},
                 shadowOpacity: 0.08,
-                shadowRadius: 4,
-                elevation: 2,
+                shadowRadius: 8,
+                elevation: 1,
               }}>
               <AvatarWrapper url={customer?.avatarUrl} role={ROLE.WORKER} size={52} />
               <View style={{marginLeft: 12, flex: 1}}>
@@ -764,82 +779,7 @@ export default function WorkFlow() {
             )}
 
             <View>
-              <View style={{marginTop: 8}}>
-                <Text style={{fontSize: 15, fontWeight: '700', color: '#222', marginBottom: 16}}>
-                  Quy trình làm việc
-                </Text>
-
-                <View style={{marginLeft: 12, paddingRight: 0}}>
-                  {processSteps.map((status, index) => {
-                    const label = WORKFLOW_STATUS_MAP[status as keyof typeof WORKFLOW_STATUS_MAP];
-                    const currentStatus = bookingStatus;
-                    const isActive = status === currentStatus;
-                    const isCompleted = processSteps.indexOf(currentStatus) > index;
-                    const isLast = index === processSteps.length - 1;
-
-                    return (
-                      <View
-                        key={status}
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          marginBottom: isLast ? 0 : 4,
-                        }}>
-                        {/* Cột trái (timeline) */}
-                        <View style={{alignItems: 'center', width: 30}}>
-                          {/* Vòng tròn trạng thái */}
-                          <View
-                            style={{
-                              width: 20,
-                              height: 20,
-                              borderRadius: 10,
-                              backgroundColor: isCompleted ? '#4CAF50' : isActive ? '#1565C0' : '#E0E0E0',
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                              shadowColor: isActive ? '#1565C0' : '#000',
-                              shadowOffset: {width: 0, height: 2},
-                              shadowOpacity: isActive ? 0.3 : 0.1,
-                              shadowRadius: 3,
-                              elevation: isActive ? 4 : 1,
-                            }}>
-                            {isCompleted ? (
-                              <MaterialIcons name='check' size={14} color='#fff' />
-                            ) : isActive ? (
-                              <MaterialIcons name='autorenew' size={14} color='#fff' />
-                            ) : null}
-                          </View>
-                        </View>
-
-                        {/* Phần mô tả bước */}
-                        <View
-                          style={{
-                            backgroundColor: isActive ? 'rgba(21, 101, 192, 0.1)' : 'rgba(0,0,0,0.02)',
-                            borderRadius: 4,
-                            paddingVertical: 4,
-                            paddingHorizontal: 14,
-                            flex: 1,
-                            shadowColor: '#000',
-                            shadowOffset: {width: 0, height: 1},
-                            shadowOpacity: 0.05,
-                            shadowRadius: 2,
-                          }}>
-                          <Text
-                            style={{
-                              fontSize: 15,
-                              fontWeight: isActive ? '700' : '500',
-                              color: isCompleted ? '#388E3C' : isActive ? '#1565C0' : '#555',
-                            }}>
-                            {label}
-                          </Text>
-                          {isActive && (
-                            <Text style={{fontSize: 13, color: '#666', marginTop: 2}}>(Đang thực hiện bước này)</Text>
-                          )}
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
+              <WorkflowTimeline bookingStatus={bookingStatus} />
 
               {['PAYING', 'PAID', 'COMPLETED'].includes(bookingStatus) && (
                 <View
@@ -952,181 +892,19 @@ export default function WorkFlow() {
                       {formatPrice(bookingDetail?.totalAmount * 0.9)}đ
                     </Text>
                   </View>
-
-                  {/* Hình ảnh đính kèm */}
-                  {jobDetail?.files?.length > 0 && (
-                    <View style={{marginTop: 20}}>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: '600',
-                          marginBottom: 10,
-                          color: '#333',
-                        }}>
-                        📸 Hình ảnh đính kèm
-                      </Text>
-                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        {jobDetail.files.map((file: any) => (
-                          <View
-                            key={file.id}
-                            style={{
-                              width: 80,
-                              height: 80,
-                              borderRadius: 12,
-                              overflow: 'hidden',
-                              marginRight: 10,
-                              borderWidth: 1,
-                              borderColor: '#ddd',
-                            }}>
-                            <Image
-                              source={{uri: file.fileUrl}}
-                              style={{width: '100%', height: '100%'}}
-                              resizeMode='cover'
-                            />
-                          </View>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  )}
+                 
                 </View>
               )}
 
-              <View
-                style={{
-                  backgroundColor: '#fff',
-                  borderRadius: 12,
-                  padding: 16,
-                  marginTop: 16,
-                  shadowColor: '#000',
-                  shadowOffset: {width: 0, height: 1},
-                  shadowOpacity: 0.08,
-                  shadowRadius: 3,
-                  elevation: 2,
-                }}>
-                {/* Tiêu đề */}
-                <Text
-                  style={{
-                    fontSize: 18,
-                    fontWeight: '700',
-                    color: '#222',
-                    marginBottom: 12,
-                  }}>
-                  Thông tin chi tiết
-                </Text>
-
-                {/* Mã booking */}
-                <Text
-                  style={{
-                    fontSize: 14,
-                    color: '#666',
-                    marginBottom: 12,
-                  }}>
-                  Mã đặt: <Text style={{fontWeight: '600', color: '#333'}}>#{bookingDetail?.bookingCode}</Text>
-                </Text>
-
-                {/* Dòng thông tin */}
-                <View style={{rowGap: 10}}>
-                  {/* Dịch vụ */}
-                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <MaterialCommunityIcons name='tools' size={20} color={Colors.primary} />
-                    <Text style={{marginLeft: 8, fontSize: 15, color: '#333'}}>{jobDetail?.service?.serviceName}</Text>
-                  </View>
-
-                  {/* Mô tả */}
-                  <View style={{flexDirection: 'row', alignItems: 'flex-start'}}>
-                    <MaterialIcons name='description' size={20} color={Colors.primary} />
-                    <Text
-                      style={{
-                        marginLeft: 8,
-                        fontSize: 15,
-                        color: '#333',
-                        flex: 1,
-                        lineHeight: 20,
-                      }}>
-                      {jobDetail?.description || 'Không có mô tả'}
-                    </Text>
-                  </View>
-
-                  {/* Ngày đặt */}
-                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <MaterialIcons name='calendar-today' size={20} color={Colors.primary} />
-                    <Text style={{marginLeft: 8, fontSize: 15, color: '#333'}}>
-                      {displayDateVN(jobDetail?.bookingDate)}
-                    </Text>
-                  </View>
-
-                  {/* Địa chỉ */}
-                  <View style={{flexDirection: 'row', alignItems: 'flex-start'}}>
-                    <MaterialCommunityIcons name='map-marker' size={20} color={Colors.primary} />
-                    <Text
-                      style={{
-                        marginLeft: 8,
-                        fontSize: 15,
-                        color: '#333',
-                        flex: 1,
-                        lineHeight: 20,
-                      }}>
-                      {jobDetail?.bookingAddress}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Giá dự kiến */}
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    backgroundColor: '#F7F9FC',
-                    padding: 12,
-                    borderRadius: 10,
-                    borderWidth: 1,
-                    borderColor: '#E5E9F0',
-                    marginTop: 16,
-                  }}>
-                  <Text style={{fontSize: 15, color: '#444', fontWeight: '600'}}>Giá dự kiến</Text>
-                  <Text style={{fontSize: 17, fontWeight: '700', color: Colors.primary}}>
-                    {formatPrice(bookingDetail?.totalAmount)} đ
-                  </Text>
-                </View>
-
-                {/* Hình ảnh đính kèm */}
-                {jobDetail?.files?.length > 0 && (
-                  <View style={{marginTop: 20}}>
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        fontWeight: '600',
-                        color: '#222',
-                        marginBottom: 10,
-                      }}>
-                      Hình ảnh đính kèm
-                    </Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                      {jobDetail.files.map((file: any) => (
-                        <View
-                          key={file.id}
-                          style={{
-                            width: 80,
-                            height: 80,
-                            borderRadius: 10,
-                            overflow: 'hidden',
-                            marginRight: 10,
-                            backgroundColor: '#f2f2f2',
-                            borderWidth: 1,
-                            borderColor: '#e5e5e5',
-                          }}>
-                          <Image
-                            source={{uri: file.fileUrl}}
-                            style={{width: '100%', height: '100%'}}
-                            resizeMode='cover'
-                          />
-                        </View>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
-              </View>
+              <JobDetailSection
+                bookingCode={bookingDetail?.bookingCode}
+                serviceName={jobDetail?.service?.serviceName}
+                description={jobDetail?.description}
+                bookingDate={jobDetail?.bookingDate}
+                bookingAddress={jobDetail?.bookingAddress}
+                files={jobDetail?.files}
+                totalAmount={bookingDetail?.totalAmount}
+              />
             </View>
           </ScrollView>
         </View>
@@ -1206,9 +984,8 @@ export default function WorkFlow() {
             <Text style={styles.floatingActionButtonText}>
               {WORKFLOW_STATUS_MAP[nextStep as keyof typeof WORKFLOW_STATUS_MAP]}
             </Text>
-          </TouchableOpacity>   
-        ) : 
-        // <View style={styles.floatingActionButton}>
+          </TouchableOpacity>
+        ) : // <View style={styles.floatingActionButton}>
         //   <SlideActionBar onSlideRight={handleNextStep} label={
         //     nextStep === 'COMING'
         //       ? 'Bắt đầu di chuyển'
@@ -1644,7 +1421,7 @@ const styles = StyleSheet.create({
   // Full info card for PENDING state
   infoCardFull: {
     paddingHorizontal: 16,
-    marginBottom: 80,
+    // marginBottom: 80,
     borderTopWidth: 1,
     borderColor: '#eee',
     flex: 1,

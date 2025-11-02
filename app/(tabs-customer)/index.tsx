@@ -7,6 +7,7 @@ import { ServiceType } from '@/interfaces/interfaces';
 import { jsonGettAPI } from '@/lib/apiService';
 import { Colors } from '@/lib/common';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -21,8 +22,6 @@ import {
   View,
 } from 'react-native';
 import { Text } from 'react-native-paper';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 const {width} = Dimensions.get('window');
 
 const promotions = [
@@ -83,15 +82,14 @@ const ServiceCategoryItem = ({item, onPress}: {item: ServiceType; onPress: (id: 
     </TouchableOpacity>
   );
 };
+
 type PromotionCardProps = {
   title: string;
   subtitle: string;
   image?: ImageSourcePropType | null;
 };
-
 const PromotionCard = ({title, subtitle, image}: PromotionCardProps) => {
   const hasImage = !!image;
-
   return (
     <View style={{width: width - 40, marginRight: 12}}>
       <TouchableOpacity style={styles.promoCard} activeOpacity={0.85}>
@@ -124,15 +122,14 @@ const PromotionCard = ({title, subtitle, image}: PromotionCardProps) => {
 };
 
 export default function HomeScreen() {
-  const insets = useSafeAreaInsets();
   const [serviceList, setServiceList] = useState<ServiceType[]>([]);
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedServiceId, setSelectedServiceId] = useState<number | string | null>(null);
   const [isOpenModal, setIsOpenModal] = useState(false);
-
   const {user, role} = useRole();
   const avatarUrl = user?.avatarUrl || '';
+  const tabbarHeight = useBottomTabBarHeight();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -160,12 +157,12 @@ export default function HomeScreen() {
     setIsOpenModal(true);
   };
 
-  const _navigateToSearch = () => {
+  const navigatetoSearchScreen = () => {
     router.push('/booking/search');
   };
 
   return (
-    <View style={[styles.container, {paddingBottom: insets.bottom + 30}]}>
+    <View style={[styles.container, {paddingBottom: tabbarHeight}]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={[styles.header, {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}]}>
@@ -173,7 +170,6 @@ export default function HomeScreen() {
             <Text style={styles.headerTitle}>Xin chào!</Text>
             <Text style={styles.headerSubtitle}>Tìm dịch vụ bạn cần</Text>
           </View>
-
           <TouchableOpacity
             onPress={() => {
               router.push({
@@ -188,8 +184,8 @@ export default function HomeScreen() {
         </View>
 
         {/* Search Bar */}
-        <Pressable onPress={_navigateToSearch}>
-          <SearchCustom editable={false} placeholder='Tìm kiếm dịch vụ...' onPress={_navigateToSearch} />
+        <Pressable onPress={navigatetoSearchScreen}>
+          <SearchCustom editable={false} placeholder='Tìm kiếm dịch vụ...' onPress={navigatetoSearchScreen} />
         </Pressable>
 
         {/* Categories */}
@@ -214,7 +210,6 @@ export default function HomeScreen() {
               <Text style={styles.tipSubtitle}>Chọn thợ gần bạn, đặt lịch chỉ trong vài giây.</Text>
             </View>
           </View>
-
           <View style={styles.tipCard}>
             <MaterialCommunityIcons name='shield-check-outline' size={28} color='#4CAF50' />
             <View style={{flex: 1, marginLeft: 10}}>
@@ -223,6 +218,7 @@ export default function HomeScreen() {
             </View>
           </View>
         </View>
+
         {/* Promotions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Chiến dịch nổi bật</Text>
@@ -296,30 +292,6 @@ const styles = StyleSheet.create({
     color: '#111',
     marginBottom: 10,
   },
-  serviceItem: {
-    alignItems: 'center',
-    marginRight: 16,
-    width: 80,
-  },
-  serviceIconWrapper: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#4CAF50',
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    shadowOffset: {width: 0, height: 2},
-  },
-  serviceText: {
-    textAlign: 'center',
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#333',
-    marginTop: 6,
-  },
   benefitCard: {
     width: '100%',
     height: 180,
@@ -376,33 +348,5 @@ const styles = StyleSheet.create({
   tipSubtitle: {
     color: '#555',
     fontSize: 13,
-  },
-  aboutCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  aboutText: {
-    textAlign: 'center',
-    color: '#333',
-    fontSize: 14,
-    marginTop: 8,
-    lineHeight: 20,
-  },
-  upcomingCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
   },
 });

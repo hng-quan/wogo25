@@ -1,25 +1,16 @@
+import NoticeCard, { NoticeItem } from '@/components/ui/NotionCard';
 import { jsonGettAPI } from '@/lib/apiService';
+import { Colors } from '@/lib/common';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-interface NoticeItem {
-  id: string;
-  title: string;
-  description: string;
-  read: boolean;
-  type: string;
-}
-
 export default function Notice() {
   const [notices, setNotices] = useState<NoticeItem[]>([]);
   const [loading, setLoading] = useState(false);
-
-  // 🔹 Quản lý modal & thông báo đang chọn
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
 
-  // 🔹 Gọi API danh sách thông báo
   const fetchNotices = async () => {
     setLoading(true);
     jsonGettAPI('/notifications/my-notifications/CUSTOMER', {}, payload => {
@@ -32,35 +23,9 @@ export default function Notice() {
     fetchNotices();
   }, []);
 
-  // 🔹 Khi nhấn vào 1 item
   const handlePressNotice = (item: NoticeItem) => {
     setSelectedNotice(item);
     setModalVisible(true);
-  };
-
-  // 🔹 Hiển thị từng item
-  const renderItem = ({item}: {item: NoticeItem}) => {
-    const isUnread = !item.read;
-    const iconColor = item.type === 'PROMO' ? '#60A5FA' : item.type === 'SERVICE' ? '#F59E0B' : '#9CA3AF';
-
-    return (
-      <TouchableOpacity
-        style={[styles.noticeItem, isUnread && styles.unreadItem]}
-        onPress={() => handlePressNotice(item)}>
-        <View style={[styles.iconContainer, {backgroundColor: iconColor + '22'}]}>
-          <MaterialIcons name='notifications' size={22} color={iconColor} />
-        </View>
-
-        <View style={styles.textContainer}>
-          <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.description} numberOfLines={2}>
-            {item.description || 'Không có mô tả'}
-          </Text>
-        </View>
-
-        {isUnread && <View style={styles.dot} />}
-      </TouchableOpacity>
-    );
   };
 
   return (
@@ -68,9 +33,10 @@ export default function Notice() {
       <Text style={styles.header}>Thông báo</Text>
 
       <FlatList
+        showsVerticalScrollIndicator={false}
         data={notices}
         keyExtractor={(item, index) => `${item.id}-${index}`}
-        renderItem={renderItem}
+        renderItem={({item}) => <NoticeCard item={item} onPress={handlePressNotice} />}
         refreshing={loading}
         onRefresh={fetchNotices}
         contentContainerStyle={{paddingVertical: 8, paddingBottom: 20}}
@@ -81,11 +47,10 @@ export default function Notice() {
         }
       />
 
-      {/* 🔹 Modal hiển thị chi tiết thông báo */}
-      <Modal visible={modalVisible} animationType='slide' transparent onRequestClose={() => setModalVisible(false)}>
+      {/* Modal chi tiết */}
+      <Modal visible={modalVisible} animationType='fade' transparent onRequestClose={() => setModalVisible(false)}>
         <View style={styles.overlay}>
           <View style={styles.modalCard}>
-            {/* Header */}
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <MaterialIcons name='arrow-back' size={24} color='#111' />
@@ -94,20 +59,13 @@ export default function Notice() {
               <View style={{width: 24}} />
             </View>
 
-            {/* Body */}
             {selectedNotice ? (
-              <ScrollView
-                contentContainerStyle={{
-                  paddingHorizontal: 20,
-                  paddingBottom: 30,
-                }}>
+              <ScrollView contentContainerStyle={{paddingHorizontal: 20, paddingBottom: 30}}>
                 <View style={styles.separator} />
-
                 <Text style={styles.detailTitle}>{selectedNotice.title}</Text>
                 <View style={styles.typeBadge}>
                   <Text style={styles.typeText}>{selectedNotice.type || 'Không xác định'}</Text>
                 </View>
-
                 <Text style={styles.detailDescription}>
                   {selectedNotice.description || 'Không có nội dung chi tiết.'}
                 </Text>
@@ -125,7 +83,7 @@ export default function Notice() {
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F9FAFB', paddingHorizontal: 16},
+  container: {flex: 1, backgroundColor: Colors.background, paddingHorizontal: 16},
   header: {
     fontSize: 22,
     fontWeight: 'bold',
@@ -133,44 +91,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     color: '#111827',
   },
-  noticeItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  unreadItem: {
-    backgroundColor: '#FFF',
-  },
-  iconContainer: {
-    borderRadius: 25,
-    padding: 8,
-    marginRight: 12,
-  },
-  textContainer: {flex: 1},
-  title: {fontWeight: '700', fontSize: 12, color: '#111827', marginBottom: 4},
-  description: {color: '#4B5563', fontSize: 11},
-  dot: {
-    width: 10,
-    height: 10,
-    backgroundColor: '#EF4444',
-    borderRadius: 5,
-    marginLeft: 8,
-  },
   emptySection: {
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: 40,
   },
   emptyText: {fontSize: 15, color: '#9CA3AF'},
-  modalContainer: {flex: 1, backgroundColor: '#FFF'},
-  detailType: {fontSize: 14, color: '#6B7280', marginBottom: 12},
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.3)',
@@ -201,9 +127,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111',
   },
-  separator: {
-    height: 12,
-  },
+  separator: {height: 12},
   detailTitle: {
     fontSize: 20,
     fontWeight: '700',

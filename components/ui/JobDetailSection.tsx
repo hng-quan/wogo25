@@ -1,24 +1,23 @@
+import { ROLE, useRole } from '@/context/RoleContext';
 import { Colors } from '@/lib/common';
 import { displayDateVN, formatPrice } from '@/lib/utils';
-import {
-    FontAwesome5,
-    MaterialCommunityIcons,
-    MaterialIcons,
-} from '@expo/vector-icons';
+import { FontAwesome5, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Text, View } from 'react-native';
 import ImagePreviewList from './ImagePreview';
 
 interface JobDetailProps {
+  bookingCode?: string;
   serviceName?: string;
   description?: string;
   bookingDate?: string;
   bookingAddress?: string;
   totalAmount?: number;
-  files?: { id: string; fileUrl: string }[];
+  files?: {id: string; fileUrl: string}[];
 }
 
 const JobDetailSection: React.FC<JobDetailProps> = ({
+  bookingCode,
   serviceName,
   description,
   bookingDate,
@@ -26,36 +25,25 @@ const JobDetailSection: React.FC<JobDetailProps> = ({
   totalAmount,
   files,
 }) => {
-  const accentColor = Colors.secondary || '#1565C0';
+  const {role} = useRole();
+  const accentColor = role === ROLE.WORKER ? Colors.primary : Colors.secondary;
 
   // Dễ mở rộng thêm item mà không cần sửa JSX
   const detailItems = [
     {
-      icon: (
-        <FontAwesome5 name="tools" size={18} color={accentColor} />
-      ),
+      icon: <FontAwesome5 name='tools' size={18} color={accentColor} />,
       label: serviceName || 'Không xác định',
     },
     {
-      icon: (
-        <MaterialIcons name="notes" size={18} color={accentColor} />
-      ),
+      icon: <MaterialIcons name='notes' size={18} color={accentColor} />,
       label: description || 'Không có mô tả',
     },
     {
-      icon: (
-        <MaterialCommunityIcons
-          name="calendar-clock"
-          size={18}
-          color={accentColor}
-        />
-      ),
+      icon: <MaterialCommunityIcons name='calendar-clock' size={18} color={accentColor} />,
       label: displayDateVN(bookingDate ? new Date(bookingDate) : undefined),
     },
     {
-      icon: (
-        <MaterialIcons name="place" size={18} color={accentColor} />
-      ),
+      icon: <MaterialIcons name='place' size={18} color={accentColor} />,
       label: bookingAddress || 'Chưa có địa chỉ',
     },
   ];
@@ -86,14 +74,19 @@ const JobDetailSection: React.FC<JobDetailProps> = ({
         Thông tin chi tiết
       </Text>
 
+      {/* Mã booking */}
+      <Text
+        style={{
+          fontSize: 14,
+          color: '#666',
+          marginBottom: 12,
+        }}>
+        Mã đặt: <Text style={{fontWeight: '600', color: '#333'}}>#{bookingCode}</Text>
+      </Text>
+
       {/* === Các dòng thông tin === */}
       {detailItems.map((item, index) => (
-        <DetailRow
-          key={index}
-          icon={item.icon}
-          label={item.label}
-          isFirst={index === 0}
-        />
+        <DetailRow key={index} icon={item.icon} label={item.label} isFirst={index === 0} />
       ))}
 
       {/* === Giá dự kiến === */}
@@ -128,7 +121,7 @@ const JobDetailSection: React.FC<JobDetailProps> = ({
 
       {/* === Hình ảnh đính kèm === */}
       {files && files.length > 0 && (
-        <View style={{ marginTop: 20 }}>
+        <View style={{marginTop: 20}}>
           <Text
             style={{
               fontSize: 15,
@@ -138,11 +131,7 @@ const JobDetailSection: React.FC<JobDetailProps> = ({
             }}>
             Hình ảnh đính kèm
           </Text>
-          <ImagePreviewList
-  images={files.map(f => f.fileUrl)}
-  size={100}
-  borderRadius={12}
-/>
+          <ImagePreviewList images={files.map(f => f.fileUrl)} size={100} borderRadius={12} />
         </View>
       )}
     </View>
@@ -152,15 +141,7 @@ const JobDetailSection: React.FC<JobDetailProps> = ({
 export default JobDetailSection;
 
 /* === Sub Component Row === */
-const DetailRow = ({
-  icon,
-  label,
-  isFirst,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  isFirst?: boolean;
-}) => (
+const DetailRow = ({icon, label, isFirst}: {icon: React.ReactNode; label: string; isFirst?: boolean}) => (
   <View
     style={{
       flexDirection: 'row',

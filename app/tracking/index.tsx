@@ -20,7 +20,7 @@ const processSteps = ['PENDING', 'COMING', 'ARRIVED', 'NEGOTIATING', 'WORKING', 
 
 export default function Tracking() {
   const {currentTab, jobRequestCode} = useLocalSearchParams();
-  const {subscribe, connected, registerConfirmJob} = useSocket();
+  const {subscribe, connected, registerConfirmJob, trigger} = useSocket();
   const mapRef = useRef<MapView>(null);
 
   const [jobDetail, setJobDetail] = useState<any>(null);
@@ -112,6 +112,11 @@ export default function Tracking() {
       console.error('Error fetching booking detail:', error);
     }
   };
+
+  useEffect(() => {
+    console.log('🔄 trigger changed in Tracking page:', trigger);
+    fetchBookingDetail();
+  }, [trigger]);
 
   useEffect(() => {
     fetchBookingDetail();
@@ -392,8 +397,8 @@ export default function Tracking() {
               shadowColor: '#000',
               shadowOffset: {width: 0, height: 2},
               shadowOpacity: 0.08,
-              shadowRadius: 4,
-              elevation: 2,
+              shadowRadius: 8,
+              elevation: 4,
             }}>
             <AvatarWrapper url={acceptedWorker?.worker?.user?.avatarUrl} role={ROLE.CUSTOMER} size={52} />
             <View style={{marginLeft: 12, flex: 1}}>
@@ -403,7 +408,7 @@ export default function Tracking() {
               <Text style={{fontSize: 13, color: '#777', marginTop: 2}}>Thợ</Text>
             </View>
             <View style={{marginLeft: 'auto', flexDirection: 'row', gap: 12}}>
-              <TouchableOpacity style={styles.chatButton} onPress={() => registerConfirmJob('JR2A57E7892025')}>
+              <TouchableOpacity style={styles.chatButton} onPress={() => registerConfirmJob('JRB40D79F42025')}>
                 <MaterialIcons name='call' size={22} color='#fff' />
               </TouchableOpacity>
               <TouchableOpacity style={styles.chatButton} onPress={handleChat}>
@@ -418,6 +423,7 @@ export default function Tracking() {
             </View>
 
             <JobDetailSection
+              bookingCode={bookingDetail?.bookingCode}
               serviceName={jobDetail?.service?.serviceName}
               description={jobDetail?.description}
               bookingDate={jobDetail?.bookingDate}
