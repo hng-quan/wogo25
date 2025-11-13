@@ -14,7 +14,6 @@ export default function HomeScreen() {
   const {user, role} = useRole();
   const [revenue, setRevenue] = React.useState(0);
   const [expenses, setExpenses] = React.useState(0);
-  const [counter, setCounter] = React.useState(0);
   const [refreshing, setRefreshing] = React.useState(false);
   const avatarUrl = user?.avatarUrl || '';
   const fullName = user?.fullName || 'Người dùng';
@@ -23,7 +22,7 @@ export default function HomeScreen() {
   useEffect(() => {
     fetchRevenueData();
     fetchExpensesData();
-  }, [counter]);
+  }, []);
 
   const fetchRevenueData = async () => {
     console.log('Fetching revenue data...');
@@ -38,6 +37,8 @@ export default function HomeScreen() {
       setExpenses(payload?.result || 0);
     });
   };
+
+  const navigationtoWallet = () => router.push('/wallet');
 
   return (
     <View style={[styles.container, {paddingBottom: tabbarHeight}]}>
@@ -73,37 +74,38 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* Ví chi tiêu */}
-        <LinearGradient colors={['#1565C0', '#1E88E5']} style={[styles.card, {marginBottom: 16}]}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.cardTitle}>Ví chi tiêu</Text>
-            <MaterialIcons name='account-balance-wallet' size={22} color='#fff' />
-          </View>
-          <Text style={styles.cardAmount}>{expenses.toLocaleString()} đ</Text>
-        </LinearGradient>
-
         {/* Doanh thu */}
-        <LinearGradient colors={['#4CAF50', '#66BB6A']} style={[styles.card, {marginBottom: 16}]}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.cardTitle}>Doanh thu</Text>
-            <MaterialIcons name='attach-money' size={22} color='#fff' />
-          </View>
-          <View style={styles.rowBetween}>
-            <Text style={styles.cardAmount}>{revenue.toLocaleString()} đ</Text>
-            {/* <Text style={styles.orderText}>{ordersCount} đơn</Text> */}
-          </View>
-        </LinearGradient>
+        <TouchableOpacity onPress={navigationtoWallet}>
+          <LinearGradient colors={['#4CAF50', '#66BB6A']} style={[styles.card, {marginBottom: 16}]}>
+            <View style={styles.rowBetween}>
+              <Text style={styles.cardTitle}>Doanh thu</Text>
+              <MaterialIcons name='attach-money' size={22} color='#fff' />
+            </View>
+            <View style={styles.rowBetween}>
+              <Text style={styles.cardAmount}>{revenue.toLocaleString()} đ</Text>
+              {/* <Text style={styles.orderText}>{ordersCount} đơn</Text> */}
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        {/* Ví chi tiêu */}
+        <TouchableOpacity onPress={navigationtoWallet}>
+          <LinearGradient colors={['#1565C0', '#1E88E5']} style={[styles.card, {marginBottom: 16}]}>
+            <View style={styles.rowBetween}>
+              <Text style={styles.cardTitle}>Ví chi tiêu</Text>
+              <MaterialIcons name='account-balance-wallet' size={22} color='#fff' />
+            </View>
+            <Text style={styles.cardAmount}>{expenses.toLocaleString()} đ</Text>
+          </LinearGradient>
+        </TouchableOpacity>
 
         {/* Nút thao tác nhanh */}
-        <View style={[styles.row, {gap: 12, marginBottom: 20}]}>
-          <TouchableOpacity
-            activeOpacity={0.85}
-            style={[styles.button, {borderColor: '#1565C0'}]}
-            onPress={() => setCounter(counter + 1)}>
+        {/* <View style={[styles.row, {gap: 12, marginBottom: 20}]}>
+          <TouchableOpacity activeOpacity={0.85} style={[styles.button, {borderColor: '#1565C0'}]}>
             <MaterialIcons name='build-circle' size={20} color='#1565C0' />
             <View>
               <Text style={styles.buttonLabel}>Đang tiến hành</Text>
-              {/* <Text style={styles.buttonValue}>{ordersCount} đơn</Text> */}
+              <Text style={styles.buttonValue}>{ordersCount} đơn</Text>
             </View>
           </TouchableOpacity>
 
@@ -111,10 +113,10 @@ export default function HomeScreen() {
             <MaterialIcons name='receipt-long' size={20} color='#1565C0' />
             <View>
               <Text style={styles.buttonLabel}>Đang báo giá</Text>
-              {/* <Text style={styles.buttonValue}>{ordersCount} đơn</Text> */}
+              <Text style={styles.buttonValue}>{ordersCount} đơn</Text>
             </View>
           </TouchableOpacity>
-        </View>
+        </View> */}
 
         {/* Sự kiện */}
         <View style={styles.section}>

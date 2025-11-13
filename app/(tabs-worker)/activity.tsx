@@ -47,7 +47,7 @@ export default function ActivityScreen() {
   const fetchMyJobsRequest = async () => {
     const endpoint = '/jobs/my-quotes/' + activeTab;
     const res = await jsonGettAPI(endpoint);
-    // console.log('Fetched jobs request:', res);
+    console.log('Fetched jobs request:', res);
     setMyJobsRequest(res?.result || []);
   };
   useEffect(() => {
@@ -105,8 +105,9 @@ export default function ActivityScreen() {
     const getStatusStyle = (status: string | undefined) => {
       switch (status) {
         case 'COMPLETED':
-        case 'ACCEPTED':
           return {bg: '#E3FCEF', color: '#4CAF50', label: 'Hoàn thành'};
+        case 'ACCEPTED':
+          return {bg: '#E3F2FD', color: '#1565C0', label: 'Đang thực hiện'};
         case 'PENDING':
           return {bg: '#FFF4E5', color: '#FF9800', label: 'Chờ xác nhận'};
         default:
@@ -133,14 +134,13 @@ export default function ActivityScreen() {
           padding: 8,
           borderWidth: 0.6,
           marginBottom: 12,
-          borderLeftWidth: 3,
+          borderRadius: 12,
           borderColor: Colors.primary,
           backgroundColor: '#fff',
           shadowColor: '#000',
           shadowOffset: {width: 0, height: 2},
           shadowOpacity: 0.08,
           shadowRadius: 8,
-          // elevation: 4,
         }}>
         {/* Header */}
         <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>

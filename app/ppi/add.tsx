@@ -4,6 +4,7 @@ import SearchCustom from '@/components/search/SearchCustom';
 import useDebounce from '@/hooks/useDebounce';
 import { ServiceGroup, ServiceType } from '@/interfaces/interfaces';
 import { jsonGettAPI } from '@/lib/apiService';
+import { Colors } from '@/lib/common';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -62,14 +63,15 @@ export default function AddProfessional() {
     <View style={styles.container}>
       <Appbar title={t('Thêm nghiệp vụ')} onBackPress={_goBack} />
       <View className='flex-1'>
-        <View className='px-4'>
+        <View className='px-4 mt-1'>
           <SearchCustom
-          onSearch={query => {
-            setSearchQuery(query);
-          }}
-        />
+            onSearch={query => {
+              setSearchQuery(query);
+            }}
+          />
         </View>
         <FlatList
+          showsVerticalScrollIndicator={false}
           className='pl-4'
           data={serviceList}
           renderItem={({item}) => {
@@ -107,6 +109,6 @@ export default function AddProfessional() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F2',
-  }
-})
+    backgroundColor: Colors.background,
+  },
+});

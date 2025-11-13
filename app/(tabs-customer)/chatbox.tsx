@@ -1,7 +1,11 @@
 import Appbar from '@/components/layout/Appbar';
+import { useRole } from '@/context/RoleContext';
 import { Colors } from '@/lib/common';
+import { formatPrice } from '@/lib/utils';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useRef, useState } from 'react';
+import axios from 'axios';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -15,17 +19,87 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { ActivityIndicator } from 'react-native-paper';
+
+interface Message {
+  role: 'user' | 'bot';
+  content: string;
+}
+
+const API_URL = process.env.EXPO_PUBLIC_CHATBOT_URL;
+
+const STATUS = {
+  COMPLETE: 'complete',
+  PARTIAL: 'partial',
+};
 
 export default function ChatbotScreen() {
-  const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([]);
+  const [text, setText] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [popup, setPopup] = useState<any>(null);
+  const [priceRange, setPriceRange] = useState<any>(null);
+  const {user} = useRole();
+  const [sending, setSending] = useState(false);
 
-  const handleSend = () => {
-    if (!message.trim()) return;
-    const newMsg = {id: Date.now(), from: 'user', text: message.trim()};
-    setMessages(prev => [...prev, newMsg]);
-    setMessage('');
+  const fetchSession = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/session/${String(user.id)}`);
+      setMessages(response.data.messages);
+    } catch (error) {
+      console.error('Error fetching session:', error);
+    }
   };
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.id) {
+        fetchSession();
+      }
+    }, [user]),
+  );
+
+  const handleSend = async () => {
+    try {
+      setSending(true);
+      const response = await axios.post(`${API_URL}/wogo/chatbot`, {
+        session_id: String(user.id),
+        message: text,
+      });
+      console.log('Response from chatbot API:', response.data);
+      setPopup(response.data.popup);
+      setText('');
+      // Cập nhật lại danh sách tin nhắn
+      fetchSession();
+      setSending(false);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setSending(false);
+    }
+  };
+
+  const handleDeleteSession = async () => {
+    try {
+      await axios.delete(`${API_URL}/session/${String(user.id)}`);
+      setMessages([]);
+      setPopup(null);
+    } catch (error) {
+      console.error('Error deleting session:', error);
+    }
+  };
+
+  const fetchPrice = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/price-range/${String('35')}`);
+      setPriceRange(response.data);
+    } catch (error) {
+      console.error('Error fetching price range:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (popup?.status === STATUS.COMPLETE) {
+      fetchPrice();
+    }
+  }, [popup]);
 
   return (
     <KeyboardAvoidingView
@@ -35,7 +109,14 @@ export default function ChatbotScreen() {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={{flex: 1}}>
           {/* Header */}
-          <Appbar title='AI Wogo' />
+          <View>
+            <Appbar title='AI Wogo' />
+            <TouchableOpacity
+              onPress={handleDeleteSession}
+              style={{position: 'absolute', right: 16, top: 12, zIndex: 10, padding: 6}}>
+              <Ionicons name='trash-bin' size={24} color={Colors.secondary || '#FFB300'} />
+            </TouchableOpacity>
+          </View>
 
           {/* Body */}
           <View style={{flex: 1}}>
@@ -46,12 +127,12 @@ export default function ChatbotScreen() {
                 paddingBottom: 160, // chừa khoảng cho popup + input
               }}>
               {messages.length > 0 ? (
-                messages.map(msg => (
+                messages.map((msg, index) => (
                   <View
-                    key={msg.id}
+                    key={index}
                     style={{
-                      alignSelf: msg.from === 'user' ? 'flex-end' : 'flex-start',
-                      backgroundColor: msg.from === 'user' ? '#FFD54F' : '#FFF',
+                      alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                      backgroundColor: msg.role === 'user' ? '#E8F5E9' : '#E3F2FD',
                       borderRadius: 16,
                       padding: 12,
                       marginVertical: 4,
@@ -61,32 +142,17 @@ export default function ChatbotScreen() {
                       shadowRadius: 2,
                       elevation: 1,
                     }}>
-                    <Text style={{fontSize: 15, color: '#222'}}>{msg.text}</Text>
+                    <Text style={{fontSize: 15, color: '#222'}}>{msg.content}</Text>
                   </View>
                 ))
               ) : (
-                // <View
-                //   style={{
-                //     flex: 1,
-                //     justifyContent: 'center',
-                //     alignItems: 'center',
-                //   }}>
-                //   <Image
-                //     source={require('../../assets/images/icons8-music-robot-94.png')}
-                //     style={{width: 80, height: 80}}
-                //     resizeMode='contain'
-                //   />
-                //   <Text style={{fontSize: 16, color: '#666', textAlign: 'center', lineHeight: 22}}>
-                //     Xin chào! 👋{'\n'}Hãy cho tôi biết vấn đề của bạn nhé.
-                //   </Text>
-                // </View>
                 <GreetingAnimation />
               )}
             </ScrollView>
           </View>
 
           {/* Popup hiển thị khi có tin nhắn */}
-          {messages.length > 0 && (
+          {popup?.status === STATUS.COMPLETE && (
             <View
               style={{
                 position: 'absolute',
@@ -101,7 +167,7 @@ export default function ChatbotScreen() {
                 shadowRadius: 5,
                 elevation: 4,
               }}>
-              <Text style={{fontWeight: 'bold', fontSize: 16, marginBottom: 8}}>Thợ cửa nhôm kính</Text>
+              <Text style={{fontWeight: 'bold', fontSize: 16, marginBottom: 8}}>{popup?.service_group}</Text>
 
               <View
                 style={{
@@ -117,7 +183,7 @@ export default function ChatbotScreen() {
                     fontWeight: 'bold',
                     fontSize: 16,
                   }}>
-                  800,000 - 5,000,000đ
+                  {formatPrice(priceRange?.minPrice)} - {formatPrice(priceRange?.maxPrice)}
                 </Text>
                 <Text style={{color: '#43A047', fontSize: 13, marginTop: 4}}>Độ chính xác giá thị trường: 90%</Text>
               </View>
@@ -125,16 +191,24 @@ export default function ChatbotScreen() {
               <View style={{marginBottom: 12}}>
                 <Text style={{color: '#555', marginBottom: 4}}>Mô tả công việc</Text>
                 <Text style={{backgroundColor: '#fafafa', padding: 8, borderRadius: 8}}>
-                  {messages[messages.length - 1].text}
+                  {popup?.description}
                 </Text>
               </View>
 
               <TouchableOpacity
                 style={{
-                  backgroundColor: '#FFB300',
+                  backgroundColor: Colors.secondary || '#FFB3',
                   borderRadius: 25,
                   paddingVertical: 12,
                   alignItems: 'center',
+                }} onPress={() => {
+                  router.push({
+                    pathname: '/booking/create-job',
+                    params: {
+                      serviceId: popup?.service_id,
+                      des: popup?.description,
+                    }
+                  })
                 }}>
                 <Text style={{color: '#000', fontWeight: 'bold', fontSize: 16}}>Tìm thợ</Text>
               </TouchableOpacity>
@@ -168,8 +242,8 @@ export default function ChatbotScreen() {
               }}>
               <TextInput
                 placeholder='Nhập tin nhắn...'
-                value={message}
-                onChangeText={setMessage}
+                value={text}
+                onChangeText={setText}
                 style={{
                   flex: 1,
                   fontSize: 16,
@@ -177,29 +251,47 @@ export default function ChatbotScreen() {
                   paddingRight: 8,
                 }}
                 placeholderTextColor='#999'
-                returnKeyType='send'
-                onSubmitEditing={handleSend}
               />
             </View>
 
-            <TouchableOpacity
-              onPress={handleSend}
-              activeOpacity={0.8}
-              style={{
-                marginLeft: 10,
-                backgroundColor: Colors.secondary || '#FFB300',
-                width: 42,
-                height: 42,
-                borderRadius: 24,
-                alignItems: 'center',
-                justifyContent: 'center',
-                shadowColor: '#000',
-                shadowOpacity: 0.2,
-                shadowRadius: 4,
-                elevation: 4,
-              }}>
-              <Ionicons name='send' size={22} color='#fff' />
-            </TouchableOpacity>
+            {sending ? (
+              <View
+                style={{
+                  marginLeft: 10,
+                  backgroundColor: Colors.secondary || '#FFB300',
+                  width: 42,
+                  height: 42,
+                  borderRadius: 24,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  shadowColor: '#000',
+                  shadowOpacity: 0.2,
+                  shadowRadius: 4,
+                  elevation: 4,
+                }}>
+                <ActivityIndicator size='small' color='#fff' />
+              </View>
+            ) : (
+              // loading indicator
+              <TouchableOpacity
+                onPress={() => handleSend()}
+                activeOpacity={0.8}
+                style={{
+                  marginLeft: 10,
+                  backgroundColor: Colors.secondary || '#FFB300',
+                  width: 42,
+                  height: 42,
+                  borderRadius: 24,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  shadowColor: '#000',
+                  shadowOpacity: 0.2,
+                  shadowRadius: 4,
+                  elevation: 4,
+                }}>
+                <Ionicons name='send' size={22} color='#fff' />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </TouchableWithoutFeedback>

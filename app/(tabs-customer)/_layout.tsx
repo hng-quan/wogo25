@@ -1,27 +1,23 @@
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { Colors } from '@/lib/common';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Image } from 'react-native';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: Colors.secondary,
         tabBarInactiveTintColor: '#999',
         tabBarStyle: {
           position: 'absolute',
           left: 16,
           right: 16,
           height: 64,
-          backgroundColor: Colors[colorScheme ?? 'light'].background,
           shadowColor: '#000',
           shadowOpacity: 0.06,
           shadowRadius: 8,

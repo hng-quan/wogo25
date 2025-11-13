@@ -1,9 +1,10 @@
 import ButtonCustom from '@/components/button/ButtonCustom';
 import Appbar from '@/components/layout/Appbar';
 import MapPicker from '@/components/map/MapPicker';
-import { formPostAPI, jsonGettAPI } from '@/lib/apiService';
+import { formPostAPI } from '@/lib/apiService';
 import { updateAddress } from '@/lib/utils';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import axios from 'axios';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -29,8 +30,8 @@ const STATUS = {
 };
 
 export default function Index() {
-  const {serviceName, parentId, serviceId} = useLocalSearchParams();
-  const [description, setDescription] = useState('');
+  const {serviceName, parentId, serviceId, des} = useLocalSearchParams();
+  const [description, setDescription] = useState(des ?? '');
   const [address, setAddress] = useState<string>('');
   const [loadingAddress, setLoadingAddress] = useState(true);
   const [date, setDate] = useState<Date>(new Date());
@@ -38,7 +39,7 @@ export default function Index() {
   const [coords, setCoords] = useState<{latitude: number; longitude: number} | null>(null);
   const [mapVisible, setMapVisible] = useState(false);
   const [priceSuggestion, setPriceSuggestion] = useState<any>(null);
-  const [duration, setDuration] = useState<number | null>(null);
+  // const [duration, setDuration] = useState<number | null>(null);
   const [imageList, setImageList] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -69,18 +70,35 @@ export default function Index() {
   }, [parentId]);
 
   const fetchPriceSuggestion = async () => {
-    if (!parentId) return;
     const onSuccess = (res: any) => {
-      const priceAround = res.result?.estimatedPriceLower + ' - ' + res.result?.estimatedPriceHigher;
+      const priceAround = res?.minPrice + ' - ' + res?.maxPrice;
       setPriceSuggestion({
-        estimatedPriceLower: res.result?.estimatedPriceLower,
-        estimatedPriceHigher: res.result?.estimatedPriceHigher,
-        estimatedDurationMinutes: res.result?.estimatedDurationMinutes,
+        estimatedPriceLower: res?.minPrice,
+        estimatedPriceHigher: res?.maxPrice,
         priceAround: priceAround,
       });
-      setDuration(res.result?.estimatedDurationMinutes);
     };
-    await jsonGettAPI('/services/suggestions/' + serviceId, {}, onSuccess);
+    const fetchPrice = async () => {
+      try {
+        const response = await axios.get(`${process.env.EXPO_PUBLIC_CHATBOT_URL}/price-range/${serviceId}`);
+        onSuccess(response.data);
+      } catch (error) {
+        console.error('Error fetching price range:', error);
+      }
+    };
+    fetchPrice();
+    // if (!parentId) return;
+    // const onSuccess = (res: any) => {
+    //   const priceAround = res.result?.estimatedPriceLower + ' - ' + res.result?.estimatedPriceHigher;
+    //   setPriceSuggestion({
+    //     estimatedPriceLower: res.result?.estimatedPriceLower,
+    //     estimatedPriceHigher: res.result?.estimatedPriceHigher,
+    //     estimatedDurationMinutes: res.result?.estimatedDurationMinutes,
+    //     priceAround: priceAround,
+    //   });
+    //   setDuration(res.result?.estimatedDurationMinutes);
+    // };
+    // await jsonGettAPI('/services/suggestions/' + serviceId, {}, onSuccess);
   };
 
   const handleSelectLocation = async (selectedCoords: {latitude: number; longitude: number}) => {
@@ -172,9 +190,8 @@ export default function Index() {
       formData.append('bookingDate', bookingDate);
       formData.append('latitudeUser', String(coords?.latitude || ''));
       formData.append('longitudeUser', String(coords?.longitude || ''));
-      formData.append('estimatedPriceLower', priceSuggestion?.estimatedPriceLower ?? null);
-      formData.append('estimatedPriceHigher', priceSuggestion?.estimatedPriceHigher ?? null);
-      formData.append('estimatedDurationMinutes', priceSuggestion?.estimatedDurationMinutes ?? null);
+      formData.append('estimatedPriceLower', priceSuggestion?.estimatedPriceLower ?? 0);
+      formData.append('estimatedPriceHigher', priceSuggestion?.estimatedPriceHigher ?? 0);
 
       // ✅ Thêm danh sách file ảnh/video
       imageList.forEach((file, index) => {
@@ -304,13 +321,15 @@ export default function Index() {
           <View style={styles.priceContainer}>
             <View>
               <Text style={styles.priceLabel}>Giá tham khảo</Text>
-              <Text style={styles.priceRange}>{priceSuggestion ? priceSuggestion.priceAround + ' đ' : 'Chưa xác định'}</Text>
+              <Text style={styles.priceRange}>
+                {priceSuggestion ? priceSuggestion.priceAround + ' đ' : 'Chưa xác định'}
+              </Text>
             </View>
             <View>
-              <Text style={styles.priceLabel}>Thời gian xử lý</Text>
+              {/* <Text style={styles.priceLabel}>Thời gian xử lý</Text>
               <Text style={{fontSize: 15, fontWeight: 'bold', color: '#fbbf24'}}>
                 {duration ? duration + ' phút' : 'Chưa xác định'}
-              </Text>
+              </Text> */}
             </View>
           </View>
           <ButtonCustom onPress={handleCreateJob} loading={submitting} disabled={submitting}>
@@ -333,7 +352,7 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F2F2F2', paddingHorizontal: 16, position: 'relative'},
+  container: {flex: 1, backgroundColor: '#F2F2F2', paddingHorizontal: 16, position: 'relative', paddingVertical: 8},
   card: {backgroundColor: 'white', borderRadius: 4, padding: 12, marginBottom: 12},
   label: {fontWeight: '600', fontSize: 16, marginBottom: 4},
   required: {color: 'red'},
@@ -381,5 +400,5 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   priceLabel: {fontSize: 14, color: '#777'},
-  priceRange: {fontSize: 16, fontWeight: 'bold', color: '#22c55e'},
+  priceRange: {fontSize: 16, fontWeight: 'bold', color: '#FFB300'},
 });
