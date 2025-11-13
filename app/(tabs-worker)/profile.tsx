@@ -34,7 +34,9 @@ const Profile = () => {
     {id: 1, title: 'Ví', icon: 'wallet', onPress: _gotoWallet},
     {id: 2, title: 'Nghiệp vụ', icon: 'id-card', onPress: _goToProfessional},
     {id: 3, title: 'Ngôn ngữ', icon: 'web', onPress: () => setVisible(true)},
-    {id: 4, title: 'Đăng xuất', icon: 'logout', onPress: () => setDialogVisible(true)},
+    {id: 4, title: 'Đổi mật khẩu', icon: 'id-card', onPress: () => {
+    }},
+    {id: 5, title: 'Đăng xuất', icon: 'logout', onPress: () => setDialogVisible(true)},
   ];
 
   return (

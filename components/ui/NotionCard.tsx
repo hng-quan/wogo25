@@ -16,21 +16,16 @@ interface NoticeCardProps {
   onPress?: (item: NoticeItem) => void;
 }
 
-const NoticeCard: React.FC<NoticeCardProps> = ({ item, onPress }) => {
+const NoticeCard: React.FC<NoticeCardProps> = ({item, onPress}) => {
   const {role} = useRole();
   const borderColor = role === ROLE.CUSTOMER ? Colors.secondary : Colors.primary;
   const isUnread = !item.read;
-  // const iconColor =
-  //   item.type === 'PROMO' ? '#60A5FA' :
-  //   item.type === 'SERVICE' ? '#F59E0B' :
-  //   '#9CA3AF';
 
   return (
     <TouchableOpacity
       activeOpacity={0.85}
-      style={[styles.noticeItem, isUnread && styles.unreadItem, { borderLeftColor: borderColor }]}
+      style={[styles.noticeItem, isUnread && styles.unreadItem, {borderLeftColor: borderColor}]}
       onPress={() => onPress?.(item)}>
-
       {/* Nội dung */}
       <View style={styles.textContainer}>
         <Text style={styles.title}>{item.title}</Text>
@@ -38,11 +33,6 @@ const NoticeCard: React.FC<NoticeCardProps> = ({ item, onPress }) => {
           {item.description || 'Không có mô tả'}
         </Text>
       </View>
-
-      {/* Icon */}
-      {/* <View style={[styles.iconContainer, { backgroundColor: iconColor + '22' }]}>
-        <MaterialIcons name="notifications" size={16} color={iconColor} />
-      </View> */}
     </TouchableOpacity>
   );
 };
@@ -51,20 +41,20 @@ export default NoticeCard;
 
 const styles = StyleSheet.create({
   noticeItem: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: '#fff',
-  padding: 12,
-  marginBottom: 10,
-  borderWidth: 0.6,
-  borderColor: 'rgba(0,0,0,0.08)',
-  shadowColor: '#000',
-  shadowOpacity: 0.08,
-  shadowRadius: 3,
-  shadowOffset: { width: 0, height: 1 },
-  borderLeftWidth: 3,
-}
-,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 12,
+    marginBottom: 10,
+    borderRadius: 12,
+    borderWidth: 0.6,
+    borderColor: 'rgba(0,0,0,0.08)',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    shadowOffset: {width: 0, height: 1},
+    borderLeftWidth: 3,
+  },
   unreadItem: {
     backgroundColor: '#FFF',
   },
@@ -73,9 +63,9 @@ const styles = StyleSheet.create({
     padding: 8,
     marginRight: 12,
   },
-  textContainer: { flex: 1 },
-  title: { fontWeight: '700', fontSize: 12, color: '#111827', marginBottom: 4 },
-  description: { color: '#4B5563', fontSize: 11 },
+  textContainer: {flex: 1},
+  title: {fontWeight: '700', fontSize: 14, color: '#111827', marginBottom: 4},
+  description: {color: '#4B5563', fontSize: 12},
   dot: {
     width: 10,
     height: 10,
