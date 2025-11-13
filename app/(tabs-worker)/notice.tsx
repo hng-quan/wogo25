@@ -2,6 +2,7 @@ import NoticeCard from '@/components/ui/NotionCard';
 import { jsonGettAPI } from '@/lib/apiService';
 import { Colors } from '@/lib/common';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -16,12 +17,10 @@ interface NoticeItem {
 export default function Notice() {
   const [notices, setNotices] = useState<NoticeItem[]>([]);
   const [loading, setLoading] = useState(false);
-
-  // 🔹 Quản lý modal & thông báo đang chọn
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
+  const tabbarHeight = useBottomTabBarHeight();
 
-  // 🔹 Gọi API danh sách thông báo
   const fetchNotices = async () => {
     setLoading(true);
     jsonGettAPI('/notifications/my-notifications/WORKER', {}, payload => {
@@ -34,17 +33,17 @@ export default function Notice() {
     fetchNotices();
   }, []);
 
-  // 🔹 Khi nhấn vào 1 item
   const handlePressNotice = (item: NoticeItem) => {
     setSelectedNotice(item);
     setModalVisible(true);
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {paddingBottom: tabbarHeight}]}>
       <Text style={styles.header}>Thông báo</Text>
 
       <FlatList
+        showsVerticalScrollIndicator={false}
         data={notices}
         keyExtractor={(item, index) => `${item.id}-${index}`}
         renderItem={item => <NoticeCard item={item.item} onPress={() => handlePressNotice(item.item)} />}

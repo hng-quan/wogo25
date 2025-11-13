@@ -1,6 +1,7 @@
 import ButtonCustom from '@/components/button/ButtonCustom';
 import Appbar from '@/components/layout/Appbar';
 import { formPostAPI } from '@/lib/apiService';
+import { Colors } from '@/lib/common';
 import { generateDocumentName } from '@/lib/utils';
 import * as DocumentPicker from 'expo-document-picker';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -12,8 +13,6 @@ import Toast from 'react-native-toast-message';
 export default function Index() {
   const {service_id, serviceName} = useLocalSearchParams();
   const [files, setFiles] = useState<any[]>([]);
-
-  // console.log('service_id, serviceName', service_id, serviceName);
 
   /** chọn file pdf */
   const pickDocuments = async () => {
@@ -56,22 +55,22 @@ export default function Index() {
       } as any);
     });
 
-    const res = await formPostAPI('/worker-verify/upload-worker-document', formData);
-    console.log('Upload response:', res);
-    if (res?.message === 'Upload worker document successfully') {
-      Toast.show({
-        type: 'success',
-        text1: 'Thành công',
-        text2: 'Tệp đã được upload thành công',
-      });
-      setFiles([]);
-      router.replace('/ppi/doc/success');
-    } else {
+    const res = await formPostAPI('/worker-verify/upload-worker-document', formData, undefined, undefined, (errormsg) => {
+      console.log('Upload error:', errormsg);
       Toast.show({
         type: 'error',
-        text1: 'Lỗi',
-        text2: res?.message || 'Upload thất bại, vui lòng thử lại',
+        text1: 'Lỗi upload',
+        text2: errormsg?.message,
       });
+    });
+    if (res?.message === 'Upload worker document successfully') {
+      // Toast.show({
+      //   type: 'success',
+      //   text1: 'Thành công',
+      //   text2: 'Tệp đã được upload thành công',
+      // });
+      setFiles([]);
+      router.replace('/ppi/doc/success');
     }
   };
 
@@ -86,21 +85,38 @@ export default function Index() {
   };
 
   return (
-    <View className='flex-1 bg-[#F2F2F2]'>
+    <View style={{flex: 1, backgroundColor: Colors.background}}>
       <Appbar title='Cập nhật giấy phép lao động' />
 
       <View className='gap-4 flex-1'>
-        <ButtonCustom className='mx-4' mode='outlined' onPress={pickDocuments}>
-          Chọn tệp upload
-        </ButtonCustom>
-
         {/* Hiển thị preview */}
-        <ScrollView style={{marginVertical: 16}} contentContainerStyle={{paddingHorizontal: 16, paddingBottom: 20}}>
+        <ScrollView style={{marginVertical: 8}} contentContainerStyle={{paddingHorizontal: 16, paddingBottom: 10}}>
           {files.length === 0 ? (
-            <View className='items-center justify-center py-10'>
-              <Icon source='file-document-outline' size={60} color='#9CA3AF' />
-              <Text className='text-gray-500 mt-2 text-center'>
-                Chưa có tệp nào được chọn.{'\n'}Hãy nhấn nút Chọn tệp upload để bắt đầu.
+            <View
+              style={{
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: 40,
+                backgroundColor: '#f9fafb',
+                borderRadius: 16,
+                marginHorizontal: 12,
+                marginVertical: 16,
+                borderWidth: 1,
+                borderColor: '#e5e7eb',
+                borderStyle: 'dashed',
+              }}>
+              <Icon source='file-document-outline' size={56} color='#9ca3af' />
+
+              <Text
+                style={{
+                  marginTop: 12,
+                  fontSize: 15,
+                  color: '#6b7280',
+                  textAlign: 'center',
+                  lineHeight: 22,
+                }}>
+                Chưa có tệp nào được chọn.{'\n'}
+                <Text style={{color: '#4b5563', fontWeight: '500',}}>Hãy nhấn nút Chọn tệp upload để bắt đầu.</Text>
               </Text>
             </View>
           ) : (
@@ -167,14 +183,14 @@ export default function Index() {
                         <Text
                           ellipsizeMode='tail'
                           numberOfLines={1}
-                          style={{fontSize: 16, fontWeight: '500', maxWidth: '90%', }}>
+                          style={{fontSize: 16, fontWeight: '500', maxWidth: '90%'}}>
                           {file.name || 'Không rõ tên tệp'}
                         </Text>
                         <Text style={{color: '#6B7280', fontSize: 13}}>Tài liệu</Text>
                       </View>
                       <TouchableOpacity onPress={() => removeFile(index)}>
-                      <Icon source='trash-can-outline' size={26} color='red' />
-                    </TouchableOpacity>
+                        <Icon source='trash-can-outline' size={26} color='red' />
+                      </TouchableOpacity>
                     </View>
                   </View>
                 )}
@@ -182,8 +198,10 @@ export default function Index() {
             ))
           )}
         </ScrollView>
-
-        <ButtonCustom className='mx-4' disabled={files.length === 0} mode='contained' onPress={upload}>
+        <ButtonCustom className='mx-4' mode='outlined' onPress={pickDocuments}>
+          Chọn tệp upload
+        </ButtonCustom>
+        <ButtonCustom style={{marginHorizontal: 16}} disabled={files.length === 0} mode='contained' onPress={upload}>
           Xác nhận & Upload
         </ButtonCustom>
       </View>

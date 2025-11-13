@@ -2,6 +2,7 @@ import ButtonCustom from '@/components/button/ButtonCustom';
 import Appbar from '@/components/layout/Appbar';
 import { Professional } from '@/interfaces/interfaces';
 import { jsonGettAPI } from '@/lib/apiService';
+import { Colors } from '@/lib/common';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -74,6 +75,7 @@ export default function Index() {
           </Animated.View>
         </View>
         <FlatList
+          showsVerticalScrollIndicator={false}
           data={myProfessional}
           renderItem={({item}) => <CardCustom item={item} />}
           keyExtractor={item => item.id.toString()}
@@ -86,7 +88,7 @@ export default function Index() {
 
 const CardCustom = ({ item }: { item: Professional }) => {
   return (
-    <View className="bg-white rounded p-4 mb-3 shadow-sm">
+    <View className="bg-white rounded p-4 mb-3 border border-gray-200">
       {/* Tên nghiệp vụ */}
       <Text variant="titleMedium" className="!font-bold text-gray-900 mb-3">
         {item.service.parentService.serviceName}
@@ -125,6 +127,6 @@ const CardCustom = ({ item }: { item: Professional }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F2',
+    backgroundColor: Colors.background,
   },
 });
