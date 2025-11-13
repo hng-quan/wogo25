@@ -52,11 +52,16 @@ export const jsonPostAPI = async (
   onLoading?: (loading: boolean) => void,
   onError?: (error: any) => void,
   isShowToast?: boolean,
+  useParams = false,
 ): Promise<any | undefined> => {
   try {
     onLoading && onLoading(true);
 
-    const response = await apiClient.post(endpoint, params);
+    const response = await apiClient.post(
+      endpoint,
+      useParams ? null : params,
+      useParams ? {params: params} : undefined,
+    );
     const data = response.data;
 
     // Kiểm tra kết quả
@@ -171,7 +176,7 @@ const _onRefreshed = (token: string) => {
 
 const navigateToLogin = async () => {
   await clearStorage();
-  const { getRoleContextRef } = await import('@/context/RoleContext');
+  const {getRoleContextRef} = await import('@/context/RoleContext');
   getRoleContextRef()?.initialValue();
   router.replace('/(auth)/login');
 };
@@ -288,10 +293,10 @@ const _handleError = (error: any) => {
   }
   if (error?.code === 5009) {
     Toast.show({
-      type:'error',
+      type: 'error',
       text1: 'Cảnh báo',
-      text2: error?.message
-    })
+      text2: error?.message,
+    });
   }
   if (error.response?.data?.code === 5006) {
     if (error?.response?.data?.message === 'You have already sent a quote for this job request') {
@@ -377,7 +382,6 @@ export const formPutAPI = async (
     console.log(`Error call api ${endpoint}:`, errorData);
   }
 };
-
 
 export const jsonPutAPI = async (
   endpoint: any,

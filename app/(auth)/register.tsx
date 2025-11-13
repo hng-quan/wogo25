@@ -1,12 +1,11 @@
 import ButtonCustom from '@/components/button/ButtonCustom';
 import HelpText from '@/components/text/HelpText';
-import { jsonPostAPI } from '@/lib/apiService';
 import { validateFullName, validatePassword, validatePhoneNumber } from '@/lib/utils';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 
@@ -84,76 +83,79 @@ const RegisterScreen = () => {
       fullName: fullName,
       avatarUrl: '',
     };
-    await jsonPostAPI('/auth/signup', params, _onSuccess, setIsLoading, setError);
+    _onSuccess({});
+    // await jsonPostAPI('/auth/signup', params, _onSuccess, setIsLoading, setError);
   };
   const _navigateToLogin = () => {
     router.back();
   };
   return (
-    <LinearGradient colors={['#E8F5E9', '#C8E6C9']} style={styles.container}>
-      <Text variant='headlineSmall' style={styles.title}>
-        {t('Đăng ký')}
-      </Text>
+    <KeyboardAvoidingView style={{flex: 1}} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <LinearGradient colors={['#E8F5E9', '#C8E6C9']} style={styles.container}>
+        <Text variant='headlineSmall' style={styles.title}>
+          {t('Đăng ký')}
+        </Text>
 
-      <HelpText type='error' visible={error !== null}>
-        {error ? t(error.message) : null}
-      </HelpText>
-      <TextInput
-        label={t('Số điện thoại')}
-        value={phoneNumber ?? ''}
-        onChangeText={text => {
-          setPhoneNumber(text);
-        }}
-        style={styles.input}
-        theme={inputTheme}
-      />
-      <HelpText type='error' visible={error !== null}>
-        {t(error?.phoneError)}
-      </HelpText>
-      <TextInput
-        label={t('Họ và tên')}
-        value={fullName ?? ''}
-        onChangeText={text => {
-          setFullName(text);
-        }}
-        style={styles.input}
-        theme={inputTheme}
-      />
-      <HelpText type='error' visible={error !== null}>
-        {t(error?.fullNameError)}
-      </HelpText>
-      <TextInput
-        label={t('Mật khẩu')}
-        secureTextEntry={hidePassword}
-        right={
-          <TextInput.Icon
-            icon={`${hidePassword ? 'eye-off' : 'eye'}`}
-            onPress={() => setHidePassword(!hidePassword)}
-            color={styles.icon.color}
-          />
-        }
-        value={password ?? ''}
-        onChangeText={text => {
-          setPassword(text);
-        }}
-        style={styles.input}
-        theme={inputTheme}
-      />
-      <HelpText type='error' visible={error !== null}>
-        {t(error?.passwordError)}
-      </HelpText>
-      <ButtonCustom mode='contained' loading={isLoading} onPress={_handleRegister} style={{marginTop: 32}}>
-        {t('Đăng ký')}
-      </ButtonCustom>
-      <ButtonCustom mode='outlined' onPress={_navigateToLogin} style={{marginTop: 15}}>
-        {t('Đăng nhập')}
-      </ButtonCustom>
+        <HelpText type='error' visible={error !== null}>
+          {error ? t(error.message) : null}
+        </HelpText>
+        <TextInput
+          label={t('Số điện thoại')}
+          value={phoneNumber ?? ''}
+          onChangeText={text => {
+            setPhoneNumber(text);
+          }}
+          style={styles.input}
+          theme={inputTheme}
+        />
+        <HelpText type='error' visible={error !== null}>
+          {t(error?.phoneError)}
+        </HelpText>
+        <TextInput
+          label={t('Họ và tên')}
+          value={fullName ?? ''}
+          onChangeText={text => {
+            setFullName(text);
+          }}
+          style={styles.input}
+          theme={inputTheme}
+        />
+        <HelpText type='error' visible={error !== null}>
+          {t(error?.fullNameError)}
+        </HelpText>
+        <TextInput
+          label={t('Mật khẩu')}
+          secureTextEntry={hidePassword}
+          right={
+            <TextInput.Icon
+              icon={`${hidePassword ? 'eye-off' : 'eye'}`}
+              onPress={() => setHidePassword(!hidePassword)}
+              color={styles.icon.color}
+            />
+          }
+          value={password ?? ''}
+          onChangeText={text => {
+            setPassword(text);
+          }}
+          style={styles.input}
+          theme={inputTheme}
+        />
+        <HelpText type='error' visible={error !== null}>
+          {t(error?.passwordError)}
+        </HelpText>
+        <ButtonCustom mode='contained' loading={isLoading} onPress={_handleRegister} style={{marginTop: 32}}>
+          {t('Đăng ký')}
+        </ButtonCustom>
+        <ButtonCustom mode='outlined' onPress={_navigateToLogin} style={{marginTop: 15}}>
+          {t('Đăng nhập')}
+        </ButtonCustom>
 
-      <Text style={styles.termsText}>
-        {t('Bằng cách nhấn đăng ký, bạn đồng ý với')} <Text style={styles.boldText}>{t('Điều khoản dịch vụ')}</Text> &{' '}
-        <Text style={styles.boldText}>{t('Chính sách bảo mật')}</Text>
-      </Text>
-    </LinearGradient>
+        <Text style={styles.termsText}>
+          {t('Bằng cách nhấn đăng ký, bạn đồng ý với')} <Text style={styles.boldText}>{t('Điều khoản dịch vụ')}</Text> &{' '}
+          <Text style={styles.boldText}>{t('Chính sách bảo mật')}</Text>
+        </Text>
+      </LinearGradient>
+    </KeyboardAvoidingView>
   );
 };
 

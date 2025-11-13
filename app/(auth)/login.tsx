@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 
 const LoginScreen = () => {
@@ -120,7 +120,9 @@ const LoginScreen = () => {
           {t(error?.passwordError)}
         </HelpText>
       )}
-      <Text style={styles.forgotPasswordText}>{t('Quên mật khẩu?')}</Text>
+      <Pressable onPress={() => router.push('/(auth)/forgot-password')}>
+        <Text style={styles.forgotPasswordText}>{t('Quên mật khẩu?')}</Text>
+      </Pressable>
 
       <ButtonCustom mode='contained' loading={isLoading} onPress={_handleLogin} style={{marginTop: 15}}>
         {t('Đăng nhập')}
