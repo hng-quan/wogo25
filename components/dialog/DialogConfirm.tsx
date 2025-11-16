@@ -12,7 +12,7 @@ const DialogConfirm = ({isOpen, onClose, onConfirm}: DialogConfirmProps) => {
     if (!isOpen) return null;
   return (
     <Portal>
-      <Dialog visible={isOpen} onDismiss={onClose}>
+      <Dialog visible={isOpen} onDismiss={onClose} style={{backgroundColor: 'white'}}>
         <Dialog.Title>{t('Thông báo')}</Dialog.Title>
         <Dialog.Content>
           <Text>{t('Bạn có chắc chắn muốn tiếp tục?')}</Text>

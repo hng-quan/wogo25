@@ -4,6 +4,7 @@ import PaymentMethodModal from '@/components/modal/PaymentQRModal';
 import PaymentQRModal from '@/components/modal/QRCodeModal';
 import JobDetailSection from '@/components/ui/JobDetailSection';
 import WorkflowTimeline from '@/components/ui/WorkFLowTimeLine';
+import { WorkerRatingDisplayCard } from '@/components/ui/WorkerRatingDisplayCard';
 import { ROLE } from '@/context/RoleContext';
 import { useSocket } from '@/context/SocketContext';
 import { jsonGettAPI, jsonPostAPI, jsonPutAPI } from '@/lib/apiService';
@@ -17,6 +18,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -25,10 +27,11 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import MapView, { AnimatedRegion, Marker, Polyline } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
 
 // API key OpenRouteService
 const ORS_API_KEY = process.env.EXPO_PUBLIC_OPENROUTE_SERVICE_API_KEY || '';
@@ -92,6 +95,29 @@ export default function WorkFlow() {
   const verifyIntervalRef = useRef<any | null>(null);
   const verifyTimeoutRef = useRef<any | null>(null);
   const [isPollingVerify, setIsPollingVerify] = React.useState<boolean>(false);
+  const [showCompleteModal, setShowCompleteModal] = React.useState<boolean>(false);
+
+  /**
+   * Check if the completed booking has a customer review
+   * @returns true if booking is completed and has review data, false otherwise
+   */
+  const hasCustomerReview = (): boolean => {
+    return (
+      bookingStatus === 'COMPLETED' && 
+      bookingDetail?.review && 
+      typeof bookingDetail.review.rating === 'number'
+    );
+  };
+
+  /**
+   * Get customer name from booking detail for display
+   * @returns Customer name or fallback text
+   */
+  const getCustomerName = (): string => {
+    return bookingDetail?.user?.fullName || 
+           bookingDetail?.customer?.fullName || 
+           'Khách hàng';
+  };
 
   // Khởi tạo
   useEffect(() => {
@@ -144,6 +170,7 @@ export default function WorkFlow() {
   const fetchBookingDetail = async () => {
     try {
       const res = await jsonGettAPI('/bookings/getByCode/' + jobRequestCode);
+      console.log('booking detail res', res);
       if (res?.result) {
         setBookingDetail(res.result);
         setBookingStatus(res.result.bookingStatus);
@@ -346,6 +373,7 @@ export default function WorkFlow() {
   // Lắng nghe cập nhật trạng thái booking
   useEffect(() => {
     if (!connected || !bookingDetail?.bookingCode) return;
+    console.log('🔌 [Worker] Lắng nghe trạng thái booking:', bookingDetail.bookingCode);
     const topic = `/topic/bookingStatus/${bookingDetail.bookingCode}`;
     const sub = subscribe(topic, (msg: any) => {
       try {
@@ -478,6 +506,10 @@ export default function WorkFlow() {
       const response = await jsonPutAPI('/bookings/updateStatus', payload);
       if (response?.code === 1000) {
         console.log('✅ Cập nhật trạng thái thành công');
+        // show modal hoàn tất nếu chuyển sang COMPLETED
+        if (newStatus === 'COMPLETED') {
+          setShowCompleteModal(true);
+        }
       } else {
         console.error('❌ Lỗi cập nhật trạng thái:', response);
       }
@@ -525,10 +557,13 @@ export default function WorkFlow() {
 
   const handleCreateQR = async () => {
     try {
+      console.log('param', bookingDetail?.bookingCode);
       const res = await jsonPostAPI('/bookings/create-payment/' + bookingDetail?.bookingCode, {});
-      setQrLink(res?.result);
-      // Start polling verify-payment every 3s, stop when verified or after 5 minutes
-      startVerifyPolling(bookingDetail?.bookingCode);
+      console.log('res', res);
+      if (res?.result && res?.result?.linkTransaction) {
+        setQrLink(res?.result);
+        startVerifyPolling(bookingDetail?.bookingCode);
+      }
     } catch (error: any) {
       Alert.alert('Lỗi', error?.message || 'Đã có lỗi xảy ra');
     }
@@ -549,18 +584,27 @@ export default function WorkFlow() {
 
     setIsPollingVerify(true);
 
-    const POLL_INTERVAL_MS = 3000;
-    const MAX_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+    const POLL_INTERVAL_MS = 5000;
+    const MAX_DURATION_MS = 3 * 60 * 1000; // 3 minutes
 
     // One-off immediate check (optional), then interval
     const checkOnce = async () => {
       try {
-        const resp = await jsonPostAPI('/bookings/verify-payment/' + code, {});
+        const resp = await jsonPostAPI(
+          '/bookings/verify-payment/' + code,
+          {},
+          () => {},
+          () => {},
+        );
         console.log('verify-payment:', resp);
         if (resp?.result === true) {
           // stop polling and refresh booking detail
           stopVerifyPolling();
-          // fetchBookingDetail();
+          fetchBookingDetail();
+        }
+        if (resp?.code !== 1000) {
+          console.warn('verify-payment returned error code:', resp?.code);
+          stopVerifyPolling();
         }
       } catch (err) {
         console.error('Error checking payment verification:', err);
@@ -573,12 +617,25 @@ export default function WorkFlow() {
     verifyIntervalRef.current = setInterval(async () => {
       try {
         console.log('Polling verify-payment for', code);
-        const resp = await jsonPostAPI('/bookings/verify-payment/' + code, {});
+        const resp = await jsonPostAPI(
+          '/bookings/verify-payment/' + code,
+          {},
+          () => {},
+          () => {},
+        );
         console.log('verify-payment:', resp);
         if (resp?.result === true) {
           console.log('Payment verified for', code);
           stopVerifyPolling();
-          // await fetchBookingDetail();
+          // Đóng QR modal
+          setViewQRVisible(false);
+          fetchBookingDetail();
+          // Hiển thị thống báo đã thanh toán
+          Toast.show({type: 'success', text1: 'Thanh toán thành công'});
+        }
+        if (resp?.code !== 1000) {
+          console.warn('verify-payment returned error code:', resp?.code);
+          stopVerifyPolling();
         }
       } catch (err) {
         console.error('Polling verify-payment error:', err);
@@ -892,7 +949,6 @@ export default function WorkFlow() {
                       {formatPrice(bookingDetail?.totalAmount * 0.9)}đ
                     </Text>
                   </View>
-                 
                 </View>
               )}
 
@@ -905,6 +961,18 @@ export default function WorkFlow() {
                 files={jobDetail?.files}
                 totalAmount={bookingDetail?.totalAmount}
               />
+
+              {/* Customer Rating Display Section */}
+              {hasCustomerReview() && (
+                <View style={styles.ratingDisplaySection}>
+                  <WorkerRatingDisplayCard 
+                    review={bookingDetail.review}
+                    serviceName={jobDetail?.service?.serviceName}
+                    customerName={getCustomerName()}
+                    showSummary={false}
+                  />
+                </View>
+              )}
             </View>
           </ScrollView>
         </View>
@@ -1076,6 +1144,46 @@ export default function WorkFlow() {
         onSelectMethod={setMethod}
         // onCreateQR={handleCreateQR}
       />
+      {/* Completion modal: show when job moves to COMPLETED from PAID */}
+      <Modal
+        visible={showCompleteModal}
+        transparent
+        animationType='fade'
+        onRequestClose={() => setShowCompleteModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, {maxWidth: 420, height: 'auto'}]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Hoàn tất dịch vụ</Text>
+              <TouchableOpacity
+                style={[]}
+                onPress={() => setShowCompleteModal(false)}>
+                <Text style={[styles.confirmButtonText, {color: '#000'}]}>
+                  <MaterialCommunityIcons name='close' size={24} color='#000' />
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{alignItems: 'center', flexShrink: 1}}>
+              <View style={{width: '100%', marginBottom: 12}}>
+                <Image
+                  source={require('../../assets/images/receive-payment-v2.png')}
+                  style={{
+                    width: '100%',
+                    height: undefined,
+                    aspectRatio: 1.6, // chỉnh theo tỉ lệ ảnh
+                    resizeMode: 'contain',
+                    marginTop: 4,
+                    borderRadius: 12,
+                  }}
+                />
+              </View>
+
+              <Text style={{fontSize: 14, color: '#666'}}>Tổng thu nhập thực nhận</Text>
+              <Text style={styles.completeAmount}>{'+'+formatPrice(bookingDetail?.totalAmount * 0.9)}đ</Text>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <PaymentQRModal
         visible={viewQRVisible}
@@ -1147,6 +1255,13 @@ const styles = StyleSheet.create({
     elevation: 4,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  completeAmount: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: Colors.primary,
+    marginTop: 6,
+    marginBottom: 16,
   },
   markerArrow: {
     width: 0,
@@ -1484,9 +1599,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOpacity: 0.2,
     shadowRadius: 10,
     elevation: 8,
+    zIndex: 999
   },
   floatingActionButtonText: {
     color: '#fff',
@@ -1580,5 +1695,8 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  ratingDisplaySection: {
+    marginTop: 16,
   },
 });

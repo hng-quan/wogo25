@@ -31,10 +31,10 @@ const DepositsHistory = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchHistory = async () => {
-    if (!user?.id) return;
+    if (!user?.workerId) return;
     setLoading(true);
     try {
-      await jsonGettAPI(`/transactions/deposits/history/${user.id}`, {}, (res: any) => {
+      await jsonGettAPI(`/transactions/deposits/history/${user.workerId}`, {}, (res: any) => {
         console.log('deposits history res', res);
         setData(res?.result || []);
       }, (l: boolean) => setLoading(l), (err: any) => {
@@ -49,7 +49,7 @@ const DepositsHistory = () => {
 
   useEffect(() => {
     fetchHistory();
-  }, [user?.id]);
+  }, [user?.workerId]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -101,7 +101,6 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
     backgroundColor: Colors.background,
-    flex: 1
   },
   card: {
     backgroundColor: '#fff',

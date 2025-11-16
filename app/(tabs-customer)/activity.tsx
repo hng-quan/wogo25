@@ -18,7 +18,7 @@ const STATUS = {
 const filters = [
   {key: 'ALL', label: 'Tất cả'},
   {key: STATUS.PENDING, label: 'Đang tìm'},
-  {key: STATUS.ACCEPTED, label: 'Đang thực hiện'},
+  {key: STATUS.ACCEPTED, label: 'Đang làm'},
   {key: STATUS.HISTORY, label: 'Lịch sử'},
 ];
 
@@ -122,7 +122,7 @@ export default function ActivityScreen() {
             {item.status === STATUS.PENDING
               ? 'Đang tìm thợ'
               : item.status === STATUS.ACCEPTED
-                ? 'Đang tiến hành'
+                ? 'Đang làm'
                 : 'Đã hủy'}
           </Text>
         </View>
@@ -240,7 +240,7 @@ export const renderHistoryCard = ({item, onPress}: {item: HistoryItem; onPress: 
                 ? historyStyles.statusCancelled
                 : historyStyles.statusPending,
           ]}>
-          {item.status === 'COMPLETED' ? 'Hoàn thành' : item.status === 'CANCELLED' ? 'Đã hủy' : 'Đang xử lý'}
+          {item.status === 'COMPLETED' ? 'Hoàn thành' : item.status === 'CANCELLED' ? 'Đã hủy' : item?.status === 'PENDING' ? 'Đang tìm thợ' :  'Đang làm'}
         </Text>
       </View>
 
@@ -312,10 +312,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     shadowColor: '#000',
     shadowOpacity: 0.08,
+    borderRadius: 12,
     shadowRadius: 8,
     borderColor: Colors.secondary,
     borderWidth: 0.6,
-    borderLeftWidth: 3,
+    // borderLeftWidth: 3,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -383,8 +384,8 @@ const historyStyles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: {width: 0, height: 4},
     borderWidth: 0.6,
-    borderLeftWidth: 3,
     borderColor: Colors.secondary,
+    borderRadius: 12
   },
   cardHeader: {
     flexDirection: 'row',

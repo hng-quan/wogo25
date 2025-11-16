@@ -20,7 +20,7 @@ const STATUS = {
 const filters = [
   {key: STATUS.ALL, label: 'Tất cả'},
   {key: STATUS.PENDING, label: 'Báo giá'},
-  {key: STATUS.ACCEPTED, label: 'Đang thực hiện'},
+  {key: STATUS.ACCEPTED, label: 'Đang làm'},
   {key: STATUS.HISTORY, label: 'Lịch sử'},
 ];
 
@@ -107,7 +107,7 @@ export default function ActivityScreen() {
         case 'COMPLETED':
           return {bg: '#E3FCEF', color: '#4CAF50', label: 'Hoàn thành'};
         case 'ACCEPTED':
-          return {bg: '#E3F2FD', color: '#1565C0', label: 'Đang thực hiện'};
+          return {bg: '#E3F2FD', color: '#1565C0', label: 'Đang làm'};
         case 'PENDING':
           return {bg: '#FFF4E5', color: '#FF9800', label: 'Chờ xác nhận'};
         default:

@@ -4,7 +4,7 @@ import { useSafeCurrentLocation } from '@/hooks/useCurrentLocation';
 import { jsonGettAPI, jsonPostAPI } from '@/lib/apiService';
 import { Colors } from '@/lib/common';
 import { calculateDistance } from '@/lib/location-helper';
-import { displayDateVN } from '@/lib/utils';
+import { displayDateVN, formatPrice } from '@/lib/utils';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
@@ -28,10 +28,9 @@ const TABBAR_HEIGHT = 70; // chỉnh theo tabbar app bạn
 const BOTTOM_PADDING = 16; // chừa thêm khoảng cách nhỏ cho đẹp
 
 export default function FindJob() {
-  const drawerHeight = height * 0.70;
+  const drawerHeight = height * 0.7;
   const CLOSED_Y = drawerHeight - 70;
   const OPEN_Y = height * 0.15;
-
   const translateY = useRef(new Animated.Value(CLOSED_Y)).current;
   const lastOffset = useRef(CLOSED_Y);
   const [jobList, setJobList] = useState<any[]>([]);
@@ -82,8 +81,9 @@ export default function FindJob() {
           longitude: workerCoords?.longitude,
           role: 'WORKER',
         };
-        const res = await jsonPostAPI('/addresses/save-or-update', params);
+        await jsonPostAPI('/addresses/save-or-update', params);
         setIsSavedAddress(true);
+        // Lưu tạm vị trí vào localStorage để dùng tạm
       } catch (error) {
         console.log('save address error', error);
       } finally {
@@ -96,7 +96,10 @@ export default function FindJob() {
 
   // Lấy danh sách job
   const fetchJobsAvailable = async () => {
-    const res = await jsonGettAPI('/bookings/job-available', {});
+    const res = await jsonGettAPI('/bookings/job-available', {}, undefined, undefined, error => {
+      setFinding(false);
+      setIsSearching(false);
+    });
     if (res?.result) {
       setJobList(res.result);
     }
@@ -152,48 +155,40 @@ export default function FindJob() {
   return (
     <View style={styles.container}>
       {/* Map */}
-      <View style={{ flex: 1 }}>
-  <MapView
-    style={StyleSheet.absoluteFill}
-    region={
-      workerCoords && isValidCoords(workerCoords)
-        ? {
-            latitude: workerCoords.latitude,
-            longitude: workerCoords.longitude,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
-          }
-        : undefined
-    }
-  >
-    {isValidCoords(workerCoords) && (
-      <Marker
-        coordinate={workerCoords as any}
-        title="Vị trí của bạn"
-        description="Đây là vị trí hiện tại"
-      />
-    )}
-  </MapView>
+      <View style={{flex: 1}}>
+        <MapView
+          style={StyleSheet.absoluteFill}
+          region={
+            workerCoords && isValidCoords(workerCoords)
+              ? {
+                  latitude: workerCoords.latitude,
+                  longitude: workerCoords.longitude,
+                  latitudeDelta: 0.05,
+                  longitudeDelta: 0.05,
+                }
+              : undefined
+          }>
+          {isValidCoords(workerCoords) && (
+            <Marker coordinate={workerCoords as any} title='Vị trí của bạn' description='Đây là vị trí hiện tại' />
+          )}
+        </MapView>
 
-  {/* Overlay loading */}
-  {!isValidCoords(workerCoords) && (
-    <View
-      style={[
-        StyleSheet.absoluteFillObject,
-        {
-          backgroundColor: 'rgba(255,255,255,0.7)',
-          justifyContent: 'center',
-          alignItems: 'center',
-        },
-      ]}
-    >
-      <ActivityIndicator size="large" color="#6200ee" />
-      <Text style={{ marginTop: 8, color: '#333', fontWeight: '500' }}>
-        Đang xác định vị trí của bạn...
-      </Text>
-    </View>
-  )}
-</View>
+        {/* Overlay loading */}
+        {!isValidCoords(workerCoords) && (
+          <View
+            style={[
+              StyleSheet.absoluteFillObject,
+              {
+                backgroundColor: 'rgba(255,255,255,0.7)',
+                justifyContent: 'center',
+                alignItems: 'center',
+              },
+            ]}>
+            <ActivityIndicator size='large' color='#6200ee' />
+            <Text style={{marginTop: 8, color: '#333', fontWeight: '500'}}>Đang xác định vị trí của bạn...</Text>
+          </View>
+        )}
+      </View>
 
       {/* Drawer */}
       <Animated.View
@@ -255,17 +250,17 @@ export default function FindJob() {
                   <Text style={styles.jobTitle}>{item.service.serviceName}</Text>
 
                   {/* Ước tính */}
-                  <View style={[{flexDirection: 'row', gap: 4}, {alignItems: 'center'}]}>
+                  {/* <View style={[{flexDirection: 'row', gap: 4}, {alignItems: 'center'}]}>
                     <MaterialCommunityIcons name='clock-outline' size={16} color='#999' />
                     <Text style={styles.jobEstimate}>Ước tính: {item.estimatedDurationMinutes} phút</Text>
-                  </View>
+                  </View> */}
 
                   {/* Hàng ngang: khoảng cách - giá tiền */}
                   <View style={styles.rowBetween}>
                     <View style={styles.rowCenter}>
                       <MaterialIcons name='attach-money' size={16} color='#1565C0' />
                       <Text style={styles.jobPrice}>
-                        {item.estimatedPriceLower} - {item.estimatedPriceHigher} đ
+                        {formatPrice(item.estimatedPriceLower)} - {formatPrice(item.estimatedPriceHigher)} đ
                       </Text>
                     </View>
                   </View>
@@ -401,7 +396,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#222',
-    marginTop: 4
+    marginTop: 4,
   },
   jobDate: {
     position: 'absolute',

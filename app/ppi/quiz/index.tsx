@@ -2,6 +2,7 @@ import ButtonCustom from '@/components/button/ButtonCustom';
 import Appbar from '@/components/layout/Appbar';
 import { Question } from '@/interfaces/interfaces';
 import { jsonPostAPI } from '@/lib/apiService';
+import { Colors } from '@/lib/common';
 import { useNavigation } from '@react-navigation/native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -246,12 +247,32 @@ export default function Index() {
   }
 
   return (
-    <View className='h-full bg-[#F2F2F2]'>
+    <View style={{flex: 1, backgroundColor: Colors.background}}>
       <Appbar title='Làm bài kiểm tra' />
       {/* Header */}
-      <View style={{flexDirection: 'row', justifyContent: 'space-between'}} className='px-4'>
-        <Text variant='titleMedium'>{`${answeredCount}/${questions.length} câu`}</Text>
-        <Text variant='titleMedium'>⏳{formatTime(timeLeft)}</Text>
+      <View className='mx-4 my-1 p-2 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl shadow-lg border border-indigo-100'>
+        <View className='flex-row justify-between items-center'>
+          {/* Left: Answered count */}
+          <View className='flex-row items-baseline space-x-1'>
+            <Text variant='titleLarge' className='font-extrabold text-indigo-700'>
+              {answeredCount}
+            </Text>
+            <Text variant='titleMedium' className='text-indigo-500'>
+              /{questions.length}
+            </Text>
+            <Text variant='labelLarge' className='text-indigo-400 ml-1'>
+              câu
+            </Text>
+          </View>
+
+          {/* Right: Timer */}
+          <View className='flex-row items-center space-x-1.5 bg-white/10 px-1 py-1 rounded-full shadow'>
+            <Text className='text-lg'>⏳</Text>
+            <Text variant='titleLarge' className='font-mono font-bold text-purple-600'>
+              {formatTime(timeLeft)}
+            </Text>
+          </View>
+        </View>
       </View>
 
       {/* Danh sách câu hỏi */}
@@ -261,9 +282,35 @@ export default function Index() {
         keyExtractor={item => item.id.toString()}
         renderItem={({item, index}) => (
           <View style={{marginVertical: 12}}>
-            <Text style={{fontSize: 16, fontWeight: '600', color: 'blue'}}>
-              Câu {index + 1}: {item.questionText}
-            </Text>
+            <View
+              style={{
+                backgroundColor: '#EFF6FF', // xanh nhạt dịu mắt
+                borderLeftWidth: 4,
+                borderLeftColor: '#3B82F6',
+                borderRadius: 8,
+                paddingVertical: 8,
+                paddingHorizontal: 12,
+                marginBottom: 12,
+              }}>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: '#1E40AF',
+                }}>
+                Câu {index + 1}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 15,
+                  fontWeight: '500',
+                  color: '#111827',
+                  marginTop: 2,
+                  lineHeight: 22,
+                }}>
+                {item.questionText}
+              </Text>
+            </View>
 
             {item.questionType === 'SINGLE_CHOICE'
               ? item.questionOptions.map(opt => {
@@ -296,7 +343,7 @@ export default function Index() {
                               height: 10,
                               width: 10,
                               borderRadius: 5,
-                              backgroundColor: 'blue',
+                              backgroundColor: Colors.primary,
                             }}
                           />
                         )}
@@ -333,7 +380,7 @@ export default function Index() {
                             style={{
                               height: 12,
                               width: 12,
-                              backgroundColor: 'blue',
+                              backgroundColor: Colors.primary,
                             }}
                           />
                         )}

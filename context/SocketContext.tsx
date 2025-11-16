@@ -42,7 +42,7 @@ export const SocketProvider: React.FC<{userId: string; children: React.ReactNode
       heartbeatOutgoing: 4000,
 
       onConnect: () => {
-        // console.log('✅ Connected to WS', userId);
+        console.log('✅ Connected to WS', userId);
         setConnected(true);
       },
       onDisconnect: () => {

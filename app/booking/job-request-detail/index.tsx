@@ -32,6 +32,7 @@ export default function Index() {
     // console.log('Socket connected:', connected);
     if (!connected) return;
     const topic = `/topic/send-quote/${serviceId}`;
+    console.log('Subscribing to topic:', topic);
     const subscription = subscribe(topic, message => {
       // console.log('Received message:', message.body);
       if (message.body) {
@@ -42,7 +43,7 @@ export default function Index() {
       console.log('Unsubscribing from topic:', topic);
       subscription?.unsubscribe();
     };
-  }, [serviceId]);
+  }, [serviceId, connected]);
 
   useEffect(() => {
     if (!latitude || !longitude) return;
@@ -241,7 +242,7 @@ export default function Index() {
         <View>
           <Text style={styles.priceLabel}>Giá tham khảo</Text>
           <Text style={styles.priceRange}>
-            {jobRequest?.estimatedPriceLower} - {jobRequest?.estimatedPriceHigher} đ
+            {formatPrice(jobRequest?.estimatedPriceLower)} - {formatPrice(jobRequest?.estimatedPriceHigher)} đ
           </Text>
         </View>
       </View>

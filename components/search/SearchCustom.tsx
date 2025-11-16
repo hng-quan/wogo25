@@ -1,3 +1,4 @@
+import { ROLE, useRole } from '@/context/RoleContext';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Searchbar } from 'react-native-paper';
@@ -12,6 +13,7 @@ export default function SearchCustom({
   ...props
 }: SearchCustomProps) {
   const [searchQuery, setSearchQuery] = React.useState('');
+  const { role } = useRole();
 
   const handleChange = (query: string) => {
     setSearchQuery(query);
@@ -36,7 +38,7 @@ export default function SearchCustom({
           borderRadius: 100,
           backgroundColor: '#fff',
           borderWidth: 1,
-          borderColor: '#4FAF50',
+          borderColor: role === ROLE.CUSTOMER ? '#46A049' : '#1565C0',
           elevation: 0,
         },
         style,

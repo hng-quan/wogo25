@@ -204,6 +204,7 @@ export default function ChatRoom() {
     };
     try {
       await jsonPostAPI('/chats/send-message', payload);
+      setNewMessage('');
     } catch (error) {
       console.error('❌ Lỗi khi gửi tin nhắn:', error);
     }
@@ -304,7 +305,7 @@ export default function ChatRoom() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 45 : 0}>
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 45 : 32}>
         <FlatList
           ref={flatListRef}
           data={messageList}

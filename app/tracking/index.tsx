@@ -1,6 +1,8 @@
 import Appbar from '@/components/layout/Appbar';
 import { AvatarWrapper } from '@/components/layout/ProfileContainer';
+import { ServiceRatingModal } from '@/components/modal/ServiceRatingModal';
 import JobDetailSection from '@/components/ui/JobDetailSection';
+import { RatingDisplayCard } from '@/components/ui/RatingDisplayCard';
 import WorkflowTimeline from '@/components/ui/WorkFLowTimeLine';
 import { ROLE } from '@/context/RoleContext';
 import { useSocket } from '@/context/SocketContext';
@@ -16,7 +18,6 @@ import MapView, { AnimatedRegion, Marker, Polyline } from 'react-native-maps';
 
 const ORS_API_KEY = process.env.EXPO_PUBLIC_OPENROUTE_SERVICE_API_KEY || '';
 // const ORS_API_KEY = '';
-const processSteps = ['PENDING', 'COMING', 'ARRIVED', 'NEGOTIATING', 'WORKING', 'PAYING', 'PAID', 'COMPLETED'];
 
 export default function Tracking() {
   const {currentTab, jobRequestCode} = useLocalSearchParams();
@@ -32,6 +33,11 @@ export default function Tracking() {
   const [customerLocation, setCustomerLocation] = useState<any>(null);
   const [workerLocation, setWorkerLocation] = useState<any>(null);
   const [loadingWorkerLocation, setLoadingWorkerLocation] = useState<boolean>(true);
+  
+  // Rating modal state
+  const [showRatingModal, setShowRatingModal] = useState<boolean>(false);
+  const [hasRated, setHasRated] = useState<boolean>(false);
+  const [submittedRating, setSubmittedRating] = useState<any>(null);
 
   const workerLocationRef = useRef(
     new AnimatedRegion({
@@ -107,10 +113,64 @@ export default function Tracking() {
       if (res?.result) {
         setBookingDetail(res.result);
         setBookingStatus(res.result.bookingStatus);
+        
+        // Check if booking has been rated
+        // checkRatingStatus(res.result.id);
       }
     } catch (error) {
       console.error('Error fetching booking detail:', error);
     }
+  };
+
+  /**
+   * Check if the booking has already been rated
+   * @param bookingId - ID of the booking to check
+   */
+  // const checkRatingStatus = async (bookingId: string) => {
+  //   if (!bookingId) return;
+    
+  //   try {
+  //     const res = await jsonGettAPI(`/reviews/check/${bookingId}`);
+  //     console.log('Rating status response:', res);
+  //     if (res?.result) {
+  //       setHasRated(res.result.hasRated || false);
+  //       // If review data is returned, store it for display
+  //       if (res.result.review) {
+  //         setSubmittedRating(res.result.review);
+  //       }
+  //     }
+  //   } catch {
+  //     // If endpoint doesn't exist or fails, assume not rated
+  //     // This prevents errors when the rating check endpoint is not implemented
+  //     setHasRated(false);
+  //   }
+  // };
+
+  /**
+   * Get review data for display
+   * Priority: submittedRating > bookingDetail.review > null
+   * @returns Review data object or null if no review exists
+   */
+  const getReviewData = () => {
+    // First check if we have a recently submitted rating
+    if (submittedRating) {
+      return submittedRating;
+    }
+    
+    // Then check if booking detail contains review data
+    if (bookingDetail?.review) {
+      return bookingDetail.review;
+    }
+    
+    return null;
+  };
+
+  /**
+   * Check if user has rated the service
+   * @returns true if service has been rated, false otherwise
+   */
+  const hasExistingRating = (): boolean => {
+    return hasRated || !!getReviewData();
   };
 
   useEffect(() => {
@@ -151,8 +211,8 @@ export default function Tracking() {
         longitude: lng,
       }));
       setRouteCoords(coords);
-    } catch (error: any) {
-      // console.log('❌ Lỗi fetch route:', error?.message);
+    } catch {
+      // Ignore route fetch errors - not critical for functionality
     }
   };
 
@@ -285,6 +345,41 @@ export default function Tracking() {
     });
   };
 
+  /**
+   * Open rating modal for completed service
+   * Only allows rating if booking is completed and not already rated
+   */
+  const handleOpenRatingModal = () => {
+    if (bookingStatus !== 'COMPLETED') {
+      console.warn('Cannot rate service - booking not completed');
+      return;
+    }
+    
+    if (hasRated) {
+      console.warn('Service already rated');
+      return;
+    }
+    
+    setShowRatingModal(true);
+  };
+
+  /**
+   * Close rating modal and refresh rating status
+   * @param ratingData - Optional rating data if submission was successful
+   */
+  const handleCloseRatingModal = (ratingData?: any) => {
+    setShowRatingModal(false);
+    
+    // If rating was successfully submitted, store it for display
+    if (ratingData) {
+      setSubmittedRating(ratingData);
+      setHasRated(true);
+    }
+    
+    // Refresh booking detail and rating status
+    fetchBookingDetail();
+  };
+
   useEffect(() => {
     console.log('Booking status updated:', bookingStatus);
   }, [bookingStatus]);
@@ -408,12 +503,22 @@ export default function Tracking() {
               <Text style={{fontSize: 13, color: '#777', marginTop: 2}}>Thợ</Text>
             </View>
             <View style={{marginLeft: 'auto', flexDirection: 'row', gap: 12}}>
-              <TouchableOpacity style={styles.chatButton} onPress={() => registerConfirmJob('JRB40D79F42025')}>
+              <TouchableOpacity style={styles.chatButton} onPress={() => registerConfirmJob(jobRequestCode as string || '')}>
                 <MaterialIcons name='call' size={22} color='#fff' />
               </TouchableOpacity>
               <TouchableOpacity style={styles.chatButton} onPress={handleChat}>
                 <MaterialIcons name='chat' size={22} color='#fff' />
               </TouchableOpacity>
+              
+              {/* Rating button - only show when booking is completed and not rated yet */}
+              {bookingStatus === 'COMPLETED' && !hasExistingRating() && (
+                <TouchableOpacity 
+                  style={[styles.chatButton, styles.ratingButton]} 
+                  onPress={handleOpenRatingModal}
+                >
+                  <MaterialIcons name='star-rate' size={22} color='#fff' />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
@@ -431,9 +536,28 @@ export default function Tracking() {
               totalAmount={bookingDetail?.totalAmount}
               files={jobDetail?.files}
             />
+
+            {/* Rating Display Section */}
+            {bookingStatus === 'COMPLETED' && hasExistingRating() && (
+              <View style={styles.ratingDisplaySection}>
+                <RatingDisplayCard 
+                  review={getReviewData()!} 
+                  serviceName={jobDetail?.service?.serviceName}
+                  showEditOption={false}
+                />
+              </View>
+            )}
           </View>
         </ScrollView>
       </View>
+      
+      {/* Service Rating Modal */}
+      <ServiceRatingModal
+        visible={showRatingModal}
+        onClose={handleCloseRatingModal}
+        bookingId={bookingDetail?.id || ''}
+        serviceName={jobDetail?.service?.serviceName}
+      />
     </View>
   );
 }
@@ -460,6 +584,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 3,
     elevation: 3,
+  },
+  ratingButton: {
+    backgroundColor: '#FFD700', // Gold color for rating
+    shadowColor: '#FFD700',
+  },
+  ratingDisplaySection: {
+    marginTop: 16,
   },
   step: {
     color: '#aaa',

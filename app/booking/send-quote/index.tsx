@@ -4,12 +4,13 @@ import { AvatarWrapper } from '@/components/layout/ProfileContainer';
 import { useRole } from '@/context/RoleContext';
 import { jsonPostAPI } from '@/lib/apiService';
 import { formatDistance } from '@/lib/location-helper';
-import { displayDateVN } from '@/lib/utils';
+import { displayDateVN, formatPrice } from '@/lib/utils';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { Dimensions, FlatList, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Modal, Portal, Text, TextInput } from 'react-native-paper';
+import Toast from 'react-native-toast-message';
 
 export default function SendQuotePage() {
   const {job_detail, workerLatitude, workerLongitude, currentTab, prevPath} = useLocalSearchParams();
@@ -29,20 +30,21 @@ export default function SendQuotePage() {
   const mainImage = files?.[0]?.fileUrl || 'https://placehold.co/400x200?text=No+Image';
 
   const goBackFindJob = () => router.push('/(tabs-worker)/find-job');
-  const goBackActivity = () => router.push({
-    pathname: '/(tabs-worker)/activity',
-    params: {
-      currentTab: currentTab || 'ALL',
-    }
-  });
+  const goBackActivity = () =>
+    router.push({
+      pathname: '/(tabs-worker)/activity',
+      params: {
+        currentTab: currentTab || 'ALL',
+      },
+    });
 
   const goBack = () => {
     if (prevPath === 'worker-activity') {
       goBackActivity();
-    }else {
+    } else {
       goBackFindJob();
     }
-  }
+  };
 
   return (
     <View style={styles.container}>
@@ -86,17 +88,19 @@ export default function SendQuotePage() {
                 <Text style={styles.distanceText}>{formatDistance(detailData?.distance)}</Text>
               </View>
               {/* Nút chat */}
-              <TouchableOpacity style={styles.chatButton} onPress={() => {
-                router.push({
-                  pathname: '/chat-room',
-                 params: {
-                  jobRequestCode: detailData?.jobRequestCode,
-                  prevPathname: '/booking/send-quote',
-                  job_detail: job_detail,
-                  userId: detailData?.user?.id, 
-                 }
-                })
-              }}>
+              <TouchableOpacity
+                style={styles.chatButton}
+                onPress={() => {
+                  router.push({
+                    pathname: '/chat-room',
+                    params: {
+                      jobRequestCode: detailData?.jobRequestCode,
+                      prevPathname: '/booking/send-quote',
+                      job_detail: job_detail,
+                      userId: detailData?.user?.id,
+                    },
+                  });
+                }}>
                 <MaterialIcons name='chat' size={20} color='#fff' />
               </TouchableOpacity>
             </View>
@@ -127,7 +131,10 @@ export default function SendQuotePage() {
         isOpen={isOpenModal}
         jobRequestCode={detailData?.jobRequestCode}
         onClose={() => setIsOpenModal(false)}
-        priceSuggestion={{estimatedPriceLower: detailData?.estimatedPriceLower || 0, estimatedPriceHigher: detailData?.estimatedPriceHigher || 0}}
+        priceSuggestion={{
+          estimatedPriceLower: detailData?.estimatedPriceLower || 0,
+          estimatedPriceHigher: detailData?.estimatedPriceHigher || 0,
+        }}
         workerLatitude={workerLatitude ? Number(workerLatitude) : undefined}
         workerLongitude={workerLongitude ? Number(workerLongitude) : undefined}
       />
@@ -165,7 +172,17 @@ const SendQuoteModal = ({
         latitude: workerLatitude,
         longitude: workerLongitude,
       };
-      const res = await jsonPostAPI('/bookings/send-quote', params);
+      const res = await jsonPostAPI(
+        '/bookings/send-quote',
+        params,
+        () => {},
+        () => {},
+        error => {
+          Toast.show({type: 'error', text1: 'Gửi báo giá thất bại', text2: error?.message || 'Vui lòng thử lại sau.'});
+          onClose();
+          // set
+        },
+      );
       if (res) {
         console.log('✅ Báo giá gửi thành công:', res);
         onClose();
@@ -181,7 +198,10 @@ const SendQuoteModal = ({
         <View style={styles.priceContainer}>
           <View>
             <Text style={styles.priceLabel}>Giá tham khảo</Text>
-            <Text style={styles.priceRange}>{priceSuggestion?.estimatedPriceLower || 0} đ - {priceSuggestion?.estimatedPriceHigher || 0} đ</Text>
+            <Text style={styles.priceRange}>
+              {formatPrice(priceSuggestion?.estimatedPriceLower) || 0} đ -{' '}
+              {formatPrice(priceSuggestion?.estimatedPriceHigher) || 0} đ
+            </Text>
           </View>
         </View>
 

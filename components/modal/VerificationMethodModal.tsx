@@ -17,7 +17,7 @@ export default function VerificationMethodModal({ visible, onClose, onConfirm }:
   return (
     <Portal>
       <Modal visible={visible} onDismiss={onClose} contentContainerStyle={styles.modalContent}>
-        <Text style={styles.title}>Bạn muốn xác thực bằng hình thức nào?</Text>
+        <Text style={styles.title}>Chọn hình thức xác thực</Text>
 
         <RadioButton.Group onValueChange={newValue => setValue(newValue)} value={value}>
           {/* Giấy phép */}

@@ -31,11 +31,11 @@ const WithdrawalsHistory = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchHistory = async () => {
-    if (!user?.id) return;
+    if (!user?.workerId) return;
     setLoading(true);
     try {
-        console.log('user id', user.id);
-      await jsonGettAPI(`/transactions/withdrawals/history/${user.id}`, {}, (res: any) => {
+        console.log('user id', user.workerId);
+      await jsonGettAPI(`/transactions/withdrawals/history/${user.workerId}`, {}, (res: any) => {
         console.log('withdrawals history res', res);
         setData(res?.result || []);
       }, (l: boolean) => setLoading(l), (err: any) => {
@@ -50,7 +50,7 @@ const WithdrawalsHistory = () => {
 
   useEffect(() => {
     fetchHistory();
-  }, [user?.id]);
+  }, [user?.workerId]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -102,7 +102,6 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
     backgroundColor: Colors.background,
-    flex: 1
   },
   card: {
     backgroundColor: '#fff',

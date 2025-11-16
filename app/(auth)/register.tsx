@@ -1,5 +1,6 @@
 import ButtonCustom from '@/components/button/ButtonCustom';
 import HelpText from '@/components/text/HelpText';
+import { jsonPostAPI } from '@/lib/apiService';
 import { validateFullName, validatePassword, validatePhoneNumber } from '@/lib/utils';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -84,7 +85,7 @@ const RegisterScreen = () => {
       avatarUrl: '',
     };
     _onSuccess({});
-    // await jsonPostAPI('/auth/signup', params, _onSuccess, setIsLoading, setError);
+    await jsonPostAPI('/auth/signup', params, _onSuccess, setIsLoading, setError);
   };
   const _navigateToLogin = () => {
     router.back();
@@ -100,6 +101,7 @@ const RegisterScreen = () => {
           {error ? t(error.message) : null}
         </HelpText>
         <TextInput
+          keyboardType='phone-pad'
           label={t('Số điện thoại')}
           value={phoneNumber ?? ''}
           onChangeText={text => {

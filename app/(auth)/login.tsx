@@ -87,6 +87,7 @@ const LoginScreen = () => {
         {error ? t(error.message) : null}
       </HelpText>
       <TextInput
+        keyboardType='phone-pad'
         label={t('Số điện thoại')}
         value={phoneNumber ?? ''}
         onChangeText={(text) => {

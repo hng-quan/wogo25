@@ -13,6 +13,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -40,6 +41,7 @@ export default function ChatbotScreen() {
   const [priceRange, setPriceRange] = useState<any>(null);
   const {user} = useRole();
   const [sending, setSending] = useState(false);
+  const [botTyping, setBotTyping] = useState(false);
 
   const fetchSession = async () => {
     try {
@@ -59,17 +61,34 @@ export default function ChatbotScreen() {
 
   const handleSend = async () => {
     try {
+      if (text.trim() === '') return;
+
+      // Khi popup đang mở, gửi lại tin nhắn mới sẽ reset popup và price range
+      if (popup?.status === STATUS.COMPLETE) {
+        setPopup(null);
+        setPriceRange(null);
+      }
+
+      const newMessage: Message = {
+        role: 'user',
+        content: text,
+      };
+
+      setMessages(prevMessages => [...prevMessages, newMessage]);
+      const userInput = text;
+      setText('');
+
       setSending(true);
+      setBotTyping(true);
       const response = await axios.post(`${API_URL}/wogo/chatbot`, {
         session_id: String(user.id),
-        message: text,
+        message: userInput,
       });
       console.log('Response from chatbot API:', response.data);
       setPopup(response.data.popup);
-      setText('');
-      // Cập nhật lại danh sách tin nhắn
       fetchSession();
       setSending(false);
+      setBotTyping(false);
     } catch (error) {
       console.error('Error sending message:', error);
       setSending(false);
@@ -104,8 +123,9 @@ export default function ChatbotScreen() {
   return (
     <KeyboardAvoidingView
       style={{flex: 1, backgroundColor: Colors.background}}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 45 : 0}>
+      behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 45 : 0}
+      >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={{flex: 1}}>
           {/* Header */}
@@ -127,24 +147,41 @@ export default function ChatbotScreen() {
                 paddingBottom: 160, // chừa khoảng cho popup + input
               }}>
               {messages.length > 0 ? (
-                messages.map((msg, index) => (
-                  <View
-                    key={index}
-                    style={{
-                      alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                      backgroundColor: msg.role === 'user' ? '#E8F5E9' : '#E3F2FD',
-                      borderRadius: 16,
-                      padding: 12,
-                      marginVertical: 4,
-                      maxWidth: '80%',
-                      shadowColor: '#000',
-                      shadowOpacity: 0.05,
-                      shadowRadius: 2,
-                      elevation: 1,
-                    }}>
-                    <Text style={{fontSize: 15, color: '#222'}}>{msg.content}</Text>
-                  </View>
-                ))
+                <>
+                  {messages.map((msg, index) => (
+                    <View
+                      key={index}
+                      style={{
+                        alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                        backgroundColor: msg.role === 'user' ? '#E8F5E9' : '#E3F2FD',
+                        borderRadius: 16,
+                        padding: 12,
+                        marginVertical: 4,
+                        maxWidth: '80%',
+                        shadowColor: '#000',
+                        shadowOpacity: 0.05,
+                        shadowRadius: 2,
+                        elevation: 1,
+                      }}>
+                      <Text style={{fontSize: 15, color: '#222'}}>{msg.content}</Text>
+                    </View>
+                  ))}
+                  {botTyping && (
+                    <View
+                      style={{
+                        alignSelf: 'flex-start',
+                        backgroundColor: '#E3F2FD',
+                        borderRadius: 16,
+                        padding: 12,
+                        marginVertical: 4,
+                        maxWidth: '80%',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                      }}>
+                      <TypingDots />
+                    </View>
+                  )}
+                </>
               ) : (
                 <GreetingAnimation />
               )}
@@ -190,9 +227,7 @@ export default function ChatbotScreen() {
 
               <View style={{marginBottom: 12}}>
                 <Text style={{color: '#555', marginBottom: 4}}>Mô tả công việc</Text>
-                <Text style={{backgroundColor: '#fafafa', padding: 8, borderRadius: 8}}>
-                  {popup?.description}
-                </Text>
+                <Text style={{backgroundColor: '#fafafa', padding: 8, borderRadius: 8}}>{popup?.description}</Text>
               </View>
 
               <TouchableOpacity
@@ -201,14 +236,15 @@ export default function ChatbotScreen() {
                   borderRadius: 25,
                   paddingVertical: 12,
                   alignItems: 'center',
-                }} onPress={() => {
+                }}
+                onPress={() => {
                   router.push({
                     pathname: '/booking/create-job',
                     params: {
                       serviceId: popup?.service_id,
                       des: popup?.description,
-                    }
-                  })
+                    },
+                  });
                 }}>
                 <Text style={{color: '#000', fontWeight: 'bold', fontSize: 16}}>Tìm thợ</Text>
               </TouchableOpacity>
@@ -238,7 +274,7 @@ export default function ChatbotScreen() {
                 flexDirection: 'row',
                 alignItems: 'center',
                 paddingHorizontal: 16,
-                paddingVertical: Platform.OS === 'ios' ? 10 : 8,
+                paddingVertical: Platform.OS === 'ios' ? 10 : 4,
               }}>
               <TextInput
                 placeholder='Nhập tin nhắn...'
@@ -390,3 +426,95 @@ const GreetingAnimation = () => {
     </View>
   );
 };
+
+const TypingDots = () => {
+  // Giá trị Animated chính. Chúng ta vẫn dùng 0 -> 3 cho 3 dot
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Vòng lặp animation: 900ms cho 3 dot, mỗi dot 300ms
+    Animated.loop(
+      Animated.timing(progress, {
+        toValue: 3,
+        duration: 900,
+        // Sử dụng easing cho cảm giác nhảy mượt hơn
+        easing: Easing.linear, 
+        useNativeDriver: true,
+      }),
+    ).start();
+  }, []);
+
+  // Chiều cao nhảy tối đa (ví dụ: 10 đơn vị)
+  const JUMP_HEIGHT = -10; 
+  // Độ trễ/khoảng cách giữa các dot trong chu kỳ (cần 1 đơn vị cho mỗi dot)
+  const DELAY = 1; 
+
+  // Tính toán translateY cho Dot 1
+  const translateY1 = progress.interpolate({
+    // Input là [0, 0.5, 1.0, 3]
+    // Chu kỳ nhảy là 0 -> 1
+    inputRange: [0, 0.5, 1, 3],
+    outputRange: [0, JUMP_HEIGHT, 0, 0], // Nhảy lên (0 -> JUMP_HEIGHT) và xuống (JUMP_HEIGHT -> 0)
+    extrapolate: 'clamp',
+  });
+
+  // Tính toán translateY cho Dot 2
+  const translateY2 = progress.interpolate({
+    // Dot 2 nhảy trễ 0.5 đơn vị so với Dot 1
+    // Chu kỳ nhảy là 1 -> 2
+    inputRange: [0, DELAY, DELAY + 0.5, DELAY + 1, 3],
+    outputRange: [0, 0, JUMP_HEIGHT, 0, 0], // Dot 2: 0ms: 0, 300ms: 0, 450ms: JUMP_HEIGHT, 600ms: 0, 900ms: 0
+    extrapolate: 'clamp',
+  });
+
+  // Tính toán translateY cho Dot 3
+  const translateY3 = progress.interpolate({
+    // Dot 3 nhảy trễ 1 đơn vị so với Dot 2 (hoặc 2 đơn vị so với Dot 1)
+    // Chu kỳ nhảy là 2 -> 3
+    inputRange: [0, DELAY * 2, DELAY * 2 + 0.5, DELAY * 3],
+    outputRange: [0, 0, JUMP_HEIGHT, 0], // Dot 3: 0ms: 0, 600ms: 0, 750ms: JUMP_HEIGHT, 900ms: 0
+    extrapolate: 'clamp',
+  });
+
+  // Bạn có thể giữ lại opacity để các dot mờ đi khi không hoạt động, 
+  // nhưng thường thì kiểu nhảy lên xuống sẽ giữ opacity = 1.
+  // Ở đây chúng ta bỏ opacity để tập trung vào hiệu ứng nhảy.
+
+  return (
+    <View style={styleDot.container}>
+      {/* Dot 1 */}
+      <Animated.Text 
+        style={[styleDot.dot, { transform: [{ translateY: translateY1 }] }]}
+      >
+        •
+      </Animated.Text>
+      
+      {/* Dot 2 */}
+      <Animated.Text 
+        style={[styleDot.dot, { transform: [{ translateY: translateY2 }] }]}
+      >
+        •
+      </Animated.Text>
+
+      {/* Dot 3 */}
+      <Animated.Text 
+        style={[styleDot.dot, { transform: [{ translateY: translateY3 }] }]}
+      >
+        •
+      </Animated.Text>
+    </View>
+  );
+};
+
+const styleDot = StyleSheet.create({
+    container: {
+        flexDirection: 'row', 
+        alignItems: 'center',
+        height: 30, // Đảm bảo có đủ không gian cho các dot nhảy
+    },
+    dot: {
+        fontSize: 22,
+        marginLeft: 4,
+        color: '#0084ff', // Màu xanh Messenger
+    }
+});

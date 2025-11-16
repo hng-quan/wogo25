@@ -67,18 +67,25 @@ export default function OrderDetailScreen() {
     };
     console.log('ID thợ đặt:', workerData?.worker?.id);
     const res = await jsonPostAPI('/bookings/place-job', params, () => {
-      Alert.alert('Thành công', 'Đặt thợ thành công!', [
-        {
-          text: 'Ở lại', onPress: () => {},
-        },
-        {
-          text: 'Xem lịch sử', onPress: () => {
-            router.push({
-              pathname: '/(tabs-customer)/activity'
-            })
-          }
+      router.push({
+        pathname: '/tracking',
+        params: {
+          jobRequestCode: jobRequestCode,
+          currentTab: 'ACCEPTED'
         }
-      ]);
+      })
+      // Alert.alert('Thành công', 'Đặt thợ thành công!', [
+      //   {
+      //     text: 'Ở lại', onPress: () => {},
+      //   },
+      //   {
+      //     text: 'Xem lịch sử', onPress: () => {
+      //       router.push({
+      //         pathname: '/(tabs-customer)/activity'
+      //       })
+      //     }
+      //   }
+      // ]);
     }, () => {}, () => {
       Alert.alert('Lỗi', 'Đặt thợ thất bại. Vui lòng thử lại sau.');
     });
