@@ -5,11 +5,11 @@ import useDebounce from '@/hooks/useDebounce';
 import { ServiceGroup, ServiceType } from '@/interfaces/interfaces';
 import { jsonGettAPI } from '@/lib/apiService';
 import { Colors } from '@/lib/common';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, StyleSheet, View } from 'react-native';
-import { Icon, List } from 'react-native-paper';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function AddProfessional() {
   const {t} = useTranslation();
@@ -62,33 +62,42 @@ export default function AddProfessional() {
   return (
     <View style={styles.container}>
       <Appbar title={t('Thêm nghiệp vụ')} onBackPress={_goBack} />
-      <View className='flex-1'>
-        <View className='px-4 mt-1'>
-          <SearchCustom
-            onSearch={query => {
-              setSearchQuery(query);
-            }}
-          />
-        </View>
+      <View style={{flex: 1, margin: 12}}>
+        <SearchCustom
+          onSearch={query => {
+            setSearchQuery(query);
+          }}
+          style={{margin: 12}}
+        />
+
         <FlatList
           showsVerticalScrollIndicator={false}
-          className='pl-4'
           data={serviceList}
+          contentContainerStyle={{paddingHorizontal: 12, paddingBottom: 20}}
           renderItem={({item}) => {
             const parent = item.parentService;
             const children = item.childServices;
             const childNames = children.map((c: any) => c.serviceName).join(', ');
 
             return (
-              <List.Item
-                title={parent.serviceName} // hiển thị parent
-                description={childNames || parent.description} // nếu có child thì show child list
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.card}
                 onPress={() => {
                   setSelectedService(parent);
                   setModalVisible(true);
-                }}
-                left={props => <Icon {...props} size={24} source={parent?.iconUrl ?? ''} />}
-              />
+                }}>
+                <View style={styles.iconWrapper}>
+                  <MaterialCommunityIcons name={(parent.iconUrl as any) || 'wrench'} size={28} color={'#1565C0'} />
+                </View>
+                <View style={{flex: 1}}>
+                  <Text style={styles.title}>{parent.serviceName}</Text>
+                  <Text style={styles.description} numberOfLines={2} ellipsizeMode='tail'>
+                    {childNames || parent.description || 'Không có mô tả'}
+                  </Text>
+                </View>
+                <MaterialCommunityIcons name='chevron-right' size={24} color='#999' />
+              </TouchableOpacity>
             );
           }}
           keyExtractor={item => item.parentService.id.toString()}
@@ -110,5 +119,36 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  iconWrapper: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 12,
+    padding: 10,
+    marginRight: 12,
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: {width: 0, height: 2},
+    borderLeftWidth: 2,
+    borderWidth: 0.6,
+    borderColor: Colors.primary,
+  },
+  description: {
+    fontSize: 13,
+    color: '#555',
+    marginTop: 3,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111',
   },
 });

@@ -75,9 +75,9 @@ const WithdrawalsHistory = () => {
 
         {data.map(item => (
           <View key={String(item.id)} style={styles.card}>
-            <View style={styles.row}>
-              <Text style={styles.code}>{item.transactionCode}</Text>
-              <Text style={[styles.amount, {color: '#1565C0'}]}>{item.amount?.toLocaleString()} đ</Text>
+            <View style={[styles.row]}>
+              <Text style={[styles.code, {flex: 1, marginRight: 8}]} numberOfLines={1} ellipsizeMode='middle'>{item.transactionCode}</Text>
+              <Text style={[styles.amount, {color: '#1565C0'}]}>-{item.amount?.toLocaleString()} đ</Text>
             </View>
             <Text style={styles.desc}>{item.description}</Text>
             <View style={styles.rowSmall}>

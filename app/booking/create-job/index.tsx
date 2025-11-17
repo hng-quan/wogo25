@@ -31,10 +31,44 @@ const STATUS = {
 
 export default function Index() {
   const {serviceName, parentId, serviceId, des} = useLocalSearchParams();
-  const [description, setDescription] = useState(des ?? '');
+  // 📝 Đảm bảo description luôn là string
+  const [description, setDescription] = useState(Array.isArray(des) ? des[0] || '' : des || '');
   const [address, setAddress] = useState<string>('');
   const [loadingAddress, setLoadingAddress] = useState(true);
-  const [date, setDate] = useState<Date>(new Date());
+  
+  // 🕐 Helper function: Tạo thời gian mặc định (hiện tại + 60 phút)
+  const createDefaultDateTime = (): Date => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 60);
+    return now;
+  };
+  
+  // 🌍 Helper function: Chuyển đổi Date local sang ISO string với múi giờ local
+  const formatDateForAPI = (date: Date): string => {
+    // Lấy offset múi giờ (phút)
+    const timezoneOffset = date.getTimezoneOffset();
+    
+    // Tạo Date mới với offset đã được điều chỉnh để giữ nguyên giờ local
+    const adjustedDate = new Date(date.getTime() - (timezoneOffset * 60000));
+    
+    // Trả về ISO string (sẽ có dạng 2025-11-17T22:48:53.000Z nhưng thực tế là local time)
+    return adjustedDate.toISOString().slice(0, 19);
+  };
+  
+  // 📅 Helper function: Format hiển thị thời gian cho UI
+  const formatDateForDisplay = (date: Date): string => {
+    return date.toLocaleString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      day: '2-digit',
+      month: '2-digit', 
+      year: 'numeric',
+      hour12: false
+    });
+  };
+  
+  const [date, setDate] = useState<Date>(createDefaultDateTime());
   const [showPicker, setShowPicker] = useState(false);
   const [coords, setCoords] = useState<{latitude: number; longitude: number} | null>(null);
   const [mapVisible, setMapVisible] = useState(false);
@@ -71,7 +105,7 @@ export default function Index() {
 
   const fetchPriceSuggestion = async () => {
     const onSuccess = (res: any) => {
-      const priceAround = res?.minPrice + ' - ' + res?.maxPrice;
+      const priceAround = (res?.minPrice || 0) + ' - ' + (res?.maxPrice || 0);
       setPriceSuggestion({
         estimatedPriceLower: res?.minPrice,
         estimatedPriceHigher: res?.maxPrice,
@@ -83,7 +117,7 @@ export default function Index() {
         const response = await axios.get(`${process.env.EXPO_PUBLIC_CHATBOT_URL}/price-range/${serviceId}`);
         onSuccess(response.data);
       } catch (error) {
-        console.error('Error fetching price range:', error);
+        console.log('Error fetching price range:', error);
       }
     };
     fetchPrice();
@@ -110,6 +144,10 @@ export default function Index() {
   const handleChangeLocation = () => setMapVisible(true);
 
   const handleConfirmDate = (selectedDate: Date) => {
+    console.log('🕐 Selected date (raw):', selectedDate);
+    console.log('🌍 Selected date (display format):', formatDateForDisplay(selectedDate));
+    console.log('📤 Selected date (API format):', formatDateForAPI(selectedDate));
+    
     const now = new Date();
     const maxDate = new Date();
     maxDate.setDate(now.getDate() + 7);
@@ -119,6 +157,14 @@ export default function Index() {
       setShowPicker(false);
       return;
     }
+    
+    // Kiểm tra thời gian không được chọn trong quá khứ
+    if (selectedDate < now) {
+      alert('Không thể chọn thời gian trong quá khứ!');
+      setShowPicker(false);
+      return;
+    }
+    
     setDate(selectedDate);
     setShowPicker(false);
   };
@@ -183,10 +229,16 @@ export default function Index() {
     setSubmitting(true);
     try {
       const formData = new FormData();
-      formData.append('serviceId', serviceId as string);
+      formData.append('serviceId', Array.isArray(serviceId) ? serviceId[0] : serviceId as string);
       formData.append('description', description);
       formData.append('address', address);
-      const bookingDate = date.toISOString().slice(0, 19);
+      
+      // 📤 Sử dụng helper function để format date cho API
+      const bookingDate = formatDateForAPI(date);
+      console.log('📅 Selected Date (original):', date);
+      console.log('🌍 UI Display Format:', formatDateForDisplay(date));
+      console.log('📤 API Format (local time preserved):', bookingDate);
+      
       formData.append('bookingDate', bookingDate);
       formData.append('latitudeUser', String(coords?.latitude || ''));
       formData.append('longitudeUser', String(coords?.longitude || ''));
@@ -281,7 +333,7 @@ export default function Index() {
               <Text style={styles.label}>
                 Thời gian <Text style={styles.required}>*</Text>
               </Text>
-              <Text style={styles.value}>{date.toLocaleString()}</Text>
+              <Text style={styles.value}>{formatDateForDisplay(date)}</Text>
             </View>
             <MaterialCommunityIcons name='clock-outline' size={20} color='#4caf50' />
           </View>
@@ -322,7 +374,7 @@ export default function Index() {
             <View>
               <Text style={styles.priceLabel}>Giá tham khảo</Text>
               <Text style={styles.priceRange}>
-                {priceSuggestion ? priceSuggestion.priceAround + ' đ' : 'Chưa xác định'}
+                {priceSuggestion ? priceSuggestion?.priceAround + ' đ' : 'Không có dữ liệu'}
               </Text>
             </View>
             <View>
@@ -341,8 +393,11 @@ export default function Index() {
           isVisible={showPicker}
           mode='datetime'
           date={date}
+          minimumDate={new Date()} // Không cho chọn thời gian quá khứ
+          maximumDate={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)} // Chỉ cho chọn trong 7 ngày
           onConfirm={handleConfirmDate}
           onCancel={() => setShowPicker(false)}
+          locale='vi_VN' // Hiển thị tiếng Việt
         />
 
         {mapVisible && coords && <MapPicker initialCoords={coords} onSelect={handleSelectLocation} />}
