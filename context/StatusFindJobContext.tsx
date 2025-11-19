@@ -71,7 +71,7 @@ export const StatusFindJobProvider: React.FC<{children: React.ReactNode}> = ({ch
           }
         });
 
-        console.log('✅ Dịch vụ cần lắng nghe:', services);
+        // console.log('✅ Dịch vụ cần lắng nghe:', services);
 
         services.forEach(s => {
           const sub = subscribe(`/topic/new-job/${s.id}`, (msg: IMessage) => {

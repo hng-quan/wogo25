@@ -5,6 +5,7 @@ import PaymentQRModal from '@/components/modal/QRCodeModal';
 import JobDetailSection from '@/components/ui/JobDetailSection';
 import WorkflowTimeline from '@/components/ui/WorkFLowTimeLine';
 import { WorkerRatingDisplayCard } from '@/components/ui/WorkerRatingDisplayCard';
+import { useLocation } from '@/context/LocationContext';
 import { ROLE } from '@/context/RoleContext';
 import { useSocket } from '@/context/SocketContext';
 import { jsonGettAPI, jsonPostAPI, jsonPutAPI } from '@/lib/apiService';
@@ -13,7 +14,6 @@ import { formatPrice } from '@/lib/utils';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import polyline from '@mapbox/polyline';
 import axios from 'axios';
-import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import {
@@ -29,7 +29,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import MapView, { AnimatedRegion, Marker, Polyline } from 'react-native-maps';
+import MapView, { Marker, Polyline } from 'react-native-maps';
+import { ActivityIndicator } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
@@ -72,14 +73,11 @@ export default function WorkFlow() {
   const [jobDetail, setJobDetail] = React.useState<any>(null);
   const [customer, setCustomer] = React.useState<any>(null);
   const [customerLocation, setCustomerLocation] = React.useState<{latitude: number; longitude: number} | null>(null);
-  const [myLocation, setMyLocation] = React.useState<{latitude: number; longitude: number} | null>(null);
-  const [loadingMyLocation, setLoadingMyLocation] = React.useState<boolean>(false);
   const [routeCoords, setRouteCoords] = React.useState<{latitude: number; longitude: number}[]>([]);
 
   // Location tracking states
   const [isTrackingLocation, setIsTrackingLocation] = React.useState<boolean>(false);
   const lastSentLocationRef = useRef<{latitude: number; longitude: number} | null>(null);
-  const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
 
   // Price negotiation states
   const [showPriceModal, setShowPriceModal] = React.useState<boolean>(false);
@@ -96,6 +94,7 @@ export default function WorkFlow() {
   const verifyTimeoutRef = useRef<any | null>(null);
   const [isPollingVerify, setIsPollingVerify] = React.useState<boolean>(false);
   const [showCompleteModal, setShowCompleteModal] = React.useState<boolean>(false);
+  const {location: workerLocation} = useLocation();
 
   /**
    * Check if the completed booking has a customer review
@@ -118,53 +117,12 @@ export default function WorkFlow() {
     if (!jobRequestCode) return;
     fetchJobDetail();
     fetchBookingDetail();
-    fetchMyLocation();
   }, [jobRequestCode]);
-
-  const workerLocationRef = useRef(
-    new AnimatedRegion({
-      latitude: 0,
-      longitude: 0,
-      latitudeDelta: 0,
-      longitudeDelta: 0,
-    }),
-  ).current;
-  const fetchMyLocation = async () => {
-    try {
-      setLoadingMyLocation(true);
-      const res = await jsonGettAPI('/bookings/get-location/' + jobRequestCode);
-      if (res?.result && res.result.latitude && res.result.longitude) {
-        const location = {
-          latitude: res.result.latitude,
-          longitude: res.result.longitude,
-        };
-        setMyLocation(location);
-
-        // Cập nhật vị trí khởi tạo của worker marker
-        workerLocationRef.setValue({
-          latitude: res.result.latitude,
-          longitude: res.result.longitude,
-          latitudeDelta: 0,
-          longitudeDelta: 0,
-        });
-
-        console.log('📍 Đã lấy vị trí worker từ API:', location);
-      } else {
-        console.warn('⚠️ API không trả về vị trí worker hợp lệ');
-        setMyLocation(null);
-      }
-    } catch (error) {
-      console.error('❌ Lỗi khi lấy vị trí worker:', error);
-      setMyLocation(null);
-    } finally {
-      setLoadingMyLocation(false);
-    }
-  };
 
   const fetchBookingDetail = async () => {
     try {
       const res = await jsonGettAPI('/bookings/getByCode/' + jobRequestCode);
-      console.log('booking detail res', res);
+      // console.log('booking detail res', res);
       if (res?.result) {
         setBookingDetail(res.result);
         setBookingStatus(res.result.bookingStatus);
@@ -176,6 +134,17 @@ export default function WorkFlow() {
       console.error('Error fetching booking detail:', error);
     }
   };
+
+  useEffect(() => {
+    if (workerLocation) {
+      sendLocationToServer(workerLocation.latitude, workerLocation.longitude);
+    }
+    console.log('📍 Vị trí worker cập nhật:', workerLocation)
+    console.log('📍 Vị trí customer:', customerLocation);
+    if (workerLocation && customerLocation) {
+      fetchRoute(workerLocation, customerLocation);
+    }
+  }, [workerLocation, customerLocation]);
 
   // Gửi vị trí lên server
   const sendLocationToServer = async (latitude: number, longitude: number) => {
@@ -197,117 +166,6 @@ export default function WorkFlow() {
     }
   };
 
-  // Khởi tạo location tracking
-  const startLocationTracking = async () => {
-    try {
-      // Chặn nếu đã có watcher
-      if (isTrackingLocation || locationSubscriptionRef.current) {
-        console.log('startLocationTracking: already tracking, skipping new watcher');
-        return;
-      }
-
-      // Kiểm tra quyền location
-      const {status} = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        console.error('❌ Không có quyền truy cập location');
-        return;
-      }
-      setIsTrackingLocation(true);
-
-      // Lấy vị trí hiện tại đầu tiên
-      const currentLocation = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-
-      const {latitude, longitude} = currentLocation.coords;
-      console.log('📍 Vị trí hiện tại:', {latitude, longitude});
-
-      // Cập nhật UI và gửi vị trí đầu tiên
-      const newLocation = {latitude, longitude};
-      setMyLocation(newLocation);
-      workerLocationRef.setValue({
-        latitude,
-        longitude,
-        latitudeDelta: 0,
-        longitudeDelta: 0,
-      });
-
-      await sendLocationToServer(latitude, longitude);
-
-      // Bắt đầu watch location
-      const subscription = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.High,
-          timeInterval: 5000, // Kiểm tra mỗi 5 giây
-          distanceInterval: 5, // Cập nhật khi di chuyển ít nhất 5 mét
-        },
-        location => {
-          const {latitude: newLat, longitude: newLon} = location.coords;
-          console.log('📱 GPS cập nhật vị trí:', {latitude: newLat, longitude: newLon});
-
-          // Kiểm tra khoảng cách so với lần gửi cuối
-          if (lastSentLocationRef.current) {
-            const distance = calculateDistance(
-              lastSentLocationRef.current.latitude,
-              lastSentLocationRef.current.longitude,
-              newLat,
-              newLon,
-            );
-
-            // Chỉ gửi khi di chuyển >= 10m
-            if (distance >= 10) {
-              console.log('🚚 Di chuyển đủ 10m, gửi vị trí mới');
-              sendLocationToServer(newLat, newLon);
-            }
-          } else {
-            // Lần đầu tiên, gửi luôn
-            sendLocationToServer(newLat, newLon);
-          }
-
-          // Cập nhật UI marker
-          const newLocation = {latitude: newLat, longitude: newLon};
-          setMyLocation(newLocation);
-
-          // Animate marker
-          (workerLocationRef as any)
-            .timing({
-              latitude: newLat,
-              longitude: newLon,
-              latitudeDelta: 0,
-              longitudeDelta: 0,
-              duration: 500,
-              useNativeDriver: false,
-            })
-            .start();
-
-          // Cập nhật route nếu có customer location
-          if (customerLocation) {
-            fetchRoute(newLocation, customerLocation);
-          }
-        },
-      );
-
-      locationSubscriptionRef.current = subscription;
-      console.log('✅ Đã khởi tạo location tracking');
-    } catch (error) {
-      console.error('❌ Lỗi khởi tạo location tracking:', error);
-      setIsTrackingLocation(false);
-    }
-  };
-
-  // Dừng location tracking
-  const stopLocationTracking = () => {
-    console.log('🛑 Dừng theo dõi vị trí GPS');
-
-    if (locationSubscriptionRef.current) {
-      locationSubscriptionRef.current.remove();
-      locationSubscriptionRef.current = null;
-    }
-
-    setIsTrackingLocation(false);
-    lastSentLocationRef.current = null;
-  };
-
   /** -------------------------------
    *  Vẽ tuyến đường khi có dữ liệu thật
    * --------------------------------*/
@@ -317,6 +175,7 @@ export default function WorkFlow() {
       return;
     }
     try {
+      console.log('📍 Lấy route từ', worker, 'đến', customer);
       const res = await axios.post(
         'https://api.openrouteservice.org/v2/directions/driving-car',
         {
@@ -329,7 +188,7 @@ export default function WorkFlow() {
       );
       const encoded = res.data.routes[0].geometry;
       const decoded = polyline.decode(encoded);
-      // console.log('✅ Lấy route thành công');
+      console.log('✅ Lấy route thành công');
       const coords = decoded.map(([lat, lng]) => ({
         latitude: lat,
         longitude: lng,
@@ -339,30 +198,6 @@ export default function WorkFlow() {
       console.log('❌ Lỗi fetch route:', error?.message);
     }
   };
-
-  // Vẽ tuyến khi có đủ dữ liệu vị trí hợp lệ
-  useEffect(() => {
-    if (!customerLocation || !myLocation) {
-      console.log('⏳ Chưa có đủ dữ liệu vị trí để vẽ route và fit map');
-      return;
-    }
-
-    // Kiểm tra tọa độ có hợp lệ không
-    if (myLocation.latitude === 0 && myLocation.longitude === 0) {
-      console.log('⚠️ Vị trí worker không hợp lệ (0,0), bỏ qua vẽ route');
-      return;
-    }
-
-    fetchRoute(myLocation, customerLocation);
-
-    // Fit map vùng nhìn
-    if (mapRef.current) {
-      mapRef.current.fitToCoordinates([customerLocation, myLocation], {
-        edgePadding: {top: 80, bottom: 80, left: 80, right: 80},
-        animated: true,
-      });
-    }
-  }, [customerLocation, myLocation]);
 
   // Lắng nghe cập nhật trạng thái booking
   useEffect(() => {
@@ -396,6 +231,7 @@ export default function WorkFlow() {
         console.log('📨 [Worker] Nhận được xác nhận giá từ khách hàng:', payload);
         if (payload.acceptTerms) {
           setIsPriceConfirmed(true);
+          Toast.show({type: 'success', text1: 'Chúc mừng!', text2: 'Khách hàng đã chấp nhận giá của bạn.'});
           // setIsOpenModalStarWork(true);
         } else {
           setIsPriceConfirmed(false);
@@ -411,14 +247,6 @@ export default function WorkFlow() {
     };
   }, [connected, bookingDetail?.bookingCode]);
 
-  // Cleanup location tracking khi component unmount
-  useEffect(() => {
-    return () => {
-      console.log('🧹 Cleanup location tracking');
-      stopLocationTracking();
-    };
-  }, []);
-
   // Cleanup verify polling on unmount
   useEffect(() => {
     return () => {
@@ -426,12 +254,6 @@ export default function WorkFlow() {
       stopVerifyPolling();
     };
   }, []);
-
-  useEffect(() => {
-    if (bookingDetail?.bookingStatus !== 'COMING' || bookingStatus !== 'COMING') {
-      stopLocationTracking();
-    }
-  }, [bookingStatus, bookingDetail?.bookingStatus]);
 
   const fetchJobDetail = async () => {
     try {
@@ -675,16 +497,18 @@ export default function WorkFlow() {
       const stepName = WORKFLOW_STATUS_MAP[nextStep as keyof typeof WORKFLOW_STATUS_MAP];
       console.log(`🚀 Chuyển sang bước tiếp theo: ${stepName}`);
 
-      // Bắt đầu location tracking khi chuyển từ PENDING sang COMING
-      if (currentStatus === 'PENDING' && nextStep === 'COMING') {
-        // console.log('🌐 Bắt đầu theo dõi vị trí GPS khi di chuyển');
-        startLocationTracking();
-      }
       updateBookingStatus(nextStep);
     } else {
       console.log('✅ Đã hoàn thành tất cả các bước');
     }
   };
+  if (!bookingDetail || !jobDetail || !customer || !workerLocation) {
+    return (
+      <View style={styles.loadingOverlay}>
+        <ActivityIndicator size='large' color={Colors.primary} />
+      </View>
+    );
+  }
   return (
     <View style={styles.container}>
       <Appbar title='Chi tiết công việc' onBackPress={goBack} />
@@ -692,65 +516,31 @@ export default function WorkFlow() {
       {/* MAP - Chỉ hiển thị khi COMING */}
       {['COMING'].includes(bookingStatus) ? (
         <View style={{flex: 1}}>
-          {loadingMyLocation && (
-            <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Đang tải vị trí...</Text>
-            </View>
-          )}
-
           {/* Overlay thông báo khi không có vị trí */}
-          {!loadingMyLocation && !myLocation && customerLocation && (
+          {!workerLocation && (
             <View style={styles.noLocationOverlay}>
               <View style={styles.noLocationCard}>
                 <MaterialIcons name='location-off' size={32} color={Colors.primary} />
-                <Text style={styles.noLocationTitle}>Không tìm thấy vị trí của bạn</Text>
+                <Text style={styles.noLocationTitle}>Bật GPS để cập nhật vị trí</Text>
                 <Text style={styles.noLocationText}>Vui lòng cập nhật vị trí để hiển thị bản đồ.</Text>
-                <TouchableOpacity style={styles.retryButton} onPress={fetchMyLocation}>
-                  <MaterialIcons name='refresh' size={16} color='#fff' />
-                  <Text style={styles.retryButtonText}>Thử lại</Text>
-                </TouchableOpacity>
               </View>
             </View>
           )}
 
-          {/* Hiển thị map với chỉ customer location khi không có worker location */}
-          {!loadingMyLocation && customerLocation && !myLocation && (
-            <MapView
-              ref={mapRef}
-              style={styles.map}
-              initialRegion={{
-                latitude: customerLocation.latitude,
-                longitude: customerLocation.longitude,
-                latitudeDelta: 0.05,
-                longitudeDelta: 0.05,
-              }}>
-              {/* Marker khách hàng */}
-              <Marker coordinate={customerLocation} title='Điểm đến' />
-            </MapView>
-          )}
-
-          {/* Hiển thị map khi có đủ dữ liệu */}
-          {customerLocation && myLocation && (
+          {customerLocation && workerLocation && (
             <MapView
               ref={mapRef}
               style={styles.map}
               showsUserLocation={true}
               followsUserLocation={true}
               initialRegion={{
-                latitude: (customerLocation.latitude + myLocation.latitude) / 2,
-                longitude: (customerLocation.longitude + myLocation.longitude) / 2,
-                latitudeDelta: Math.abs(customerLocation.latitude - myLocation.latitude) * 2 + 0.01,
-                longitudeDelta: Math.abs(customerLocation.longitude - myLocation.longitude) * 2 + 0.01,
+                latitude: workerLocation.latitude,
+                longitude: workerLocation.longitude,
+                latitudeDelta: 0.005,
+                longitudeDelta: 0.005,
               }}>
               {/* Marker khách hàng */}
               <Marker coordinate={customerLocation} title='Điểm đến' />
-
-              {/* Marker thợ (tôi) */}
-              <Marker coordinate={myLocation}>
-                <View style={styles.workerMarker}>
-                  <MaterialCommunityIcons name='account-hard-hat' size={28} color={Colors.primary} />
-                </View>
-              </Marker>
 
               {/* Tuyến đường */}
               {routeCoords.length > 0 && (
@@ -990,7 +780,7 @@ export default function WorkFlow() {
           {isTrackingLocation && (
             <View style={styles.trackingStatus}>
               <MaterialIcons name='gps-fixed' size={16} color={Colors.primary} />
-              <Text style={styles.trackingStatusText}>Đang theo dõi vị trí • Tự động gửi mỗi 10m</Text>
+              <Text style={styles.trackingStatusText}>Đang theo dõi vị trí • Tự động gửi mỗi 5m</Text>
             </View>
           )}
         </View>
@@ -1660,6 +1450,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginTop: 24,
     gap: 12,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalButton: {
     flex: 1,

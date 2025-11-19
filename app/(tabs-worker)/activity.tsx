@@ -47,7 +47,7 @@ export default function ActivityScreen() {
   const fetchMyJobsRequest = async () => {
     const endpoint = '/jobs/my-quotes/' + activeTab;
     const res = await jsonGettAPI(endpoint);
-    console.log('Fetched jobs request:', res);
+    // console.log('Fetched jobs request:', res);
     setMyJobsRequest(res?.result || []);
   };
   useEffect(() => {

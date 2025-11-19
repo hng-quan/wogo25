@@ -69,6 +69,8 @@ export function LocationProvider({children}: LocationProviderProps) {
 
   const appState = useRef(AppState.currentState);
   const fetchingRef = useRef(false); // Prevent concurrent fetches
+  const lastUpdatedRef = useRef(lastUpdated);
+  const locationSubscription = useRef<Location.LocationSubscription | null>(null);
 
   /**
    * Validates if coordinates are valid and not default values
@@ -96,10 +98,68 @@ export function LocationProvider({children}: LocationProviderProps) {
    * Fetches current location from device GPS
    * Handles permissions, GPS enablement, and error states
    */
-  const fetchCurrentLocation = async (): Promise<void> => {
-    // Prevent concurrent fetch operations
+  // const fetchCurrentLocation = async (): Promise<void> => {
+  //   // Prevent concurrent fetch operations
+  //   if (fetchingRef.current) {
+  //     console.log('🔄 Location fetch already in progress, skipping...');
+  //     return;
+  //   }
+
+  //   try {
+  //     fetchingRef.current = true;
+  //     setIsLoading(true);
+  //     setError(null);
+
+  //     // console.log('🎯 Starting location fetch process...');
+
+  //     // Check and request permissions + GPS
+  //     const isEnabled = await ensureLocationEnabled();
+  //     if (!isEnabled) {
+  //       throw new Error('Không thể truy cập vị trí. Vui lòng kiểm tra quyền và GPS.');
+  //     }
+
+  //     // Get current location with high accuracy
+  //     const locationResult = await Location.getCurrentPositionAsync({
+  //       accuracy: Location.Accuracy.High,
+  //       // maximumAge: 30000, // Use cached location if less than 30 seconds old
+  //       // timeout: 15000, // Timeout after 15 seconds
+  //     });
+
+  //     const newLocation: LocationCoords = {
+  //       latitude: locationResult.coords.latitude,
+  //       longitude: locationResult.coords.longitude,
+  //     };
+
+  //     // Validate fetched location
+  //     if (!isValidLocation(newLocation)) {
+  //       throw new Error('Vị trí không hợp lệ. Vui lòng thử lại.');
+  //     }
+
+  //     // Update state with new location
+  //     setLocation(newLocation);
+  //     setLastUpdated(new Date());
+  //     setError(null);
+
+  //     console.log('✅ [DEVICE] initial location success:', newLocation);
+  //   } catch (fetchError) {
+  //     const errorMessage = fetchError instanceof Error ? fetchError.message : 'Lỗi không xác định khi lấy vị trí';
+
+  //     console.log('❌ [DEVICE] initial location failed:', errorMessage);
+  //     setError(errorMessage);
+
+  //     // Keep existing location if available
+  //     if (!location) {
+  //       setLocation(null);
+  //     }
+  //   } finally {
+  //     setIsLoading(false);
+  //     fetchingRef.current = false;
+  //   }
+  // };
+
+  const startLocationTracking = async (): Promise<void> => {
     if (fetchingRef.current) {
-      console.log('🔄 Location fetch already in progress, skipping...');
+      console.log('🔄 Tracking start already in progress, skipping...');
       return;
     }
 
@@ -108,58 +168,62 @@ export function LocationProvider({children}: LocationProviderProps) {
       setIsLoading(true);
       setError(null);
 
-      // console.log('🎯 Starting location fetch process...');
-
-      // Check and request permissions + GPS
       const isEnabled = await ensureLocationEnabled();
       if (!isEnabled) {
         throw new Error('Không thể truy cập vị trí. Vui lòng kiểm tra quyền và GPS.');
       }
 
-      // Get current location with high accuracy
-      const locationResult = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-        // maximumAge: 30000, // Use cached location if less than 30 seconds old
-        // timeout: 15000, // Timeout after 15 seconds
-      });
-
-      const newLocation: LocationCoords = {
-        latitude: locationResult.coords.latitude,
-        longitude: locationResult.coords.longitude,
-      };
-
-      // Validate fetched location
-      if (!isValidLocation(newLocation)) {
-        throw new Error('Vị trí không hợp lệ. Vui lòng thử lại.');
+      // 1. Dừng theo dõi cũ (nếu có)
+      if (locationSubscription.current) {
+        locationSubscription.current.remove();
+        locationSubscription.current = null;
+        console.log('🛑 Stopped previous tracking subscription.');
       }
 
-      // Update state with new location
-      setLocation(newLocation);
-      setLastUpdated(new Date());
-      setError(null);
+      // 2. Bắt đầu theo dõi vị trí liên tục
+      locationSubscription.current = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.Balanced,
+          distanceInterval: 5, // Cập nhật khi di chuyển 5 mét
+          // timeInterval: 5000, // Hoặc sau mỗi 5 giây
+        },
+        locationResult => {
+          const newLocation: LocationCoords = {
+            latitude: locationResult.coords.latitude,
+            longitude: locationResult.coords.longitude,
+          };
 
-      //   console.log('✅ Location fetched successfully:', newLocation);
-    } catch (fetchError) {
-      const errorMessage = fetchError instanceof Error ? fetchError.message : 'Lỗi không xác định khi lấy vị trí';
-
-      console.log('❌ Location fetch failed:', errorMessage);
+          // Cập nhật State nếu vị trí hợp lệ
+          if (isValidLocation(newLocation)) {
+            setLocation(newLocation);
+            setLastUpdated(new Date()); // Cập nhật state (kích hoạt re-render)
+            setIsLoading(false);
+            console.log('✅ [DEVICE] location updated:', newLocation);
+          } else {
+            console.log('⚠️ [DEVICE] Received invalid location data.');
+          }
+        },
+      );
+      console.log('✅ Location tracking started successfully.');
+    } catch (trackError) {
+      const errorMessage = trackError instanceof Error ? trackError.message : 'Lỗi không xác định khi theo dõi vị trí';
+      console.log('❌ [DEVICE] location tracking failed:', errorMessage);
       setError(errorMessage);
-
-      // Keep existing location if available
-      if (!location) {
-        setLocation(null);
-      }
-    } finally {
+      if (!location) setLocation(null);
       setIsLoading(false);
+    } finally {
+      // Reset fetchingRef để cho phép gọi lại nếu cần
       fetchingRef.current = false;
     }
   };
-
   /**
    * Manual refresh function for components to trigger location update
    */
+  // const refreshLocation = async (): Promise<void> => {
+  //   await fetchCurrentLocation();
+  // };
   const refreshLocation = async (): Promise<void> => {
-    await fetchCurrentLocation();
+    await startLocationTracking();
   };
 
   /**
@@ -168,7 +232,9 @@ export function LocationProvider({children}: LocationProviderProps) {
    */
   useEffect(() => {
     // Initial location fetch on mount
-    fetchCurrentLocation();
+    console.log('lastUpdated', lastUpdated);
+    // fetchCurrentLocation();
+    startLocationTracking();
 
     // Listen for app state changes
     const subscription = AppState.addEventListener('change', nextAppState => {
@@ -178,11 +244,13 @@ export function LocationProvider({children}: LocationProviderProps) {
       if (wasInBackground && isNowActive) {
         console.log('📱 App returned from background, refreshing location...');
 
+        const currentLastUpdated = lastUpdatedRef.current;
         // Only refresh if last update was more than 5 minutes ago
-        const shouldRefresh = !lastUpdated || Date.now() - lastUpdated.getTime() > 5 * 60 * 1000;
+        const shouldRefresh = !currentLastUpdated || Date.now() - currentLastUpdated.getTime() > 5 * 60 * 1000;
 
         if (shouldRefresh) {
-          fetchCurrentLocation();
+          // fetchCurrentLocation();
+          startLocationTracking();
         } else {
           console.log('📍 Location is still fresh, skipping refresh');
         }
@@ -194,7 +262,16 @@ export function LocationProvider({children}: LocationProviderProps) {
     // Cleanup subscription on unmount
     return () => {
       subscription.remove();
+      if (locationSubscription.current) {
+        console.log('🛑 Stopping final location tracking...');
+        locationSubscription.current.remove();
+        locationSubscription.current = null;
+      }
     };
+  }, []);
+
+  useEffect(() => {
+    lastUpdatedRef.current = lastUpdated;
   }, [lastUpdated]);
 
   /**

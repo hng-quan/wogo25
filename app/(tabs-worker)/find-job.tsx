@@ -70,19 +70,19 @@ export default function FindJob() {
 
   // Refs for map animation
   const mapRef = useRef<MapView>(null);
-  const trackingViewsChanged = useRef(true);
+  // const trackingViewsChanged = useRef(true);
   const prevLocationRef = useRef<any>(null);
 
   // Cập nhật trạng thái trackingViewsChanged để tối ưu hiệu năng hiển thị marker sau 500ms
-  useEffect(() => {
-    if (trackingViewsChanged.current) {
-      const timer = setTimeout(() => {
-        trackingViewsChanged.current = false;
-      }, 10000);
+  // useEffect(() => {
+  //   if (trackingViewsChanged.current) {
+  //     const timer = setTimeout(() => {
+  //       trackingViewsChanged.current = false;
+  //     }, 10000);
 
-      return () => clearTimeout(timer);
-    }
-  }, []);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, []);
 
   /**
    * Save worker address to server when location is available
@@ -99,8 +99,6 @@ export default function FindJob() {
     }
     try {
       savingRef.current = true;
-      console.log('🏠 Saving worker address...', workerCoords);
-      console.log(`Distance moved since last save: ${distanceMoved}`);
 
       const params = {
         latitude: workerCoords?.latitude,
@@ -111,19 +109,14 @@ export default function FindJob() {
       await jsonPostAPI('/addresses/save-or-update', params);
       setIsSavedAddress(true);
       prevLocationRef.current = workerCoords;
-
-      // Toast.show({
-      //   type: 'success',
-      //   text1: '✅ Đã cập nhật vị trí',
-      //   text2: 'Vị trí của bạn đã được lưu thành công',
-      // });
+      console.log('✅ [WORKER] send location to server successfully:', workerCoords);
     } catch (error) {
-      console.error('❌ Save address error:', error);
-      Toast.show({
-        type: 'error',
-        text1: '❌ Lỗi lưu vị trí',
-        text2: 'Không thể lưu vị trí. Vui lòng thử lại.',
-      });
+      console.error('[WORKER] send location to server error:', error);
+      // Toast.show({
+      //   type: 'error',
+      //   text1: '❌ Lỗi lưu vị trí',
+      //   text2: 'Không thể lưu vị trí. Vui lòng thử lại.',
+      // });
     } finally {
       savingRef.current = false;
     }
@@ -140,7 +133,7 @@ export default function FindJob() {
         fetchingRef.current = true;
         if (showLoading) setIsLoadingJobs(true);
 
-        console.log('🔍 Fetching available jobs...');
+        // console.log('🔍 Fetching available jobs...');
 
         const res = await jsonGettAPI('/bookings/job-available', {}, undefined, undefined, error => {
           console.error('❌ Fetch jobs error:', error);
@@ -157,7 +150,7 @@ export default function FindJob() {
         if (res?.result) {
           const sortedJobs = sortJobsByDistance(res.result);
           setJobList(sortedJobs);
-          console.log(`✅ Loaded ${sortedJobs.length} jobs successfully`);
+          console.log(`✅ [FindJob] Found ${sortedJobs.length} jobs available.`);
         }
       } catch (error) {
         console.error('❌ Fetch jobs error:', error);
@@ -181,7 +174,7 @@ export default function FindJob() {
           {latitude: a.latitude || 0, longitude: a.longitude || 0},
           workerCoords as any,
         );
-        
+
         const distanceB = calculateDistance(
           {latitude: b.latitude || 0, longitude: b.longitude || 0},
           workerCoords as any,
@@ -235,7 +228,7 @@ export default function FindJob() {
 
     if (isSearching && isSavedAddress) {
       refreshIntervalRef.current = setInterval(() => {
-        console.log('🔄 Auto-refreshing jobs...');
+        // console.log('🔄 Auto-refreshing jobs...');
         fetchJobsAvailable(false); // Silent refresh
       }, REFRESH_INTERVAL);
     }
@@ -443,14 +436,13 @@ export default function FindJob() {
       return;
     }
 
-
     saveWorkerAddress();
   }, [isSearching, workerCoords, isValidLocation, saveWorkerAddress]);
 
   useEffect(() => {
     if (!isSearching) return;
     fetchJobsAvailable();
-  }, [isSearching])
+  }, [isSearching]);
 
   // Effect: Fetch jobs when address is saved
   useEffect(() => {
@@ -503,20 +495,6 @@ export default function FindJob() {
           toolbarEnabled={true}
           scrollEnabled={true}
           followsUserLocation={true}>
-          {/* Worker Location Marker */}
-          {isValidLocation(workerCoords) && (
-            <Marker
-              coordinate={workerCoords as any}
-              title='Vị trí của bạn'
-              description='Đây là vị trí hiện tại của bạn'
-              tracksViewChanges={trackingViewsChanged.current}
-              >
-              <View style={styles.workerMarker}>
-                <MaterialCommunityIcons name='account-circle' size={28} color={Colors.primary} />
-              </View>
-            </Marker>
-          )}
-
           {/* Job Location Markers */}
           {displayJobs.map(job => (
             <Marker
