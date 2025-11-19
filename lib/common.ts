@@ -3,6 +3,8 @@ export const Colors = {
     secondary: '#4CAF50', // khách
     background: '#FFFFFF',
     card: '#FFFFFF',
+    // line màu xanh nước biển đậm
+    line: '#1E90FF',
 };
 
 export const BOOKING_STATUS_MAP = {

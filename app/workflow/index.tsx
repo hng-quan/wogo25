@@ -51,7 +51,7 @@ const WORKFLOW_STATUS_MAP = {
 };
 
 // Tính khoảng cách giữa 2 điểm (mét)
-const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
   const R = 6371000; // bán kính trái đất (mét) == 6371 km
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
@@ -102,11 +102,7 @@ export default function WorkFlow() {
    * @returns true if booking is completed and has review data, false otherwise
    */
   const hasCustomerReview = (): boolean => {
-    return (
-      bookingStatus === 'COMPLETED' && 
-      bookingDetail?.review && 
-      typeof bookingDetail.review.rating === 'number'
-    );
+    return bookingStatus === 'COMPLETED' && bookingDetail?.review && typeof bookingDetail.review.rating === 'number';
   };
 
   /**
@@ -114,9 +110,7 @@ export default function WorkFlow() {
    * @returns Customer name or fallback text
    */
   const getCustomerName = (): string => {
-    return bookingDetail?.user?.fullName || 
-           bookingDetail?.customer?.fullName || 
-           'Khách hàng';
+    return bookingDetail?.user?.fullName || bookingDetail?.customer?.fullName || 'Khách hàng';
   };
 
   // Khởi tạo
@@ -727,18 +721,11 @@ export default function WorkFlow() {
               initialRegion={{
                 latitude: customerLocation.latitude,
                 longitude: customerLocation.longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
+                latitudeDelta: 0.05,
+                longitudeDelta: 0.05,
               }}>
               {/* Marker khách hàng */}
-              <Marker coordinate={customerLocation}>
-                <View style={{alignItems: 'center'}}>
-                  <View style={[styles.markerIconContainer, {backgroundColor: Colors.secondary}]}>
-                    <MaterialIcons name='person' size={28} color='#fff' />
-                  </View>
-                  <View style={[styles.markerArrow, {borderTopColor: Colors.secondary}]} />
-                </View>
-              </Marker>
+              <Marker coordinate={customerLocation} title='Điểm đến' />
             </MapView>
           )}
 
@@ -747,6 +734,8 @@ export default function WorkFlow() {
             <MapView
               ref={mapRef}
               style={styles.map}
+              showsUserLocation={true}
+              followsUserLocation={true}
               initialRegion={{
                 latitude: (customerLocation.latitude + myLocation.latitude) / 2,
                 longitude: (customerLocation.longitude + myLocation.longitude) / 2,
@@ -754,28 +743,26 @@ export default function WorkFlow() {
                 longitudeDelta: Math.abs(customerLocation.longitude - myLocation.longitude) * 2 + 0.01,
               }}>
               {/* Marker khách hàng */}
-              <Marker coordinate={customerLocation}>
-                <View style={{alignItems: 'center'}}>
-                  <View style={[styles.markerIconContainer, {backgroundColor: Colors.secondary}]}>
-                    <MaterialIcons name='person' size={28} color='#fff' />
-                  </View>
-                  <View style={[styles.markerArrow, {borderTopColor: Colors.secondary}]} />
-                </View>
-              </Marker>
+              <Marker coordinate={customerLocation} title='Điểm đến' />
 
               {/* Marker thợ (tôi) */}
               <Marker coordinate={myLocation}>
-                <View style={{alignItems: 'center'}}>
-                  <View style={[styles.markerIconContainer, {backgroundColor: Colors.primary}]}>
-                    <MaterialCommunityIcons name='account-hard-hat' size={28} color='white' />
-                  </View>
-                  <View style={[styles.markerArrow, {borderTopColor: Colors.primary}]} />
+                <View style={styles.workerMarker}>
+                  <MaterialCommunityIcons name='account-hard-hat' size={28} color={Colors.primary} />
                 </View>
               </Marker>
 
               {/* Tuyến đường */}
               {routeCoords.length > 0 && (
-                <Polyline coordinates={routeCoords} strokeColor={Colors.primary} strokeWidth={6} />
+                <Polyline
+                  lineCap='round'
+                  lineJoin='round'
+                  geodesic
+                  zIndex={999}
+                  coordinates={routeCoords}
+                  strokeColor={Colors.line}
+                  strokeWidth={8}
+                />
               )}
             </MapView>
           )}
@@ -965,7 +952,7 @@ export default function WorkFlow() {
               {/* Customer Rating Display Section */}
               {hasCustomerReview() && (
                 <View style={styles.ratingDisplaySection}>
-                  <WorkerRatingDisplayCard 
+                  <WorkerRatingDisplayCard
                     review={bookingDetail.review}
                     serviceName={jobDetail?.service?.serviceName}
                     customerName={getCustomerName()}
@@ -1154,9 +1141,7 @@ export default function WorkFlow() {
           <View style={[styles.modalContainer, {maxWidth: 420, height: 'auto'}]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Hoàn tất dịch vụ</Text>
-              <TouchableOpacity
-                style={[]}
-                onPress={() => setShowCompleteModal(false)}>
+              <TouchableOpacity style={[]} onPress={() => setShowCompleteModal(false)}>
                 <Text style={[styles.confirmButtonText, {color: '#000'}]}>
                   <MaterialCommunityIcons name='close' size={24} color='#000' />
                 </Text>
@@ -1179,7 +1164,7 @@ export default function WorkFlow() {
               </View>
 
               <Text style={{fontSize: 14, color: '#666'}}>Tổng thu nhập thực nhận</Text>
-              <Text style={styles.completeAmount}>{'+'+formatPrice(bookingDetail?.totalAmount * 0.9)}đ</Text>
+              <Text style={styles.completeAmount}>{'+' + formatPrice(bookingDetail?.totalAmount * 0.9)}đ</Text>
             </View>
           </View>
         </View>
@@ -1327,6 +1312,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: Colors.primary,
     marginBottom: 8,
+  },
+
+  workerMarker: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
   },
 
   timelineContainer: {
@@ -1601,7 +1591,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowRadius: 10,
     elevation: 8,
-    zIndex: 999
+    zIndex: 999,
   },
   floatingActionButtonText: {
     color: '#fff',

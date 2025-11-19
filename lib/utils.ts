@@ -81,4 +81,17 @@ export function formatPrice(value: number): string {
   return value.toLocaleString("en-US"); 
 }
 
+export const parseDistanceToKm = (distanceStr: string) => {
+  if (!distanceStr) return Infinity;
+
+  if (distanceStr.includes('km')) {
+    return parseFloat(distanceStr.replace('km', '').trim());
+  } else if (distanceStr.includes('m')) {
+    return parseFloat(distanceStr.replace('m', '').trim()) / 1000;
+  }
+
+  return parseFloat(distanceStr) || Infinity;
+};
+
+
 

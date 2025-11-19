@@ -10,6 +10,9 @@ export default function MapPicker({initialCoords, onSelect}) {
     <Modal visible={true} animationType='slide'>
       <MapView
         style={{flex: 1}}
+        showsUserLocation={true}
+        followsUserLocation={true}
+
         initialRegion={{
           latitude: initialCoords.latitude,
           longitude: initialCoords.longitude,

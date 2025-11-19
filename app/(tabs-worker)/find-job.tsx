@@ -1,14 +1,15 @@
 import FindingStatus from '@/components/ui/FindingStatus';
+import { useLocation } from '@/context/LocationContext';
 import { useStatusFindJob } from '@/context/StatusFindJobContext';
-import { useSafeCurrentLocation } from '@/hooks/useCurrentLocation';
 import { jsonGettAPI, jsonPostAPI } from '@/lib/apiService';
 import { Colors } from '@/lib/common';
 import { calculateDistance } from '@/lib/location-helper';
-import { displayDateVN, formatPrice } from '@/lib/utils';
+import { displayDateVN, formatPrice, parseDistanceToKm } from '@/lib/utils';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
@@ -21,104 +22,367 @@ import {
   View,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { ActivityIndicator, Switch } from 'react-native-paper';
+import { ActivityIndicator, Switch, TextInput } from 'react-native-paper';
+import Toast from 'react-native-toast-message';
 
+// Constants for responsive design
 const {height} = Dimensions.get('window');
-const TABBAR_HEIGHT = 70; // chỉnh theo tabbar app bạn
-const BOTTOM_PADDING = 16; // chừa thêm khoảng cách nhỏ cho đẹp
+const TABBAR_HEIGHT = 70;
+const BOTTOM_PADDING = -4;
+const REFRESH_INTERVAL = 30000; // 30 seconds auto-refresh
 
+/**
+ * Enhanced Find Job Screen Component
+ * Features:
+ * - Global location context integration
+ * - Smooth drawer animations
+ * - Job filtering and search
+ * - Auto-refresh functionality
+ * - Distance-based job sorting
+ * - Better error handling
+ */
 export default function FindJob() {
+  // Drawer animation setup
+  const tabbarHeight = useBottomTabBarHeight();
   const drawerHeight = height * 0.7;
   const CLOSED_Y = drawerHeight - 70;
-  const OPEN_Y = height * 0.15;
+  const OPEN_Y = height * 0;
   const translateY = useRef(new Animated.Value(CLOSED_Y)).current;
   const lastOffset = useRef(CLOSED_Y);
+
+  // Global location context
+  const {location: workerCoords, isValidLocation} = useLocation();
+
+  // Job search state
   const [jobList, setJobList] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isLoadingJobs, setIsLoadingJobs] = useState(false);
   const [isSavedAddress, setIsSavedAddress] = useState<boolean>(false);
-  const workerCoords = useSafeCurrentLocation();
+
+  // Job finding state
   const {setFinding, setShowAlert, jobTrigger, finding} = useStatusFindJob();
   const [isSearching, setIsSearching] = useState(finding);
-  const savingRef = React.useRef(false);
 
-  // helper
-  const isValidCoords = (c: any) => {
-    if (!c) return false;
-    const {latitude, longitude} = c;
-    if (typeof latitude !== 'number' || typeof longitude !== 'number') return false;
-    // tránh trường hợp mặc định 0,0 (hầu như không phải vị trí thật của user)
-    const nearZero = Math.abs(latitude) < 1e-6 && Math.abs(longitude) < 1e-6;
-    return !nearZero;
-  };
+  // Refs for preventing concurrent operations
+  const savingRef = useRef(false);
+  const fetchingRef = useRef(false);
+  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      setShowAlert(false);
-      return () => {
-        setShowAlert(true);
+  // Refs for map animation
+  const mapRef = useRef<MapView>(null);
+  const trackingViewsChanged = useRef(true);
+  const prevLocationRef = useRef<any>(null);
+
+  // Cập nhật trạng thái trackingViewsChanged để tối ưu hiệu năng hiển thị marker sau 500ms
+  useEffect(() => {
+    if (trackingViewsChanged.current) {
+      const timer = setTimeout(() => {
+        trackingViewsChanged.current = false;
+      }, 10000);
+
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  /**
+   * Save worker address to server when location is available
+   */
+  const saveWorkerAddress = useCallback(async () => {
+    if (savingRef.current || !isValidLocation(workerCoords)) return;
+
+    let distanceMoved = '0';
+    if (prevLocationRef.current) {
+      distanceMoved = calculateDistance(prevLocationRef.current, workerCoords || prevLocationRef.current);
+      if (prevLocationRef?.current && parseFloat(distanceMoved) < 10) {
+        return;
+      }
+    }
+    try {
+      savingRef.current = true;
+      console.log('🏠 Saving worker address...', workerCoords);
+      console.log(`Distance moved since last save: ${distanceMoved}`);
+
+      const params = {
+        latitude: workerCoords?.latitude,
+        longitude: workerCoords?.longitude,
+        role: 'WORKER',
       };
-    }, [setShowAlert]),
+
+      await jsonPostAPI('/addresses/save-or-update', params);
+      setIsSavedAddress(true);
+      prevLocationRef.current = workerCoords;
+
+      // Toast.show({
+      //   type: 'success',
+      //   text1: '✅ Đã cập nhật vị trí',
+      //   text2: 'Vị trí của bạn đã được lưu thành công',
+      // });
+    } catch (error) {
+      console.error('❌ Save address error:', error);
+      Toast.show({
+        type: 'error',
+        text1: '❌ Lỗi lưu vị trí',
+        text2: 'Không thể lưu vị trí. Vui lòng thử lại.',
+      });
+    } finally {
+      savingRef.current = false;
+    }
+  }, [isValidLocation]);
+
+  /**
+   * Fetch available jobs from API
+   */
+  const fetchJobsAvailable = useCallback(
+    async (showLoading = true) => {
+      if (fetchingRef.current) return;
+
+      try {
+        fetchingRef.current = true;
+        if (showLoading) setIsLoadingJobs(true);
+
+        console.log('🔍 Fetching available jobs...');
+
+        const res = await jsonGettAPI('/bookings/job-available', {}, undefined, undefined, error => {
+          console.error('❌ Fetch jobs error:', error);
+          setFinding(false);
+          setIsSearching(false);
+
+          Toast.show({
+            type: 'error',
+            text1: '❌ Lỗi tải công việc',
+            text2: 'Không thể tải danh sách công việc. Vui lòng thử lại.',
+          });
+        });
+
+        if (res?.result) {
+          const sortedJobs = sortJobsByDistance(res.result);
+          setJobList(sortedJobs);
+          console.log(`✅ Loaded ${sortedJobs.length} jobs successfully`);
+        }
+      } catch (error) {
+        console.error('❌ Fetch jobs error:', error);
+      } finally {
+        setIsLoadingJobs(false);
+        fetchingRef.current = false;
+      }
+    },
+    [setFinding],
   );
 
-  // effect: chờ coords hợp lệ rồi mới save
-  useEffect(() => {
-    if (!isSearching) {
-      setIsSavedAddress(false);
-      setJobList([]);
-      return;
-    }
+  /**
+   * Sort jobs by distance from worker location
+   */
+  const sortJobsByDistance = useCallback(
+    (jobs: any[]) => {
+      if (!isValidLocation(workerCoords)) return jobs;
 
-    if (!isValidCoords(workerCoords)) {
-      console.log('⏳ Chờ vị trí load xong trước khi lưu địa chỉ...');
-      return; // chờ workerCoords thay đổi
-    }
+      return [...jobs].sort((a, b) => {
+        const distanceA = calculateDistance(
+          {latitude: a.latitude || 0, longitude: a.longitude || 0},
+          workerCoords as any,
+        );
+        
+        const distanceB = calculateDistance(
+          {latitude: b.latitude || 0, longitude: b.longitude || 0},
+          workerCoords as any,
+        );
 
-    const doSave = async () => {
-      if (savingRef.current) return;
-      savingRef.current = true;
-      try {
-        const params = {
-          latitude: workerCoords?.latitude,
-          longitude: workerCoords?.longitude,
-          role: 'WORKER',
-        };
-        await jsonPostAPI('/addresses/save-or-update', params);
-        setIsSavedAddress(true);
-        // Lưu tạm vị trí vào localStorage để dùng tạm
-      } catch (error) {
-        console.log('save address error', error);
-      } finally {
-        savingRef.current = false;
-      }
-    };
+        console.log('Khoảng cách A:', distanceA, ' - Khoảng cách B:', distanceB);
 
-    doSave();
-  }, [isSearching, workerCoords]);
+        // Extract numeric value from distance string for sorting
+        const numA = parseDistanceToKm(distanceA);
+        const numB = parseDistanceToKm(distanceB);
 
-  // Lấy danh sách job
-  const fetchJobsAvailable = async () => {
-    const res = await jsonGettAPI('/bookings/job-available', {}, undefined, undefined, error => {
-      setFinding(false);
-      setIsSearching(false);
+        console.log('K/c', numA - numB);
+
+        return numA - numB;
+      });
+    },
+    [workerCoords, isValidLocation],
+  );
+
+  /**
+   * Filter jobs based on search query
+   */
+  const filterJobs = useCallback((jobs: any[], query: string) => {
+    if (!query.trim()) return jobs;
+
+    const searchTerm = query.toLowerCase().trim();
+
+    return jobs.filter(job => {
+      const serviceName = job.service?.serviceName?.toLowerCase() || '';
+      const description = job.description?.toLowerCase() || '';
+      const address = job.address?.toLowerCase() || '';
+
+      return serviceName.includes(searchTerm) || description.includes(searchTerm) || address.includes(searchTerm);
     });
-    if (res?.result) {
-      setJobList(res.result);
+  }, []);
+
+  /**
+   * Memoized filtered jobs based on search query
+   */
+  const memoizedFilteredJobs = useMemo(() => {
+    return filterJobs(jobList, searchQuery);
+  }, [jobList, searchQuery, filterJobs]);
+
+  /**
+   * Setup auto-refresh interval for jobs
+   */
+  const setupAutoRefresh = useCallback(() => {
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
     }
-  };
-  useEffect(() => {
-    if (!isSavedAddress) return;
-    fetchJobsAvailable();
-  }, [isSavedAddress]);
 
-  useEffect(() => {
-    if (!isSavedAddress) return;
-    fetchJobsAvailable();
-  }, [jobTrigger]);
+    if (isSearching && isSavedAddress) {
+      refreshIntervalRef.current = setInterval(() => {
+        console.log('🔄 Auto-refreshing jobs...');
+        fetchJobsAvailable(false); // Silent refresh
+      }, REFRESH_INTERVAL);
+    }
+  }, [isSearching, isSavedAddress, fetchJobsAvailable]);
 
-  // PanResponder cho drawer
+  /**
+   * Handle job search toggle
+   */
+  const handleSearchToggle = useCallback(
+    (value: boolean) => {
+      setIsSearching(value);
+      setFinding(value);
+
+      if (!value) {
+        // Stop searching - clear data and intervals
+        setIsSavedAddress(false);
+        setJobList([]);
+
+        if (refreshIntervalRef.current) {
+          clearInterval(refreshIntervalRef.current);
+          refreshIntervalRef.current = null;
+        }
+
+        // Toast.show({
+        //   type: 'info',
+        //   text1: '⏸️ Đã dừng tìm việc',
+        //   text2: 'Bạn sẽ không nhận được thông báo công việc mới',
+        // });
+      } else {
+        // Toast.show({
+        //   type: 'success',
+        //   text1: '🔍 Bắt đầu tìm việc',
+        //   text2: 'Hệ thống sẽ tìm kiếm công việc phù hợp cho bạn',
+        // });
+      }
+    },
+    [setFinding],
+  );
+
+  /**
+   * Render individual job card
+   */
+  const renderJobCard = useCallback(
+    ({item}: {item: any}) => {
+      const customerCoords = {
+        latitude: item?.latitude || 0,
+        longitude: item?.longitude || 0,
+      };
+
+      const distance = isValidLocation(workerCoords) ? calculateDistance(customerCoords, workerCoords as any) : 'N/A';
+
+      return (
+        <TouchableOpacity
+          style={styles.jobCard}
+          onPress={() => {
+            router.push({
+              pathname: '/booking/send-quote',
+              params: {
+                job_detail: JSON.stringify(item),
+                workerLatitude: workerCoords?.latitude,
+                workerLongitude: workerCoords?.longitude,
+              },
+            });
+          }}
+          activeOpacity={0.8}>
+          {/* Job Image */}
+          <View style={styles.jobImageContainer}>
+            {item.files?.length > 0 && item.files[0]?.fileUrl ? (
+              <Image source={{uri: item.files[0].fileUrl}} style={styles.jobImage} />
+            ) : (
+              <View style={[styles.jobImage, styles.noImage]}>
+                <MaterialCommunityIcons name='image-area' size={32} color='#999' />
+              </View>
+            )}
+
+            {/* Distance Badge */}
+            <View style={styles.distanceBadge}>
+              <MaterialCommunityIcons name='map-marker-distance' size={12} color='#1565C0' />
+              <Text style={styles.distanceText}>{distance}</Text>
+            </View>
+          </View>
+
+          {/* Job Info */}
+          <View style={styles.jobInfo}>
+            <Text style={styles.jobTitle} numberOfLines={2}>
+              {item.service?.serviceName || 'Dịch vụ'}
+            </Text>
+
+            {/* Price Range */}
+            <View style={styles.priceContainer}>
+              <MaterialIcons name='attach-money' size={16} color='#1565C0' />
+              <Text style={styles.jobPrice}>
+                {formatPrice(item.estimatedPriceLower)} - {formatPrice(item.estimatedPriceHigher)} đ
+              </Text>
+            </View>
+
+            {/* Description */}
+            <Text style={styles.jobDesc} numberOfLines={2} ellipsizeMode='tail'>
+              {item.description || 'Không có mô tả'}
+            </Text>
+          </View>
+
+          {/* Date Badge */}
+          <View style={styles.dateBadge}>
+            <LinearGradient
+              colors={['#00c6ff', '#0072ff']}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 1}}
+              style={styles.dateGradient}>
+              <Text style={styles.dateText}>{displayDateVN(item.bookingDate)}</Text>
+            </LinearGradient>
+          </View>
+        </TouchableOpacity>
+      );
+    },
+    [workerCoords, isValidLocation],
+  );
+
+  /**
+   * Render empty state when no jobs available
+   */
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <MaterialCommunityIcons name='briefcase-search-outline' size={64} color='#ccc' />
+      <Text style={styles.emptyTitle}>Chưa có công việc phù hợp</Text>
+      <Text style={styles.emptyDesc}>
+        {isSearching ? 'Hệ thống đang tìm kiếm công việc cho bạn...' : 'Bật tìm việc để nhận thông báo công việc mới'}
+      </Text>
+    </View>
+  );
+
+  /**
+   * Handle pull to refresh
+   */
+  const handleRefresh = useCallback(async () => {
+    if (!isSavedAddress) return;
+    await fetchJobsAvailable(true);
+  }, [isSavedAddress, fetchJobsAvailable]);
+
+  // Get jobs to display (filtered or all)
+  const displayJobs = searchQuery.trim() ? memoizedFilteredJobs : jobList;
+
+  // PanResponder for drawer gestures
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 5,
+      onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dy) > 5,
       onPanResponderMove: (_, gestureState) => {
         let newY = lastOffset.current + gestureState.dy;
         newY = Math.max(OPEN_Y, Math.min(CLOSED_Y, newY));
@@ -127,6 +391,7 @@ export default function FindJob() {
       onPanResponderRelease: (_, gestureState) => {
         const shouldClose = gestureState.vy > 0.5 || gestureState.dy > 120;
         const toValue = shouldClose ? CLOSED_Y : OPEN_Y;
+
         Animated.spring(translateY, {
           toValue,
           useNativeDriver: true,
@@ -139,9 +404,12 @@ export default function FindJob() {
     }),
   ).current;
 
-  // Toggle drawer
-  const toggleDrawer = () => {
+  /**
+   * Toggle drawer open/closed state
+   */
+  const toggleDrawer = useCallback(() => {
     const toValue = lastOffset.current === OPEN_Y ? CLOSED_Y : OPEN_Y;
+
     Animated.spring(translateY, {
       toValue,
       useNativeDriver: true,
@@ -150,307 +418,414 @@ export default function FindJob() {
     }).start(() => {
       lastOffset.current = toValue;
     });
-  };
+  }, [translateY, OPEN_Y, CLOSED_Y]);
+
+  // Focus effect for alert management
+  useFocusEffect(
+    useCallback(() => {
+      setShowAlert(false);
+      return () => {
+        setShowAlert(true);
+      };
+    }, [setShowAlert]),
+  );
+
+  // Effect: Save address when location becomes available and searching is enabled
+  useEffect(() => {
+    if (!isSearching) {
+      setIsSavedAddress(false);
+      setJobList([]);
+      return;
+    }
+
+    if (!isValidLocation(workerCoords)) {
+      console.log('⏳ Waiting for valid location before saving address...');
+      return;
+    }
+
+
+    saveWorkerAddress();
+  }, [isSearching, workerCoords, isValidLocation, saveWorkerAddress]);
+
+  useEffect(() => {
+    if (!isSearching) return;
+    fetchJobsAvailable();
+  }, [isSearching])
+
+  // Effect: Fetch jobs when address is saved
+  useEffect(() => {
+    if (!isSavedAddress) return;
+
+    fetchJobsAvailable();
+    setupAutoRefresh();
+  }, [isSavedAddress, fetchJobsAvailable, setupAutoRefresh]);
+
+  // Effect: Fetch jobs when job trigger changes (new job notification)
+  useEffect(() => {
+    if (!isSavedAddress) return;
+
+    fetchJobsAvailable();
+  }, [jobTrigger, isSavedAddress, fetchJobsAvailable]);
+
+  // Cleanup effect for intervals
+  useEffect(() => {
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
+  }, []);
+
+  if (!workerCoords || !workerCoords.latitude || !workerCoords.longitude) {
+    return (
+      <View style={styles.loadingOverlay}>
+        <ActivityIndicator size='large' color={Colors.primary} />
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.container}>
-      {/* Map */}
-      <View style={{flex: 1}}>
+    <View style={[styles.container, {paddingBottom: tabbarHeight}]}>
+      {/* Map View */}
+      <View style={styles.mapContainer}>
         <MapView
           style={StyleSheet.absoluteFill}
-          region={
-            workerCoords && isValidCoords(workerCoords)
-              ? {
-                  latitude: workerCoords.latitude,
-                  longitude: workerCoords.longitude,
-                  latitudeDelta: 0.05,
-                  longitudeDelta: 0.05,
-                }
-              : undefined
-          }>
-          {isValidCoords(workerCoords) && (
-            <Marker coordinate={workerCoords as any} title='Vị trí của bạn' description='Đây là vị trí hiện tại' />
+          ref={mapRef}
+          initialRegion={{
+            latitude: workerCoords?.latitude as number,
+            longitude: workerCoords?.longitude as number,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          }}
+          rotateEnabled={true}
+          showsMyLocationButton={true}
+          showsUserLocation={true}
+          toolbarEnabled={true}
+          scrollEnabled={true}
+          followsUserLocation={true}>
+          {/* Worker Location Marker */}
+          {isValidLocation(workerCoords) && (
+            <Marker
+              coordinate={workerCoords as any}
+              title='Vị trí của bạn'
+              description='Đây là vị trí hiện tại của bạn'
+              tracksViewChanges={trackingViewsChanged.current}
+              >
+              <View style={styles.workerMarker}>
+                <MaterialCommunityIcons name='account-circle' size={28} color={Colors.primary} />
+              </View>
+            </Marker>
           )}
+
+          {/* Job Location Markers */}
+          {displayJobs.map(job => (
+            <Marker
+              key={job.id}
+              coordinate={{
+                latitude: job.latitude || 0,
+                longitude: job.longitude || 0,
+              }}
+              // tracksViewChanges={trackingViewsChanged.current}
+              title={job.service?.serviceName}
+              description={`${formatPrice(job.estimatedPriceLower)} - ${formatPrice(job.estimatedPriceHigher)} đ`}>
+              <View style={styles.jobMarker}>
+                <MaterialCommunityIcons name='briefcase' size={25} color={'red'} />
+              </View>
+            </Marker>
+          ))}
         </MapView>
 
-        {/* Overlay loading */}
-        {!isValidCoords(workerCoords) && (
-          <View
-            style={[
-              StyleSheet.absoluteFillObject,
-              {
-                backgroundColor: 'rgba(255,255,255,0.7)',
-                justifyContent: 'center',
-                alignItems: 'center',
-              },
-            ]}>
-            <ActivityIndicator size='large' color='#6200ee' />
-            <Text style={{marginTop: 8, color: '#333', fontWeight: '500'}}>Đang xác định vị trí của bạn...</Text>
+        {/* Location Loading Overlay */}
+        {!isValidLocation(workerCoords) && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size='large' color={Colors.primary} />
+            <Text style={styles.loadingText}>Đang xác định vị trí của bạn...</Text>
           </View>
         )}
       </View>
 
-      {/* Drawer */}
-      <Animated.View
-        {...panResponder.panHandlers}
-        style={[styles.drawer, {height: drawerHeight, transform: [{translateY}]}]}>
-        <TouchableOpacity activeOpacity={0.8} onPress={toggleDrawer}>
-          <View style={styles.drawerHandle} />
-        </TouchableOpacity>
-
-        <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>
-          <FindingStatus size={24} color='#6200ee' loading={isSearching} />
-          <Text style={styles.title}>{jobList.length} công việc phù hợp</Text>
-        </View>
-
-        <FlatList
-          data={jobList}
-          keyExtractor={item => item.id.toString()}
-          ItemSeparatorComponent={() => <View style={{height: 12}} />}
-          renderItem={({item}) => {
-            const customerCoords = {
-              latitude: item?.latitude || 0,
-              longitude: item?.longitude || 0,
-            };
-            const distance = calculateDistance(customerCoords, workerCoords as any);
-            return (
-              <TouchableOpacity
-                style={styles.jobCard}
-                onPress={() => {
-                  // Xử lý khi nhấn vào công việc
-                  router.push({
-                    pathname: '/booking/send-quote',
-                    params: {
-                      job_detail: JSON.stringify(item),
-                      workerLatitude: workerCoords?.latitude,
-                      workerLongitude: workerCoords?.longitude,
-                    },
-                  });
-                }}>
-                {/* Hình ảnh hoặc placeholder */}
-                <View style={{flexDirection: 'column', alignItems: 'center'}}>
-                  {item.files?.length > 0 && item.files[0]?.fileUrl ? (
-                    <Image source={{uri: item.files[0].fileUrl}} style={styles.jobImage} />
-                  ) : (
-                    <View style={[styles.jobImage, styles.noImage]}>
-                      <MaterialCommunityIcons name='image-area' size={52} color='#999' />
-                    </View>
-                  )}
-
-                  {/* Khoảng cách */}
-                  <View style={[styles.rowCenter, {marginTop: 'auto'}]}>
-                    <MaterialCommunityIcons name='map-marker-distance' size={16} color='#1565C0' />
-                    <Text style={styles.jobText}>{distance}</Text>
-                  </View>
-                </View>
-
-                {/* Nội dung */}
-                <View style={styles.jobInfo}>
-                  {/* Tiêu đề dịch vụ + ngày */}
-                  <Text style={styles.jobTitle}>{item.service.serviceName}</Text>
-
-                  {/* Ước tính */}
-                  {/* <View style={[{flexDirection: 'row', gap: 4}, {alignItems: 'center'}]}>
-                    <MaterialCommunityIcons name='clock-outline' size={16} color='#999' />
-                    <Text style={styles.jobEstimate}>Ước tính: {item.estimatedDurationMinutes} phút</Text>
-                  </View> */}
-
-                  {/* Hàng ngang: khoảng cách - giá tiền */}
-                  <View style={styles.rowBetween}>
-                    <View style={styles.rowCenter}>
-                      <MaterialIcons name='attach-money' size={16} color='#1565C0' />
-                      <Text style={styles.jobPrice}>
-                        {formatPrice(item.estimatedPriceLower)} - {formatPrice(item.estimatedPriceHigher)} đ
-                      </Text>
-                    </View>
-                  </View>
-                  {/* Description (1 dòng) */}
-                  <Text style={styles.jobDesc} numberOfLines={1} ellipsizeMode='tail'>
-                    {item.description}
-                  </Text>
-                </View>
-                <View style={styles.ratingWrapper}>
-                  <LinearGradient
-                    colors={['#00c6ff', '#0072ff']}
-                    start={{x: 0, y: 0}}
-                    end={{x: 1, y: 1}}
-                    style={styles.ratingBox}>
-                    <Text style={styles.ratingText}>{displayDateVN(item.bookingDate)}</Text>
-                  </LinearGradient>
-                </View>
-              </TouchableOpacity>
-            );
-          }}
-        />
-      </Animated.View>
-
-      {/* Toggle tìm việc */}
+      {/* Job Search Toggle */}
       <View style={styles.toggleContainer}>
-        <Text
-          style={{
-            fontWeight: 'bold',
-            marginRight: 8,
-            color: isSearching ? Colors.primary : '#777',
-          }}>
+        <Text style={[styles.toggleText, {color: isSearching ? Colors.primary : '#777'}]}>
           {isSearching ? 'Đang bật tìm việc' : 'Đã tắt tìm việc'}
         </Text>
         <Switch
           value={isSearching}
-          onValueChange={value => {
-            setIsSearching(value);
-            setFinding(value);
-          }}
-          theme={{colors: {primary: isSearching ? Colors.primary : '#777'}}}
+          onValueChange={handleSearchToggle}
+          thumbColor={isSearching ? Colors.primary : '#f4f3f4'}
+          trackColor={{false: '#767577', true: Colors.primary + '40'}}
         />
       </View>
+
+      {/* Jobs Drawer */}
+      <Animated.View
+        {...panResponder.panHandlers}
+        style={[styles.drawer, {height: drawerHeight, transform: [{translateY}]}]}>
+        {/* Drawer Handle */}
+        <TouchableOpacity activeOpacity={0.8} onPress={toggleDrawer}>
+          <View style={styles.drawerHandle} />
+        </TouchableOpacity>
+
+        {/* Header with Status and Count */}
+        <View style={styles.drawerHeader}>
+          <FindingStatus size={24} color={Colors.primary} loading={isLoadingJobs || (isSearching && !isSavedAddress)} />
+          <Text style={styles.jobCountText}>
+            {displayJobs.length} công việc {searchQuery ? 'tìm thấy' : 'phù hợp'}
+          </Text>
+        </View>
+
+        {/* Search Bar */}
+        {jobList.length > 0 && (
+          <View style={styles.searchContainer}>
+            <TextInput
+              mode='outlined'
+              placeholder='Tìm kiếm công việc...'
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              left={<TextInput.Icon icon='magnify' />}
+              right={searchQuery ? <TextInput.Icon icon='close' onPress={() => setSearchQuery('')} /> : undefined}
+              style={styles.searchInput}
+              contentStyle={styles.searchContent}
+            />
+          </View>
+        )}
+
+        {/* Jobs List */}
+
+        <FlatList
+          data={displayJobs}
+          keyExtractor={item => item.id.toString()}
+          renderItem={renderJobCard}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ListEmptyComponent={renderEmptyState}
+          showsVerticalScrollIndicator={false}
+          refreshing={isLoadingJobs}
+          onRefresh={handleRefresh}
+          contentContainerStyle={styles.listContent}
+          style={{flex: 1}}
+        />
+      </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#fafafa'},
-  ratingWrapper: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    borderBottomLeftRadius: 12,
-    borderTopRightRadius: 12,
-    overflow: 'hidden', // bắt buộc để gradient bo góc
+  container: {
+    flex: 1,
+    backgroundColor: '#fafafa',
   },
-  ratingBox: {
+  mapContainer: {
+    flex: 1,
+    marginBottom: '20%',
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  workerMarker: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 2,
+  },
+  jobMarker: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: {width: 0, height: 2},
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  toggleContainer: {
+    position: 'absolute',
+    top: 50,
+    right: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 25,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: {width: 0, height: 2},
+    shadowRadius: 8,
+    elevation: 5,
   },
-  ratingText: {
-    color: '#fff',
+  toggleText: {
+    fontSize: 14,
     fontWeight: '600',
-    marginRight: 2,
-    fontSize: 12,
+    marginRight: 8,
   },
   drawer: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: TABBAR_HEIGHT + BOTTOM_PADDING,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 16,
+    shadowColor: '#000',
     shadowOpacity: 0.15,
     shadowOffset: {width: 0, height: -3},
-    shadowRadius: 8,
-    elevation: 10,
+    shadowRadius: 12,
+    elevation: 15,
   },
-
   drawerHandle: {
-    width: 36,
+    width: 40,
     height: 5,
     borderRadius: 3,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#ddd',
     alignSelf: 'center',
+    marginBottom: 16,
+  },
+  drawerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 12,
   },
-
-  title: {
-    fontSize: 14,
+  jobCountText: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#333',
   },
-  toggleContainer: {
-    position: 'absolute',
-    top: 24,
-    right: 16,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    paddingHorizontal: 14,
-    paddingVertical: 4,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    shadowOffset: {width: 0, height: 2},
-    flexDirection: 'row',
-    alignItems: 'center',
+  searchContainer: {
+    marginBottom: 16,
+  },
+  searchInput: {
+    backgroundColor: '#f8f9fa',
+  },
+  searchContent: {
+    fontSize: 14,
+  },
+  listContent: {
+    flexGrow: 1,
+  },
+  separator: {
+    height: 12,
   },
   jobCard: {
     flexDirection: 'row',
-    padding: 12,
+    padding: 16,
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 16,
+    marginHorizontal: 2,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.08,
     shadowOffset: {width: 0, height: 2},
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 0.5,
+    borderColor: '#f0f0f0',
+  },
+  jobImageContainer: {
+    alignItems: 'center',
   },
   jobImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 10,
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+  },
+  noImage: {
+    backgroundColor: '#f8f9fa',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    borderStyle: 'dashed',
+  },
+  distanceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary + '15',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginTop: 6,
+  },
+  distanceText: {
+    fontSize: 11,
+    color: Colors.primary,
+    fontWeight: '600',
+    marginLeft: 2,
   },
   jobInfo: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 16,
+    justifyContent: 'space-between',
   },
   jobTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#222',
-    marginTop: 4,
+    color: '#1a1a1a',
+    lineHeight: 22,
   },
-  jobDate: {
-    position: 'absolute',
-    fontStyle: 'italic',
-    top: 0,
-    right: 0,
-    fontSize: 12,
-    color: '#55555',
-    padding: 4,
-    borderTopEndRadius: 12,
-    borderBottomStartRadius: 12,
-    backgroundColor: 'rgba(21, 101, 192, 0.1)',
-    overflow: 'hidden',
-  },
-  jobPrice: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1565C0',
-  },
-  jobText: {
-    fontSize: 13,
-    color: '#555',
-  },
-  jobDesc: {
-    fontSize: 13,
-    color: '#444',
-  },
-  jobAddress: {
-    fontSize: 12,
-    color: '#777',
-  },
-  jobEstimate: {
-    fontSize: 12,
-    color: '#555',
-  },
-  rowBetween: {
+  priceContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginVertical: 4,
   },
-  rowCenter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+  jobPrice: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1565C0',
+    marginLeft: 2,
   },
-  noImage: {
-    backgroundColor: '#f5f5f5',
+  jobDesc: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
+  },
+  dateBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    borderBottomLeftRadius: 12,
+    borderTopRightRadius: 16,
+    overflow: 'hidden',
+  },
+  dateGradient: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  dateText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  emptyState: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 60,
   },
-  noImageText: {
-    fontSize: 10,
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
     color: '#999',
-    marginTop: 4,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  emptyDesc: {
+    fontSize: 14,
+    color: '#bbb',
+    textAlign: 'center',
+    marginTop: 8,
+    paddingHorizontal: 32,
+    lineHeight: 20,
   },
 });

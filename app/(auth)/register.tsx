@@ -25,7 +25,7 @@ const RegisterScreen = () => {
       text1: t('Đăng ký thành công'),
       text2: t('Hãy đăng nhập để bắt đầu!'),
     });
-    router.back();
+    router.push('/(auth)/login');
   };
 
   useEffect(() => {
@@ -88,7 +88,7 @@ const RegisterScreen = () => {
     await jsonPostAPI('/auth/signup', params, _onSuccess, setIsLoading, setError);
   };
   const _navigateToLogin = () => {
-    router.back();
+    router.push('/(auth)/login');
   };
   return (
     <KeyboardAvoidingView style={{flex: 1}} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>

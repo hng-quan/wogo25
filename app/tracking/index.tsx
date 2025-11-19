@@ -33,7 +33,7 @@ export default function Tracking() {
   const [customerLocation, setCustomerLocation] = useState<any>(null);
   const [workerLocation, setWorkerLocation] = useState<any>(null);
   const [loadingWorkerLocation, setLoadingWorkerLocation] = useState<boolean>(true);
-  
+
   // Rating modal state
   const [showRatingModal, setShowRatingModal] = useState<boolean>(false);
   const [hasRated, setHasRated] = useState<boolean>(false);
@@ -113,7 +113,7 @@ export default function Tracking() {
       if (res?.result) {
         setBookingDetail(res.result);
         setBookingStatus(res.result.bookingStatus);
-        
+
         // Check if booking has been rated
         // checkRatingStatus(res.result.id);
       }
@@ -121,30 +121,6 @@ export default function Tracking() {
       console.error('Error fetching booking detail:', error);
     }
   };
-
-  /**
-   * Check if the booking has already been rated
-   * @param bookingId - ID of the booking to check
-   */
-  // const checkRatingStatus = async (bookingId: string) => {
-  //   if (!bookingId) return;
-    
-  //   try {
-  //     const res = await jsonGettAPI(`/reviews/check/${bookingId}`);
-  //     console.log('Rating status response:', res);
-  //     if (res?.result) {
-  //       setHasRated(res.result.hasRated || false);
-  //       // If review data is returned, store it for display
-  //       if (res.result.review) {
-  //         setSubmittedRating(res.result.review);
-  //       }
-  //     }
-  //   } catch {
-  //     // If endpoint doesn't exist or fails, assume not rated
-  //     // This prevents errors when the rating check endpoint is not implemented
-  //     setHasRated(false);
-  //   }
-  // };
 
   /**
    * Get review data for display
@@ -156,12 +132,12 @@ export default function Tracking() {
     if (submittedRating) {
       return submittedRating;
     }
-    
+
     // Then check if booking detail contains review data
     if (bookingDetail?.review) {
       return bookingDetail.review;
     }
-    
+
     return null;
   };
 
@@ -354,12 +330,12 @@ export default function Tracking() {
       console.warn('Cannot rate service - booking not completed');
       return;
     }
-    
+
     if (hasRated) {
       console.warn('Service already rated');
       return;
     }
-    
+
     setShowRatingModal(true);
   };
 
@@ -369,13 +345,13 @@ export default function Tracking() {
    */
   const handleCloseRatingModal = (ratingData?: any) => {
     setShowRatingModal(false);
-    
+
     // If rating was successfully submitted, store it for display
     if (ratingData) {
       setSubmittedRating(ratingData);
       setHasRated(true);
     }
-    
+
     // Refresh booking detail and rating status
     fetchBookingDetail();
   };
@@ -394,11 +370,11 @@ export default function Tracking() {
       {/* MAP */}
       {bookingStatus === 'COMING' && (
         <View style={{flex: 1}}>
-          {loadingWorkerLocation && (
+          {/* {loadingWorkerLocation && (
             <View style={styles.loadingContainer}>
               <Text style={styles.loadingText}>Đang tải vị trí thợ...</Text>
             </View>
-          )}
+          )} */}
 
           {/* Overlay thông báo khi không có vị trí worker */}
           {!loadingWorkerLocation && !workerLocation && customerLocation && (
@@ -427,14 +403,7 @@ export default function Tracking() {
                 longitudeDelta: 0.01,
               }}>
               {/* Marker khách hàng */}
-              <Marker coordinate={customerLocation}>
-                <View style={{alignItems: 'center'}}>
-                  <View style={[styles.markerIconContainer, {backgroundColor: Colors.primary}]}>
-                    <MaterialIcons name='person' size={28} color='#fff' />
-                  </View>
-                  <View style={[styles.markerArrow, {borderTopColor: Colors.primary}]} />
-                </View>
-              </Marker>
+              <Marker coordinate={customerLocation} />
             </MapView>
           )}
 
@@ -443,6 +412,8 @@ export default function Tracking() {
             <MapView
               ref={mapRef}
               style={styles.map}
+              showsMyLocationButton
+              // showsUserLocation
               initialRegion={{
                 latitude: (customerLocation.latitude + workerLocation.latitude) / 2,
                 longitude: (customerLocation.longitude + workerLocation.longitude) / 2,
@@ -450,28 +421,26 @@ export default function Tracking() {
                 longitudeDelta: Math.abs(customerLocation.longitude - workerLocation.longitude) * 2 + 0.01,
               }}>
               {/* Marker khách hàng */}
-              <Marker coordinate={customerLocation}>
-                <View style={{alignItems: 'center'}}>
-                  <View style={[styles.markerIconContainer, {backgroundColor: Colors.primary}]}>
-                    <MaterialIcons name='person' size={28} color='#fff' />
-                  </View>
-                  <View style={[styles.markerArrow, {borderTopColor: Colors.primary}]} />
-                </View>
-              </Marker>
+              <Marker coordinate={customerLocation} title='Bạn' />
 
               {/* Marker thợ */}
-              <Marker.Animated coordinate={workerLocationRef as any}>
-                <View style={{alignItems: 'center'}}>
-                  <View style={[styles.markerIconContainer, {backgroundColor: Colors.secondary}]}>
-                    <MaterialCommunityIcons name='account-hard-hat' size={28} color='white' />
-                  </View>
-                  <View style={[styles.markerArrow, {borderTopColor: Colors.secondary}]} />
+              <Marker.Animated coordinate={workerLocationRef as any} title='Thợ'>
+                <View style={styles.workerMarker}>
+                  <MaterialCommunityIcons name='account-hard-hat' size={28} color={Colors.secondary} />
                 </View>
               </Marker.Animated>
 
               {/* Tuyến đường */}
               {routeCoords.length > 0 && (
-                <Polyline coordinates={routeCoords} strokeColor={Colors.secondary} strokeWidth={8} />
+                <Polyline
+                  strokeWidth={8}
+                  lineCap='round'
+                  lineJoin='round'
+                  geodesic
+                  zIndex={999}
+                  coordinates={routeCoords}
+                  strokeColor={Colors.line}
+                />
               )}
             </MapView>
           )}
@@ -503,19 +472,18 @@ export default function Tracking() {
               <Text style={{fontSize: 13, color: '#777', marginTop: 2}}>Thợ</Text>
             </View>
             <View style={{marginLeft: 'auto', flexDirection: 'row', gap: 12}}>
-              <TouchableOpacity style={styles.chatButton} onPress={() => registerConfirmJob(jobRequestCode as string || '')}>
+              <TouchableOpacity
+                style={styles.chatButton}
+                onPress={() => registerConfirmJob((jobRequestCode as string) || '')}>
                 <MaterialIcons name='call' size={22} color='#fff' />
               </TouchableOpacity>
               <TouchableOpacity style={styles.chatButton} onPress={handleChat}>
                 <MaterialIcons name='chat' size={22} color='#fff' />
               </TouchableOpacity>
-              
+
               {/* Rating button - only show when booking is completed and not rated yet */}
               {bookingStatus === 'COMPLETED' && !hasExistingRating() && (
-                <TouchableOpacity 
-                  style={[styles.chatButton, styles.ratingButton]} 
-                  onPress={handleOpenRatingModal}
-                >
+                <TouchableOpacity style={[styles.chatButton, styles.ratingButton]} onPress={handleOpenRatingModal}>
                   <MaterialIcons name='star-rate' size={22} color='#fff' />
                 </TouchableOpacity>
               )}
@@ -540,8 +508,8 @@ export default function Tracking() {
             {/* Rating Display Section */}
             {bookingStatus === 'COMPLETED' && hasExistingRating() && (
               <View style={styles.ratingDisplaySection}>
-                <RatingDisplayCard 
-                  review={getReviewData()!} 
+                <RatingDisplayCard
+                  review={getReviewData()!}
                   serviceName={jobDetail?.service?.serviceName}
                   showEditOption={false}
                 />
@@ -550,7 +518,7 @@ export default function Tracking() {
           </View>
         </ScrollView>
       </View>
-      
+
       {/* Service Rating Modal */}
       <ServiceRatingModal
         visible={showRatingModal}
@@ -659,6 +627,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#444',
     flexShrink: 1,
+  },
+  workerMarker: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
   },
   priceBox: {
     marginTop: 12,

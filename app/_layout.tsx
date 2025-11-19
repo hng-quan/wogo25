@@ -1,5 +1,6 @@
 // app/_layout.tsx
 import { toastConfig } from '@/components/dialog/ToastConfig';
+import { LocationProvider } from '@/context/LocationContext';
 import { NetworkProvider } from '@/context/NetworkContext';
 import { RoleProvider, useRole } from '@/context/RoleContext';
 import { SocketProvider } from '@/context/SocketContext';
@@ -24,11 +25,13 @@ function AppContent() {
   }
 
   return (
-    <SocketProvider userId={user.id}>
-      <StatusFindJobProvider>
-        <Slot />
-      </StatusFindJobProvider>
-    </SocketProvider>
+    <LocationProvider>
+      <SocketProvider userId={user.id}>
+        <StatusFindJobProvider>
+          <Slot />
+        </StatusFindJobProvider>
+      </SocketProvider>
+    </LocationProvider>
   );
 }
 
