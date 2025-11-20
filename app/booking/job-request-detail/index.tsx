@@ -3,7 +3,7 @@ import Appbar from '@/components/layout/Appbar';
 import FindingStatus from '@/components/ui/FindingStatus';
 import { useSocket } from '@/context/SocketContext';
 import { WorkerQuote } from '@/interfaces/interfaces';
-import { jsonGettAPI } from '@/lib/apiService';
+import { jsonGettAPI, jsonPostAPI } from '@/lib/apiService';
 import { Colors } from '@/lib/common';
 import { formatDistance } from '@/lib/location-helper';
 import { displayDateVN, formatPrice } from '@/lib/utils';
@@ -12,9 +12,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { Modal, Portal, Text } from 'react-native-paper';
+import { ActivityIndicator, Button, Modal, Portal, RadioButton, Text } from 'react-native-paper';
+import Toast from 'react-native-toast-message';
 
 export default function Index() {
   const {currentTab, jobRequestCode, latitude, longitude, serviceId} = useLocalSearchParams();
@@ -27,6 +28,9 @@ export default function Index() {
   });
   const [isOpen, setIsOpen] = useState(false);
   const [jobRequest, setJobRequest] = useState<any>(null);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isLoadingCancel, setIsLoadingCancel] = useState(false);
+  const [selectedCancelReason, setSelectedCancelReason] = useState('');
 
   useEffect(() => {
     // console.log('Socket connected:', connected);
@@ -121,13 +125,157 @@ export default function Index() {
               </Text>
             </View>
           </View>
-          <ButtonCustom style={{backgroundColor: '#f44336', marginTop: 12}} onPress={onClose}>
+          <ButtonCustom 
+            style={{backgroundColor: '#f44336', marginTop: 12}} 
+            onPress={() => {
+              onClose();
+              setIsCancelModalOpen(true);
+            }}>
             Hủy đặt
           </ButtonCustom>
         </Modal>
       </Portal>
     );
   };
+
+  // Danh sách lý do hủy đặt
+  const cancelReasons = [
+    'Tôi bận đột xuất, không còn thời gian',
+    'Tôi đã tìm được thợ khác', 
+    'Không còn nhu cầu sử dụng dịch vụ nữa',
+    'Đặt nhầm dịch vụ',
+    'Chi phí không phù hợp với ngân sách',
+    'Muốn đổi ngày/giờ sang thời điểm khác',
+    'Vấn đề cá nhân (ốm, công việc gấp, gia đình...)',
+    'Địa điểm thay đổi',
+    'Muốn chọn thợ khác'
+  ];
+
+  /**
+   * Xử lý hủy đặt công việc
+   * Gọi API /cancel-job với jobRequestCode và lý do hủy
+   */
+  const handleCancelJob = async () => {
+    if (!selectedCancelReason) {
+      Toast.show({
+        type: 'error',
+        text1: 'Vui lòng chọn lý do hủy đặt',
+        text2: 'Hãy chọn một trong các lý do bên dưới'
+      });
+      return;
+    }
+
+    setIsLoadingCancel(true);
+    try {
+      console.log('Gửi yêu cầu hủy đặt với lý do:', selectedCancelReason);
+      const response = await jsonPostAPI(
+        '/bookings/cancel-job',
+        {
+          jobRequestCode: jobRequestCode,
+          reason: selectedCancelReason
+        },
+        () => {}, // onLoading
+        () => {}, // onLoadingDone
+        (error) => {
+          console.log('❌ Lỗi hủy đặt:', error);
+          Toast.show({
+            type: 'error',
+            text1: 'Hủy đặt thất bại',
+            text2: error?.message || 'Vui lòng thử lại sau'
+          });
+        }
+      );
+
+      if (response) {
+        console.log('✅ Hủy đặt thành công:', response);
+        Toast.show({
+          type: 'success',
+          text1: 'Hủy đặt thành công',
+          text2: 'Đơn hàng của bạn đã được hủy'
+        });
+        
+        // Đóng modal và quay về màn hình activity
+        setIsCancelModalOpen(false);
+        setSelectedCancelReason('');
+        onBackPress();
+      }
+    } catch (error) {
+      console.log('❌ Lỗi không mong muốn:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Hủy đặt thất bại',
+        text2: 'Đã có lỗi xảy ra, vui lòng thử lại'
+      });
+    } finally {
+      setIsLoadingCancel(false);
+    }
+  };
+
+  /**
+   * Component Modal hủy đặt với danh sách lý do
+   */
+  const CancelJobModal = () => (
+    <Portal>
+      <Modal
+        visible={isCancelModalOpen}
+        onDismiss={() => !isLoadingCancel && setIsCancelModalOpen(false)}
+        contentContainerStyle={styles.cancelModalContainer}>
+        <View style={styles.cancelModalHeader}>
+          <MaterialIcons name="warning" size={32} color="#f59e0b" />
+          <Text style={styles.cancelModalTitle}>Xác nhận hủy đặt</Text>
+          <Text style={styles.cancelModalSubtitle}>
+            Vui lòng chọn lý do hủy đặt để chúng tôi cải thiện dịch vụ
+          </Text>
+        </View>
+
+        <ScrollView style={styles.reasonList} showsVerticalScrollIndicator={false}>
+          {cancelReasons.map((reason, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.reasonItem}
+              onPress={() => setSelectedCancelReason(reason)}
+              disabled={isLoadingCancel}>
+              <RadioButton
+                value={reason}
+                status={selectedCancelReason === reason ? 'checked' : 'unchecked'}
+                onPress={() => setSelectedCancelReason(reason)}
+                color={Colors.secondary}
+                disabled={isLoadingCancel}
+              />
+              <Text style={styles.reasonText}>{reason}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        <View style={styles.cancelModalActions}>
+          <Button
+            mode="outlined"
+            onPress={() => {
+              setIsCancelModalOpen(false);
+              setSelectedCancelReason('');
+            }}
+            disabled={isLoadingCancel}
+            style={styles.cancelButton}>
+            Không hủy
+          </Button>
+          
+          <Button
+            mode="contained"
+            onPress={handleCancelJob}
+            disabled={isLoadingCancel || !selectedCancelReason}
+            style={[styles.confirmCancelButton, {opacity: isLoadingCancel ? 0.7 : 1}]}
+            buttonColor="#dc2626"
+            loading={isLoadingCancel}>
+            {isLoadingCancel ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              'Xác nhận hủy'
+            )}
+          </Button>
+        </View>
+      </Modal>
+    </Portal>
+  );
 
   const renderWorker = ({item, joblatitude, joblongitude}: {item: WorkerQuote, joblatitude: number, joblongitude: number}) => {
     const onPress = () => {
@@ -255,6 +403,7 @@ export default function Index() {
         contentContainerStyle={{flex: 1, paddingBottom: 16}}
       />
       <InfoDetailModal visible={isOpen} onClose={() => setIsOpen(false)} jobRequest={jobRequest} />
+      <CancelJobModal />
     </View>
   );
 }
@@ -344,5 +493,72 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginRight: 2,
     fontSize: 12,
+  },
+  // Cancel Modal Styles
+  cancelModalContainer: {
+    backgroundColor: 'white',
+    margin: 20,
+    borderRadius: 16,
+    padding: 0,
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  cancelModalHeader: {
+    alignItems: 'center',
+    padding: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  cancelModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#374151',
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  cancelModalSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 20,
+  },
+  reasonList: {
+    maxHeight: 320,
+    paddingHorizontal: 16,
+  },
+  reasonItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    marginVertical: 2,
+  },
+  reasonText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#374151',
+    marginLeft: 12,
+    lineHeight: 22,
+  },
+  cancelModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    borderColor: '#d1d5db',
+  },
+  confirmCancelButton: {
+    flex: 1,
   },
 });

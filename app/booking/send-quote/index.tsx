@@ -2,12 +2,13 @@ import ButtonCustom from '@/components/button/ButtonCustom';
 import Appbar from '@/components/layout/Appbar';
 import { AvatarWrapper } from '@/components/layout/ProfileContainer';
 import { useRole } from '@/context/RoleContext';
+import { useSocket } from '@/context/SocketContext';
 import { jsonPostAPI } from '@/lib/apiService';
 import { formatDistance } from '@/lib/location-helper';
 import { displayDateVN, formatPrice } from '@/lib/utils';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Dimensions, FlatList, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Modal, Portal, Text, TextInput } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
@@ -15,7 +16,9 @@ import Toast from 'react-native-toast-message';
 export default function SendQuotePage() {
   const {job_detail, workerLatitude, workerLongitude, currentTab, prevPath} = useLocalSearchParams();
   const {role} = useRole();
+  const {connected, subscribe} = useSocket();
   const [isOpenModal, setIsOpenModal] = React.useState(false);
+  const subscriptionRef = useRef<any>(null);
 
   let detailData: any = {};
   try {
@@ -29,14 +32,28 @@ export default function SendQuotePage() {
   const files = detailData?.files || [];
   const mainImage = files?.[0]?.fileUrl || 'https://placehold.co/400x200?text=No+Image';
 
-  const goBackFindJob = () => router.push('/(tabs-worker)/find-job');
-  const goBackActivity = () =>
+  const goBackFindJob = () => {
+    // Cleanup subscription before navigation
+    if (subscriptionRef.current) {
+      subscriptionRef.current.unsubscribe();
+      subscriptionRef.current = null;
+    }
+    router.push('/(tabs-worker)/find-job');
+  };
+  
+  const goBackActivity = () => {
+    // Cleanup subscription before navigation
+    if (subscriptionRef.current) {
+      subscriptionRef.current.unsubscribe();
+      subscriptionRef.current = null;
+    }
     router.push({
       pathname: '/(tabs-worker)/activity',
       params: {
         currentTab: currentTab || 'ALL',
       },
     });
+  };
 
   const goBack = () => {
     if (prevPath === 'worker-activity') {
@@ -45,6 +62,69 @@ export default function SendQuotePage() {
       goBackFindJob();
     }
   };
+
+  /**
+   * Đăng ký subscription khi gửi báo giá thành công
+   * Lắng nghe topic /topic/job-canceled/ để nhận thông báo khi job bị hủy
+   */
+  const setupJobCancellationSubscription = () => {
+    if (!connected || !detailData?.jobRequestCode) return;
+    
+    const topic = `/topic/job-canceled/${detailData.jobRequestCode}`;
+    console.log('🔔 Đăng ký topic job cancellation:', topic);
+    
+    subscriptionRef.current = subscribe(topic, (message) => {
+      console.log('📨 Nhận thông báo job bị hủy:', message.body);
+      
+      try {
+        const cancelData = JSON.parse(message.body);
+        
+        // Hiển thị thông báo cho thợ
+        Toast.show({
+          type: 'info',
+          text1: 'Đơn hàng đã bị hủy',
+          text2: `Khách hàng đã hủy đơn hàng: ${cancelData?.reason || 'Không có lý do cụ thể'}`,
+          visibilityTime: 5000,
+        });
+        
+        // Tự động quay về màn hình find-job sau 2 giây
+        setTimeout(() => {
+          // Hủy subscription
+          if (subscriptionRef.current) {
+            subscriptionRef.current.unsubscribe();
+            subscriptionRef.current = null;
+          }
+          
+          goBackFindJob();
+        }, 2000);
+        
+      } catch (error) {
+        console.log('❌ Lỗi parse thông báo hủy job:', error);
+      }
+    });
+  };
+
+  /**
+   * Cleanup subscription khi component unmount hoặc navigation
+   */
+  useEffect(() => {
+    return () => {
+      if (subscriptionRef.current) {
+        console.log('🔕 Hủy subscription job cancellation');
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
+    };
+  }, []);
+
+  /**
+   * Setup subscription khi socket connected và có job detail
+   */
+  useEffect(() => {
+    if (connected && detailData?.jobRequestCode) {
+      setupJobCancellationSubscription();
+    }
+  }, [connected, detailData?.jobRequestCode]);
 
   return (
     <View style={styles.container}>
@@ -101,7 +181,7 @@ export default function SendQuotePage() {
                     },
                   });
                 }}>
-                <MaterialIcons name='chat' size={20} color='#fff' />
+                <MaterialIcons name='chat' size={24} color='#fff' />
               </TouchableOpacity>
             </View>
 
@@ -185,6 +265,14 @@ const SendQuoteModal = ({
       );
       if (res) {
         console.log('✅ Báo giá gửi thành công:', res);
+        
+        // Hiển thị thông báo thành công
+        Toast.show({
+          type: 'success', 
+          text1: 'Gửi báo giá thành công',
+          text2: 'Báo giá của bạn đã được gửi đến khách hàng'
+        });
+        
         onClose();
       }
     } catch (error) {
@@ -284,8 +372,8 @@ const styles = StyleSheet.create({
   priceRange: {fontSize: 16, fontWeight: 'bold', color: '#16a34a'},
   chatButton: {
     backgroundColor: '#1565C0',
-    padding: 6,
-    borderRadius: 20,
+    padding: 10,
+    borderRadius: 30,
     marginLeft: 'auto',
   },
 });
