@@ -6,7 +6,7 @@ import { RatingDisplayCard } from '@/components/ui/RatingDisplayCard';
 import WorkflowTimeline from '@/components/ui/WorkFLowTimeLine';
 import { ROLE } from '@/context/RoleContext';
 import { useSocket } from '@/context/SocketContext';
-import { jsonGettAPI } from '@/lib/apiService';
+import { jsonGettAPI, jsonPostAPI } from '@/lib/apiService';
 import { Colors } from '@/lib/common';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import polyline from '@mapbox/polyline';
@@ -15,13 +15,15 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { AnimatedRegion, Marker, Polyline } from 'react-native-maps';
+import { ActivityIndicator, Button, Modal, Portal, RadioButton } from 'react-native-paper';
+import Toast from 'react-native-toast-message';
 
 const ORS_API_KEY = process.env.EXPO_PUBLIC_OPENROUTE_SERVICE_API_KEY || '';
 // const ORS_API_KEY = '';
 
 export default function Tracking() {
   const {currentTab, jobRequestCode} = useLocalSearchParams();
-  const {subscribe, connected, registerConfirmJob, trigger} = useSocket();
+  const {subscribe, connected, registerConfirmJob, registerCancelBooking, trigger} = useSocket();
   const mapRef = useRef<MapView>(null);
 
   const [jobDetail, setJobDetail] = useState<any>(null);
@@ -38,6 +40,11 @@ export default function Tracking() {
   const [showRatingModal, setShowRatingModal] = useState<boolean>(false);
   const [hasRated, setHasRated] = useState<boolean>(false);
   const [submittedRating, setSubmittedRating] = useState<any>(null);
+  
+  // Cancel booking state
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState<boolean>(false);
+  const [isLoadingCancel, setIsLoadingCancel] = useState<boolean>(false);
+  const [selectedCancelReason, setSelectedCancelReason] = useState<string>('');
 
   const workerLocationRef = useRef(
     new AnimatedRegion({
@@ -113,6 +120,11 @@ export default function Tracking() {
       if (res?.result) {
         setBookingDetail(res.result);
         setBookingStatus(res.result.bookingStatus);
+        
+        // Register for cancel booking notifications (customer side)
+        if (res.result.bookingCode && res.result.user?.id) {
+          await registerCancelBooking(res.result.bookingCode, res.result.user.id, true);
+        }
 
         // Check if booking has been rated
         // checkRatingStatus(res.result.id);
@@ -148,6 +160,163 @@ export default function Tracking() {
   const hasExistingRating = (): boolean => {
     return hasRated || !!getReviewData();
   };
+
+  // Danh sách lý do hủy đặt cho khách hàng
+  const customerCancelReasons = [
+    'Tôi bận đột xuất, không còn thời gian',
+    'Tôi đã tìm được thợ khác',
+    'Không còn nhu cầu sử dụng dịch vụ nữa',
+    'Đặt nhầm dịch vụ',
+    'Chi phí không phù hợp với ngân sách',
+    'Muốn đổi ngày/giờ sang thời điểm khác',
+    'Vấn đề cá nhân (ốm, công việc gấp, gia đình...)',
+    'Địa điểm thay đổi',
+    'Muốn chọn thợ khác'
+  ];
+
+  /**
+   * Kiểm tra xem có thể hủy booking không
+   * Chỉ cho phép hủy khi status chưa phải là WORKING trở đi
+   */
+  const canCancelBooking = (): boolean => {
+    const nonCancellableStatuses = ['WORKING', 'PAYING', 'PAID', 'COMPLETED', 'CANCELLED'];
+    return !nonCancellableStatuses.includes(bookingStatus);
+  };
+
+  /**
+   * Xử lý hủy đặt booking cho customer
+   * Gọi API /cancel-booking với bookingCode, canceller=CUSTOMER, và reason
+   */
+  const handleCancelBooking = async () => {
+    if (!selectedCancelReason) {
+      Toast.show({
+        type: 'error',
+        text1: 'Vui lòng chọn lý do hủy đặt',
+        text2: 'Hãy chọn một trong các lý do bên dưới'
+      });
+      return;
+    }
+
+    if (!canCancelBooking()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Không thể hủy booking',
+        text2: 'Booking đã bắt đầu làm việc, không thể hủy'
+      });
+      return;
+    }
+
+    setIsLoadingCancel(true);
+    try {
+      const response = await jsonPostAPI(
+        '/bookings/cancel-booking',
+        {
+          bookingCode: bookingDetail?.bookingCode,
+          canceller: 'CUSTOMER',
+          reason: selectedCancelReason
+        },
+        () => {}, // onLoading
+        () => {}, // onLoadingDone
+        (error) => {
+          console.log('❌ Lỗi hủy booking:', error);
+          Toast.show({
+            type: 'error',
+            text1: 'Hủy đặt thất bại',
+            text2: error?.message || 'Vui lòng thử lại sau'
+          });
+        }
+      );
+
+      if (response) {
+        console.log('✅ Hủy booking thành công:', response);
+        Toast.show({
+          type: 'success',
+          text1: 'Hủy đặt thành công',
+          text2: 'Booking của bạn đã được hủy'
+        });
+        
+        // Đóng modal và quay về màn hình activity
+        setIsCancelModalOpen(false);
+        setSelectedCancelReason('');
+        goBack();
+      }
+    } catch (error) {
+      console.log('❌ Lỗi không mong muốn:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Hủy đặt thất bại',
+        text2: 'Đã có lỗi xảy ra, vui lòng thử lại'
+      });
+    } finally {
+      setIsLoadingCancel(false);
+    }
+  };
+
+  /**
+   * Component Modal hủy booking cho customer
+   */
+  const CancelBookingModal = () => (
+    <Portal>
+      <Modal
+        visible={isCancelModalOpen}
+        onDismiss={() => !isLoadingCancel && setIsCancelModalOpen(false)}
+        contentContainerStyle={styles.cancelModalContainer}>
+        <View style={styles.cancelModalHeader}>
+          <MaterialIcons name="warning" size={32} color="#f59e0b" />
+          <Text style={styles.cancelModalTitle}>Xác nhận hủy booking</Text>
+          <Text style={styles.cancelModalSubtitle}>
+            Vui lòng chọn lý do hủy booking để chúng tôi cải thiện dịch vụ
+          </Text>
+        </View>
+
+        <ScrollView style={styles.reasonList} showsVerticalScrollIndicator={false}>
+          {customerCancelReasons.map((reason, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.reasonItem}
+              onPress={() => setSelectedCancelReason(reason)}
+              disabled={isLoadingCancel}>
+              <RadioButton
+                value={reason}
+                status={selectedCancelReason === reason ? 'checked' : 'unchecked'}
+                onPress={() => setSelectedCancelReason(reason)}
+                color={Colors.secondary}
+                disabled={isLoadingCancel}
+              />
+              <Text style={styles.reasonText}>{reason}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        <View style={styles.cancelModalActions}>
+          <Button
+            mode="outlined"
+            onPress={() => {
+              setIsCancelModalOpen(false);
+              setSelectedCancelReason('');
+            }}
+            disabled={isLoadingCancel}
+            style={styles.cancelButton}>
+            Không hủy
+          </Button>
+          
+          <Button
+            mode="contained"
+            onPress={handleCancelBooking}
+            disabled={isLoadingCancel || !selectedCancelReason}
+            style={[styles.confirmCancelButton, {opacity: isLoadingCancel ? 0.7 : 1}]}
+            buttonColor="#dc2626"
+            loading={isLoadingCancel}>
+            {isLoadingCancel ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              'Xác nhận hủy'
+            )}
+          </Button>
+        </View>
+      </Modal>
+    </Portal>
+  );
 
   useEffect(() => {
     console.log('🔄 trigger changed in Tracking page:', trigger);
@@ -487,6 +656,13 @@ export default function Tracking() {
                   <MaterialIcons name='star-rate' size={22} color='#fff' />
                 </TouchableOpacity>
               )}
+              
+              {/* Cancel booking button - only show when booking can be cancelled */}
+              {canCancelBooking() && (
+                <TouchableOpacity style={[styles.chatButton, styles.cancelBookingButton]} onPress={() => setIsCancelModalOpen(true)}>
+                  <MaterialIcons name='cancel' size={22} color='#fff' />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
@@ -526,6 +702,9 @@ export default function Tracking() {
         bookingId={bookingDetail?.id || ''}
         serviceName={jobDetail?.service?.serviceName}
       />
+      
+      {/* Cancel Booking Modal */}
+      <CancelBookingModal />
     </View>
   );
 }
@@ -556,6 +735,77 @@ const styles = StyleSheet.create({
   ratingButton: {
     backgroundColor: '#FFD700', // Gold color for rating
     shadowColor: '#FFD700',
+  },
+  cancelBookingButton: {
+    backgroundColor: '#dc2626', // Red color for cancel
+    shadowColor: '#dc2626',
+  },
+  // Cancel Modal Styles
+  cancelModalContainer: {
+    backgroundColor: 'white',
+    margin: 20,
+    borderRadius: 16,
+    padding: 0,
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  cancelModalHeader: {
+    alignItems: 'center',
+    padding: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  cancelModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#374151',
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  cancelModalSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 20,
+  },
+  reasonList: {
+    maxHeight: 320,
+    paddingHorizontal: 16,
+  },
+  reasonItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    marginVertical: 2,
+  },
+  reasonText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#374151',
+    marginLeft: 12,
+    lineHeight: 22,
+  },
+  cancelModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    borderColor: '#d1d5db',
+  },
+  confirmCancelButton: {
+    flex: 1,
   },
   ratingDisplaySection: {
     marginTop: 16,

@@ -30,7 +30,7 @@ import {
   View,
 } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
-import { ActivityIndicator } from 'react-native-paper';
+import { ActivityIndicator, Portal, RadioButton } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
@@ -66,7 +66,7 @@ export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2
 export default function WorkFlow() {
   const insets = useSafeAreaInsets();
   const {currentTab, jobRequestCode} = useLocalSearchParams();
-  const {subscribe, connected} = useSocket();
+  const {subscribe, connected, registerCancelBooking} = useSocket();
   const mapRef = useRef<MapView>(null);
   const [bookingDetail, setBookingDetail] = React.useState<any>(null);
   const [bookingStatus, setBookingStatus] = React.useState<string>('');
@@ -85,6 +85,11 @@ export default function WorkFlow() {
   const [notes, setNotes] = React.useState<string>('');
   const [isPriceConfirmed, setIsPriceConfirmed] = React.useState<boolean>(false);
   const [isSubmittingPrice, setIsSubmittingPrice] = React.useState<boolean>(false);
+  
+  // Cancel booking state for worker
+  const [isCancelModalOpen, setIsCancelModalOpen] = React.useState<boolean>(false);
+  const [isLoadingCancel, setIsLoadingCancel] = React.useState<boolean>(false);
+  const [selectedCancelReason, setSelectedCancelReason] = React.useState<string>('');
   const [qrVisible, setQrVisible] = React.useState<boolean>(false);
   const [method, setMethod] = React.useState<'cash' | 'qr'>('cash');
   const [qrLink, setQrLink] = React.useState<any | null>(null);
@@ -112,6 +117,161 @@ export default function WorkFlow() {
     return bookingDetail?.user?.fullName || bookingDetail?.customer?.fullName || 'Khách hàng';
   };
 
+  // Danh sách lý do hủy đặt cho thợ
+  const workerCancelReasons = [
+    'Tôi không thể đến đúng giờ',
+    'Tôi có việc cá nhân đột xuất',
+    'Giá công việc cần được điều chỉnh cao hơn dự kiến',
+    'Công việc vượt quá khả năng chuyên môn của tôi',
+    'Tôi không thể liên lạc được với khách hàng',
+    'Tôi muốn hoãn sang ngày khác'
+  ];
+
+  /**
+   * Kiểm tra xem có thể hủy booking không
+   * Chỉ cho phép hủy khi status chưa phải là WORKING trở đi
+   */
+  const canCancelBooking = (): boolean => {
+    const nonCancellableStatuses = ['WORKING', 'PAYING', 'PAID', 'COMPLETED', 'CANCELLED'];
+    return !nonCancellableStatuses.includes(bookingStatus);
+  };
+
+  /**
+   * Xử lý hủy đặt booking cho worker
+   * Gọi API /cancel-booking với bookingCode, canceller=WORKER, và reason
+   */
+  const handleCancelBooking = async () => {
+    if (!selectedCancelReason) {
+      Toast.show({
+        type: 'error',
+        text1: 'Vui lòng chọn lý do hủy đặt',
+        text2: 'Hãy chọn một trong các lý do bên dưới'
+      });
+      return;
+    }
+
+    if (!canCancelBooking()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Không thể hủy booking',
+        text2: 'Booking đã bắt đầu làm việc, không thể hủy'
+      });
+      return;
+    }
+
+    setIsLoadingCancel(true);
+    try {
+      const response = await jsonPostAPI(
+        '/bookings/cancel-booking',
+        {
+          bookingCode: bookingDetail?.bookingCode,
+          canceller: 'WORKER',
+          reason: selectedCancelReason
+        },
+        () => {}, // onLoading
+        () => {}, // onLoadingDone
+        (error) => {
+          console.log('❌ Lỗi hủy booking:', error);
+          Toast.show({
+            type: 'error',
+            text1: 'Hủy đặt thất bại',
+            text2: error?.message || 'Vui lòng thử lại sau'
+          });
+        }
+      );
+
+      if (response) {
+        console.log('✅ Hủy booking thành công:', response);
+        Toast.show({
+          type: 'success',
+          text1: 'Hủy đặt thành công',
+          text2: 'Booking của bạn đã được hủy'
+        });
+        
+        // Đóng modal và quay về màn hình activity
+        setIsCancelModalOpen(false);
+        setSelectedCancelReason('');
+        goBack();
+      }
+    } catch (error) {
+      console.log('❌ Lỗi không mong muốn:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Hủy đặt thất bại',
+        text2: 'Đã có lỗi xảy ra, vui lòng thử lại'
+      });
+    } finally {
+      setIsLoadingCancel(false);
+    }
+  };
+
+  /**
+   * Component Modal hủy booking cho worker
+   */
+  const CancelBookingModal = () => (
+    <Portal>
+      <Modal
+        visible={isCancelModalOpen}
+        onRequestClose={() => !isLoadingCancel && setIsCancelModalOpen(false)}
+        animationType="fade"
+        transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.cancelModalContainer}>
+            <View style={styles.cancelModalHeader}>
+              <MaterialIcons name="warning" size={32} color="#f59e0b" />
+              <Text style={styles.cancelModalTitle}>Xác nhận hủy booking</Text>
+              <Text style={styles.cancelModalSubtitle}>
+                Vui lòng chọn lý do hủy booking để chúng tôi cải thiện dịch vụ
+              </Text>
+            </View>
+
+            <ScrollView style={styles.reasonList} showsVerticalScrollIndicator={false}>
+              {workerCancelReasons.map((reason, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.reasonItem}
+                  onPress={() => setSelectedCancelReason(reason)}
+                  disabled={isLoadingCancel}>
+                  <RadioButton
+                    value={reason}
+                    status={selectedCancelReason === reason ? 'checked' : 'unchecked'}
+                    onPress={() => setSelectedCancelReason(reason)}
+                    color={Colors.primary}
+                    disabled={isLoadingCancel}
+                  />
+                  <Text style={styles.reasonText}>{reason}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <View style={styles.cancelModalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setIsCancelModalOpen(false);
+                  setSelectedCancelReason('');
+                }}
+                disabled={isLoadingCancel}>
+                <Text style={styles.cancelButtonText}>Không hủy</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton, {opacity: isLoadingCancel ? 0.7 : 1}]}
+                onPress={handleCancelBooking}
+                disabled={isLoadingCancel || !selectedCancelReason}>
+                {isLoadingCancel ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text style={styles.confirmButtonText}>Xác nhận hủy</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </Portal>
+  );
+
   // Khởi tạo
   useEffect(() => {
     if (!jobRequestCode) return;
@@ -128,6 +288,11 @@ export default function WorkFlow() {
         setBookingStatus(res.result.bookingStatus);
         if (res.result.bookingStatus !== 'NEGOTIATING') {
           // setIsPriceConfirmed(false);
+        }
+        
+        // Register for cancel booking notifications (worker side)
+        if (res.result.bookingCode && res.result.worker?.id) {
+          await registerCancelBooking(res.result.bookingCode, res.result.worker.id, false);
         }
       }
     } catch (error) {
@@ -511,10 +676,10 @@ export default function WorkFlow() {
   }
   return (
     <View style={styles.container}>
-      <Appbar title='Chi tiết công việc' onBackPress={goBack} />
+        <Appbar title='Chi tiết công việc' onBackPress={goBack} />
 
-      {/* MAP - Chỉ hiển thị khi COMING */}
-      {['COMING'].includes(bookingStatus) ? (
+        {/* MAP - Chỉ hiển thị khi COMING */}
+        {['COMING'].includes(bookingStatus) ? (
         <View style={{flex: 1}}>
           {/* Overlay thông báo khi không có vị trí */}
           {!workerLocation && (
@@ -758,9 +923,20 @@ export default function WorkFlow() {
         <View style={styles.compactInfoCard}>
           <View style={styles.compactHeader}>
             <Text style={styles.compactBookingCode}>#{bookingDetail?.bookingCode}</Text>
-            <TouchableOpacity style={styles.chatButton} onPress={handleChat}>
-              <MaterialIcons name='chat' size={24} color={Colors.primary} />
-            </TouchableOpacity>
+            <View style={{flexDirection: 'row', gap: 8}}>
+              <TouchableOpacity style={styles.chatButton} onPress={handleChat}>
+                <MaterialIcons name='chat' size={24} color={Colors.primary} />
+              </TouchableOpacity>
+              
+              {/* Cancel booking button - only show when booking can be cancelled */}
+              {canCancelBooking() && (
+                <TouchableOpacity 
+                  style={[styles.chatButton, {borderColor: '#dc2626'}]} 
+                  onPress={() => setIsCancelModalOpen(true)}>
+                  <MaterialIcons name='cancel' size={24} color='#dc2626' />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
           <View style={styles.compactCustomerInfo}>
@@ -965,6 +1141,10 @@ export default function WorkFlow() {
         onClose={() => setViewQRVisible(false)}
         qrLink={qrLink?.linkTransaction || ''}
       />
+      
+        
+        {/* Cancel Booking Modal */}
+        <CancelBookingModal />
     </View>
   );
 }
@@ -1484,5 +1664,65 @@ const styles = StyleSheet.create({
   },
   ratingDisplaySection: {
     marginTop: 16,
+  },
+  
+  // Cancel Modal Styles
+  cancelModalContainer: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    width: '90%',
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  cancelModalHeader: {
+    alignItems: 'center',
+    padding: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  cancelModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#374151',
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  cancelModalSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 20,
+  },
+  reasonList: {
+    maxHeight: 320,
+    paddingHorizontal: 16,
+  },
+  reasonItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    marginVertical: 2,
+  },
+  reasonText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#374151',
+    marginLeft: 12,
+    lineHeight: 22,
+  },
+  cancelModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+    gap: 12,
   },
 });

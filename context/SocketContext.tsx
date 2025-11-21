@@ -5,6 +5,7 @@ import { formatPrice } from '@/lib/utils';
 import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Dialog, Paragraph, Portal, Text } from 'react-native-paper';
+import Toast from 'react-native-toast-message';
 import SockJS from 'sockjs-client';
 import { ROLE, useRole } from './RoleContext';
 
@@ -14,6 +15,8 @@ type SocketContextType = {
   subscribe: (topic: string, cb: (msg: IMessage) => void) => StompSubscription | null;
   send: (destination: string, body: any) => void;
   registerConfirmJob: (jobRequestCode: string) => Promise<void>;
+  registerCancelBooking: (bookingCode: string, userId: string, isCustomer: boolean) => Promise<void>;
+  unregisterCancelBooking: (bookingCode: string) => Promise<void>;
   trigger: number;
 };
 
@@ -27,7 +30,9 @@ export const SocketProvider: React.FC<{userId: string; children: React.ReactNode
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [confirmPayload, setConfirmPayload] = useState<any>(null);
   const confirmSubsRef = useRef<Record<string, StompSubscription | null>>({});
+  const cancelBookingSubsRef = useRef<Record<string, StompSubscription | null>>({});
   const PLACED_JOBS_KEY = 'placed_job_codes';
+  const CANCEL_BOOKINGS_KEY = 'active_booking_codes';
   const [trigger, setTrigger] = useState(0);
   useEffect(() => {
     console.log('🔄 trigger changed in SocketProvider:', trigger);
@@ -105,6 +110,54 @@ export const SocketProvider: React.FC<{userId: string; children: React.ReactNode
           });
           confirmSubsRef.current[code] = sub;
         }
+        
+        // Subscribe to cancel booking notifications for all stored user IDs
+        const cancelCodes: {bookingCode: string, userId: string}[] | null = await getItem(CANCEL_BOOKINGS_KEY);
+        if (cancelCodes && Array.isArray(cancelCodes) && cancelCodes.length > 0) {
+          console.log('🔔 Subscribing to cancel booking topics for stored user IDs:', cancelCodes.map(c => c.userId));
+          
+          // Get unique user IDs to subscribe to their specific topics
+          const uniqueUserIds = [...new Set(cancelCodes.map(c => c.userId))];
+          
+          for (const userIdToSubscribe of uniqueUserIds) {
+            if (cancelBookingSubsRef.current[userIdToSubscribe]) continue; // already subscribed
+            
+            const cancelSub = client.subscribe(`/topic/cancel-job/${userIdToSubscribe}`, (msg: IMessage) => {
+              try {
+                const payload = JSON.parse(msg.body);
+                console.log(`📨 Received cancel booking event for user ${userIdToSubscribe}:`, payload);
+                
+                // Get current active bookings to check if this cancel is relevant
+                getItem(CANCEL_BOOKINGS_KEY).then((value: unknown) => {
+                  const currentCodes = value as {bookingCode: string, userId: string}[] | null;
+                  const isRelevantBooking = currentCodes?.some(booking => 
+                    booking.bookingCode === payload.bookingCode && booking.userId === userIdToSubscribe
+                  );
+                  
+                  if (isRelevantBooking) {
+                    // Show toast notification about cancellation
+                    const cancellerText = payload.canceller === 'CUSTOMER' ? 'Khách hàng' : 'Thợ';
+                    Toast.show({
+                      type: 'info',
+                      text1: `${cancellerText} đã hủy booking`,
+                      text2: `Booking ${payload.bookingCode}: ${payload.reason || 'Không có lý do cụ thể'}`,
+                      visibilityTime: 5000,
+                    });
+                    
+                    // Remove from stored bookings after notification
+                    setTimeout(() => {
+                      _removeCancelBooking(payload.bookingCode);
+                    }, 3000);
+                  }
+                });
+                
+              } catch (err) {
+                console.error('Error parsing cancel booking message', err);
+              }
+            });
+            cancelBookingSubsRef.current[userIdToSubscribe] = cancelSub;
+          }
+        }
       } catch (err) {
         console.error('Error subscribing stored confirmPrice topics', err);
       }
@@ -172,6 +225,96 @@ export const SocketProvider: React.FC<{userId: string; children: React.ReactNode
     }
   };
 
+  const _removeCancelBooking = async (bookingCode: string) => {
+    try {
+      const existing: {bookingCode: string, userId: string}[] | null = await getItem(CANCEL_BOOKINGS_KEY);
+      const removedBooking = existing?.find(b => b.bookingCode === bookingCode);
+      const bookings = Array.isArray(existing) ? existing.filter(b => b.bookingCode !== bookingCode) : [];
+      await setItem(CANCEL_BOOKINGS_KEY, bookings);
+      
+      // Check if this user has no more bookings, then unsubscribe from their topic
+      if (removedBooking) {
+        const userStillHasBookings = bookings.some(b => b.userId === removedBooking.userId);
+        if (!userStillHasBookings) {
+          const userSub = cancelBookingSubsRef.current[removedBooking.userId];
+          if (userSub) {
+            userSub.unsubscribe();
+            delete cancelBookingSubsRef.current[removedBooking.userId];
+            console.log(`🔕 Unsubscribed from cancel booking topic for user ${removedBooking.userId} - no more bookings`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('_removeCancelBooking error', err);
+    }
+  };
+
+  // Register a booking to listen for cancellation events
+  const registerCancelBooking = async (bookingCode: string, userId: string, isCustomer: boolean) => {
+    try {
+      // Customer receives notification on user.id topic: /topic/cancel-job/{user.id}
+      // Worker receives notification on worker.id topic: /topic/cancel-job/{worker.id}
+      // userId parameter should be user.id for customers and worker.id for workers
+      const targetUserId = userId;
+      
+      // Persist booking info for subscription
+      const existing: {bookingCode: string, userId: string}[] | null = await getItem(CANCEL_BOOKINGS_KEY);
+      const bookings = Array.isArray(existing) ? existing : [];
+      const existingBooking = bookings.find(b => b.bookingCode === bookingCode);
+      
+      if (!existingBooking) {
+        bookings.push({bookingCode, userId: targetUserId});
+        await setItem(CANCEL_BOOKINGS_KEY, bookings);
+      }
+      
+      // Subscribe to user-specific topic if connected and not already subscribed
+      if (client && client.connected && !cancelBookingSubsRef.current[targetUserId]) {
+        console.log(`🔔 Setting up cancel booking subscription for ${isCustomer ? 'customer' : 'worker'}: ${targetUserId}`);
+        const cancelSub = client.subscribe(`/topic/cancel-job/${targetUserId}`, (msg: IMessage) => {
+          try {
+            const payload = JSON.parse(msg.body);
+            console.log(`📨 Received cancel booking event for ${isCustomer ? 'customer' : 'worker'} ${targetUserId}:`, payload);
+            
+            // Get current active bookings to check if this cancel is relevant
+            getItem(CANCEL_BOOKINGS_KEY).then((value: unknown) => {
+              const currentCodes = value as {bookingCode: string, userId: string}[] | null;
+              const isRelevantBooking = currentCodes?.some(booking => 
+                booking.bookingCode === payload.bookingCode && booking.userId === targetUserId
+              );
+              
+              if (isRelevantBooking) {
+                // Show toast notification about cancellation
+                const cancellerText = payload.canceller === 'CUSTOMER' ? 'Khách hàng' : 'Thợ';
+                Toast.show({
+                  type: 'info',
+                  text1: `${cancellerText} đã hủy booking`,
+                  text2: `Booking ${payload.bookingCode}: ${payload.reason || 'Không có lý do cụ thể'}`,
+                  visibilityTime: 5000,
+                });
+                
+                // Remove from stored bookings after notification
+                setTimeout(() => {
+                  _removeCancelBooking(payload.bookingCode);
+                }, 3000);
+              }
+            });
+            
+          } catch (err) {
+            console.error('Error parsing cancel booking message', err);
+          }
+        });
+        cancelBookingSubsRef.current[targetUserId] = cancelSub;
+      }
+    } catch (err) {
+      console.error('RegisterCancelBooking error', err);
+    }
+  };
+
+  // Unregister cancel booking subscription
+  const unregisterCancelBooking = async (bookingCode: string) => {
+    await _removeCancelBooking(bookingCode);
+  };
+
   const handleConfirmPrice = async (Option = 'ACCEPT') => {
     try {
       const bookingCode = confirmPayload?.bookingCode || confirmPayload?.jobRequestCode || confirmPayload?.bookingCode;
@@ -207,7 +350,7 @@ export const SocketProvider: React.FC<{userId: string; children: React.ReactNode
   };
 
   return (
-    <SocketContext.Provider value={{client, subscribe, send, connected, registerConfirmJob, trigger}}>
+    <SocketContext.Provider value={{client, subscribe, send, connected, registerConfirmJob, registerCancelBooking, unregisterCancelBooking, trigger}}>
       {children}
 
       {/* Confirm price modal for customers */}
