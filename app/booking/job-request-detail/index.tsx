@@ -38,9 +38,14 @@ export default function Index() {
     const topic = `/topic/send-quote/${serviceId}`;
     console.log('Subscribing to topic:', topic);
     const subscription = subscribe(topic, message => {
-      // console.log('Received message:', message.body);
+      console.log('===========Received message:=============', message.body);
       if (message.body) {
-        fetchJobRequestByCode(jobRequestCode as string);
+        // settime out và xóa
+        // fetchJobRequestByCode(jobRequestCode as string);
+        const timer = setTimeout(() => {
+          fetchJobRequestByCode(jobRequestCode as string);
+        }, 500);
+        return () => clearTimeout(timer);
       }
     });
     return () => {
