@@ -74,16 +74,16 @@ export default function SendQuotePage() {
     console.log('🔔 Đăng ký topic job cancellation:', topic);
     
     subscriptionRef.current = subscribe(topic, (message) => {
-      console.log('📨 Nhận thông báo job bị hủy:', message.body);
+      // console.log('📨 Nhận thông báo job bị hủy:', message.body);
       
       try {
-        const cancelData = JSON.parse(message.body);
+        // const cancelData = JSON.parse(message.body);
         
         // Hiển thị thông báo cho thợ
         Toast.show({
-          type: 'info',
+          type: 'warning',
           text1: 'Đơn hàng đã bị hủy',
-          text2: `Khách hàng đã hủy đơn hàng: ${cancelData?.reason || 'Không có lý do cụ thể'}`,
+          text2: `Khách hàng đã hủy đơn hàng`,
           visibilityTime: 5000,
         });
         

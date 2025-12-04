@@ -123,7 +123,7 @@ export default function HomeScreen() {
           <Text variant='titleMedium' style={styles.sectionTitle}>
             🎉 Sự kiện nổi bật
           </Text>
-          <Text variant='bodyMedium' style={styles.eventText}>
+          <Text variant='bodyMedium' style={[styles.eventText, {textAlign: 'center'}]}>
             Hiện chưa có sự kiện nào.
           </Text>
         </View>
@@ -135,7 +135,7 @@ export default function HomeScreen() {
           </Text>
           <View style={{borderRadius: 16, overflow: 'hidden', marginTop: 8}}>
             <ImageBackground
-              source={require('../../assets/images/quynloitho.png')}
+              source={require('../../assets/images/quynloitho1.png')}
               resizeMode='cover'
               style={{height: 180}}
             />

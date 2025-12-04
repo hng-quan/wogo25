@@ -7,7 +7,7 @@ import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Animated, Easing, FlatList, StyleSheet, View } from 'react-native';
-import { Icon, IconButton, Text } from 'react-native-paper';
+import { IconButton, Text } from 'react-native-paper';
 
 export default function Index() {
   const {t} = useTranslation();
@@ -90,22 +90,22 @@ const CardCustom = ({ item }: { item: Professional }) => {
   return (
     <View className="bg-white rounded p-4 mb-3 border border-gray-200">
       {/* Tên nghiệp vụ */}
-      <Text variant="titleMedium" className="!font-bold text-gray-900 mb-3">
+      <Text variant="titleMedium" className="!font-bold text-gray-900">
         {item.service.parentService.serviceName}
       </Text>
 
       {/* Các số liệu */}
-      <View className="flex-row items-center mb-1">
+      {/* <View className="flex-row items-center mb-1">
         <Icon source='briefcase-outline'  size={18} color="#4B5563" />
         <Text className="text-gray-700 ml-2">{item.worker.totalJobs} công việc</Text>
-      </View>
+      </View> */}
 
-      <View className="flex-row items-center mb-1">
+      {/* <View className="flex-row items-center mb-1">
         <Icon source='star-outline'  size={18} color="#FACC15" />
         <Text className="text-gray-700 ml-2">{item.worker.averageRating} sao trung bình</Text>
-      </View>
+      </View> */}
 
-      <View className="flex-row items-center mb-1">
+      {/* <View className="flex-row items-center mb-1">
         <Icon source='check-circle-outline' size={18} color="#22C55E" />
         <Text className="text-gray-700 ml-2">{item.totalOrders} đơn đã hoàn thành</Text>
       </View>
@@ -119,7 +119,7 @@ const CardCustom = ({ item }: { item: Professional }) => {
           })}{' '}
           doanh thu
         </Text>
-      </View>
+      </View> */}
     </View>
   );
 };

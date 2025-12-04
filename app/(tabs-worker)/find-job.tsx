@@ -455,7 +455,7 @@ export default function FindJob() {
   // Effect: Fetch jobs when job trigger changes (new job notification)
   useEffect(() => {
     if (!isSavedAddress) return;
-
+    console.log('🔔 Job trigger changed, fetching available jobs...');
     fetchJobsAvailable();
   }, [jobTrigger, isSavedAddress, fetchJobsAvailable]);
 

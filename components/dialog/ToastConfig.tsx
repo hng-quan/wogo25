@@ -87,7 +87,6 @@ export const toastConfig = {
         maxWidth: '90%',
       }}
       activeOpacity={0.85}>
-
       <View style={{flex: 1}}>
         <Text
           style={{
@@ -102,6 +101,97 @@ export const toastConfig = {
           <Text
             style={{
               color: '#d1fae5', // xanh lá nhạt
+              fontSize: 13,
+              marginTop: 2,
+              lineHeight: 18,
+            }}>
+            {text2}
+          </Text>
+        ) : null}
+      </View>
+    </TouchableOpacity>
+  ),
+
+  info: ({text1, text2, onPress}: BaseToastProps) => (
+    <TouchableOpacity
+      onPress={onPress}
+      style={{
+        marginTop: 0,
+        marginHorizontal: 16,
+        backgroundColor: '#3b82f6', // xanh dương nhẹ (blue-500)
+        borderRadius: 12,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+        elevation: 5,
+        maxWidth: '90%',
+      }}
+      activeOpacity={0.85}>
+      <View style={{flex: 1}}>
+        <Text
+          style={{
+            color: 'white',
+            fontWeight: '600',
+            fontSize: 15,
+            lineHeight: 20,
+          }}>
+          {text1}
+        </Text>
+
+        {text2 ? (
+          <Text
+            style={{
+              color: '#bfdbfe', // xanh nhạt (blue-200)
+              fontSize: 13,
+              marginTop: 2,
+              lineHeight: 18,
+            }}>
+            {text2}
+          </Text>
+        ) : null}
+      </View>
+    </TouchableOpacity>
+  ),
+  warning: ({text1, text2, onPress}: BaseToastProps) => (
+    <TouchableOpacity
+      onPress={onPress}
+      style={{
+        marginTop: 0,
+        marginHorizontal: 16,
+        backgroundColor: '#f59e0b', // vàng cam (amber-500)
+        borderRadius: 12,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+        elevation: 5,
+        maxWidth: '90%',
+      }}
+      activeOpacity={0.85}>
+      <View style={{flex: 1}}>
+        <Text
+          style={{
+            color: 'white',
+            fontWeight: '600',
+            fontSize: 15,
+            lineHeight: 20,
+          }}>
+          {text1}
+        </Text>
+
+        {text2 ? (
+          <Text
+            style={{
+              color: '#fde68a', // vàng nhạt (amber-200)
               fontSize: 13,
               marginTop: 2,
               lineHeight: 18,

@@ -3,7 +3,7 @@ import Appbar from '@/components/layout/Appbar';
 import MapPicker from '@/components/map/MapPicker';
 import { useLocation } from '@/context/LocationContext';
 import { formPostAPI } from '@/lib/apiService';
-import { updateAddress } from '@/lib/utils';
+import { formatPrice, updateAddress } from '@/lib/utils';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as ImagePicker from 'expo-image-picker';
@@ -96,7 +96,7 @@ export default function Index() {
 
   const fetchPriceSuggestion = async () => {
     const onSuccess = (res: any) => {
-      const priceAround = (res?.minPrice || 0) + ' - ' + (res?.maxPrice || 0);
+      const priceAround = (formatPrice(res?.minPrice) || 0) + ' - ' + (formatPrice(res?.maxPrice) || 0);
       setPriceSuggestion({
         estimatedPriceLower: res?.minPrice,
         estimatedPriceHigher: res?.maxPrice,

@@ -88,7 +88,7 @@ const Profile = () => {
   };
   const settingsOptions = [
     {id: 1, title: 'Thanh toán', icon: 'wallet'},
-    {id: 2, title: 'Ưu đãi', icon: 'gift'},
+    // {id: 2, title: 'Ưu đãi', icon: 'gift'},
     {id: 3, title: 'Ngôn ngữ', icon: 'web', onPress: () => setVisible(true)},
     {id: 4, title: 'Đổi mật khẩu', icon: 'id-card', onPress: () => setChangePwdVisible(true)},
     {id: 5, title: 'Đăng xuất', icon: 'logout', onPress: () => setDialogVisible(true)},

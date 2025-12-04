@@ -201,8 +201,22 @@ export default function HomeScreen() {
           />
         </View>
 
+        {/* Promotions */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Mẹo sử dụng ứng dụng</Text>
+          {/* <Text style={styles.sectionTitle}>Chiến dịch nổi bật</Text> */}
+          <FlatList
+            ref={flatListRef}
+            data={promotions}
+            renderItem={({item}) => <PromotionCard title={item.title} subtitle={item.subtitle} image={item.image} />}
+            keyExtractor={item => item.id}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+          />
+        </View>
+
+        <View style={styles.section}>
+          {/* <Text style={styles.sectionTitle}>Mẹo sử dụng ứng dụng</Text> */}
           <View style={styles.tipCard}>
             <MaterialCommunityIcons name='lightbulb-on-outline' size={28} color='#4CAF50' />
             <View style={{flex: 1, marginLeft: 10}}>
@@ -219,23 +233,9 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Promotions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Chiến dịch nổi bật</Text>
-          <FlatList
-            ref={flatListRef}
-            data={promotions}
-            renderItem={({item}) => <PromotionCard title={item.title} subtitle={item.subtitle} image={item.image} />}
-            keyExtractor={item => item.id}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-          />
-        </View>
-
         {/* Benefits */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quyền lợi</Text>
+          {/* <Text style={styles.sectionTitle}>Quyền lợi</Text> */}
           <ImageBackground
             source={require('../../assets/images/quyenloikhach.jpg')}
             resizeMode='cover'
