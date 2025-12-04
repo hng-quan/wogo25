@@ -149,6 +149,7 @@ export default function FindJob() {
 
         if (res?.result) {
           const sortedJobs = sortJobsByDistance(res.result);
+          console.log('jobs fetched:', sortedJobs);
           setJobList(sortedJobs);
           console.log(`✅ [FindJob] Found ${sortedJobs.length} jobs available.`);
         }
@@ -454,7 +455,8 @@ export default function FindJob() {
 
   // Effect: Fetch jobs when job trigger changes (new job notification)
   useEffect(() => {
-    if (!isSavedAddress) return;
+    // if (!isSavedAddress) return;
+    console.log('🔔 Job trigger changed:', jobTrigger);
     console.log('🔔 Job trigger changed, fetching available jobs...');
     fetchJobsAvailable();
   }, [jobTrigger, isSavedAddress, fetchJobsAvailable]);

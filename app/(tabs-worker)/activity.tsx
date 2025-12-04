@@ -28,6 +28,13 @@ export default function ActivityScreen() {
   const {currentTab} = useLocalSearchParams();
   const [myJobsRequest, setMyJobsRequest] = React.useState<JobRequest[]>([]);
   const [activeTab, setActiveTab] = useState(currentTab || STATUS.ALL);
+
+  // Update activeTab khi currentTab param thay đổi (khi navigate back)
+  React.useEffect(() => {
+    if (currentTab && currentTab !== activeTab) {
+      setActiveTab(currentTab as string);
+    }
+  }, [currentTab]);
   const [history, setHistory] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -75,6 +82,12 @@ export default function ActivityScreen() {
     </View>
   );
 
+  /**
+   * Navigation logic dựa trên status của job
+   * - PENDING: Chuyển đến màn hình báo giá
+   * - ACCEPTED: Chuyển đến màn hình workflow
+   * - CANCELLED: Chuyển đến màn hình chi tiết job đã hủy
+   */
   const navigateToScreen = async (item: any) => {
     if (item?.job?.status === STATUS.PENDING) {
       router.push({
@@ -93,6 +106,17 @@ export default function ActivityScreen() {
         params: {
           currentTab: activeTab,
           jobRequestCode: item.job.jobRequestCode,
+        },
+      });
+    } else if (item?.job?.status === STATUS.CANCELLED) {
+      // Navigation đến màn hình chi tiết job đã hủy
+      router.replace({
+        pathname: '/booking/cancelled-job-detail',
+        params: {
+          currentTab: activeTab,
+          jobRequestCode: item.job.jobRequestCode,
+          prevPath: 'worker-activity',
+          quotedPrice: item.quotedPrice?.toString() || '0',
         },
       });
     }
@@ -122,10 +146,24 @@ export default function ActivityScreen() {
         activeOpacity={0.85}
         onPress={() => {
           if (isHistory) {
-            router.push({
-              pathname: '/workflow',
-              params: {currentTab: activeTab, jobRequestCode: item.code},
-            });
+            // Kiểm tra nếu booking history đã bị hủy thì chuyển đến cancelled job detail
+            if (item.status === 'CANCELLED') {
+              router.replace({
+                pathname: '/booking/cancelled-job-detail',
+                params: {
+                  currentTab: activeTab,
+                  jobRequestCode: item.code,
+                  prevPath: 'worker-activity',
+                  isFromHistory: 'true',
+                },
+              });
+            } else {
+              // Booking hoàn thành thì vào workflow
+              router.push({
+                pathname: '/workflow',
+                params: {currentTab: activeTab, jobRequestCode: item.code},
+              });
+            }
           } else {
             navigateToScreen(item);
           }
