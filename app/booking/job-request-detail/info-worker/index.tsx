@@ -3,6 +3,7 @@ import Appbar from '@/components/layout/Appbar';
 import { StarRating } from '@/components/ui/StarRating';
 import { useSocket } from '@/context/SocketContext';
 import { jsonPostAPI } from '@/lib/apiService';
+import { Colors } from '@/lib/common';
 import { formatPrice } from '@/lib/utils';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
@@ -204,6 +205,6 @@ export default function OrderDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F2',
+    backgroundColor: Colors.background,
   },
 });

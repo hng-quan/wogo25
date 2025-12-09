@@ -105,9 +105,9 @@ export default function ChatbotScreen() {
     }
   };
 
-  const fetchPrice = async () => {
+  const fetchPrice = async (id: string) => {
     try {
-      const response = await axios.get(`${API_URL}/price-range/${String('35')}`);
+      const response = await axios.get(`${API_URL}/price-range/${id}`);
       setPriceRange(response.data);
     } catch (error) {
       console.error('Error fetching price range:', error);
@@ -116,7 +116,7 @@ export default function ChatbotScreen() {
 
   useEffect(() => {
     if (popup?.status === STATUS.COMPLETE) {
-      fetchPrice();
+      fetchPrice(popup?.service_id);
     }
   }, [popup]);
 
@@ -124,7 +124,7 @@ export default function ChatbotScreen() {
     <KeyboardAvoidingView
       style={{flex: 1, backgroundColor: Colors.background}}
       behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 45 : 0}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 45 : 30}
       >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={{flex: 1}}>

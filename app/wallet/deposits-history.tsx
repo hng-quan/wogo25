@@ -31,6 +31,7 @@ const DepositsHistory = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchHistory = async () => {
+    console.log('user workerId', user?.workerId);
     if (!user?.workerId) return;
     setLoading(true);
     try {

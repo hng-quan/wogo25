@@ -136,7 +136,7 @@ export default function FindJob() {
         // console.log('🔍 Fetching available jobs...');
 
         const res = await jsonGettAPI('/bookings/job-available', {}, undefined, undefined, error => {
-          console.error('❌ Fetch jobs error:', error);
+          // console.error('❌ Fetch jobs error:', error);
           setFinding(false);
           setIsSearching(false);
 
@@ -154,7 +154,7 @@ export default function FindJob() {
           console.log(`✅ [FindJob] Found ${sortedJobs.length} jobs available.`);
         }
       } catch (error) {
-        console.error('❌ Fetch jobs error:', error);
+        // console.error('❌ Fetch jobs error:', error);
       } finally {
         setIsLoadingJobs(false);
         fetchingRef.current = false;

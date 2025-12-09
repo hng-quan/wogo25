@@ -22,6 +22,7 @@ import {
   View,
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import Toast from 'react-native-toast-message';
 
 const STATUS = {
   PENDING: 'PENDING',
@@ -216,6 +217,17 @@ export default function Index() {
 
   // 🚀 Gửi yêu cầu tạo job
   const handleCreateJob = async () => {
+    // Kiểm tra dữ liệu bắt buộc
+    const mPrice = priceSuggestion?.estimatedPriceLower || 0;
+    const mxPrice = priceSuggestion?.estimatedPriceHigher || 0;
+    console.log('💰 Price range for submission:', mPrice, mxPrice);
+    if (!description || !serviceId || !address || !coords) {
+      Toast.show({
+        type: 'error',
+        text1: 'Vui lòng nhập đầy đủ thông tin.',
+      });
+      return;
+    }
     if (submitting) return;
     setSubmitting(true);
     try {
@@ -233,8 +245,8 @@ export default function Index() {
       formData.append('bookingDate', bookingDate);
       formData.append('latitudeUser', String(coords?.latitude || ''));
       formData.append('longitudeUser', String(coords?.longitude || ''));
-      formData.append('estimatedPriceLower', priceSuggestion?.estimatedPriceLower ?? 0);
-      formData.append('estimatedPriceHigher', priceSuggestion?.estimatedPriceHigher ?? 0);
+      formData.append('estimatedPriceLower',  mPrice);
+      formData.append('estimatedPriceHigher', mxPrice);
 
       // ✅ Thêm danh sách file ảnh/video
       imageList.forEach((file, index) => {

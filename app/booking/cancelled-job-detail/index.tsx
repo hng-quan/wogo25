@@ -1,23 +1,23 @@
+import Appbar from '@/components/layout/Appbar';
+import { AvatarWrapper } from '@/components/layout/ProfileContainer';
+import { ROLE, useRole } from '@/context/RoleContext';
 import { JobRequest } from '@/interfaces/interfaces';
 import { jsonGettAPI } from '@/lib/apiService';
 import { Colors } from '@/lib/common';
 import { displayDateVN, formatPrice } from '@/lib/utils';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import {
-    ActivityIndicator,
-    Avatar,
-    Card,
-    Chip,
-    Text,
+  ActivityIndicator,
 } from 'react-native-paper';
 
 /**
@@ -27,6 +27,8 @@ import {
 export default function CancelledJobDetailScreen() {
   // Nhận params từ navigation
   const { jobRequestCode, currentTab, prevPath, quotedPrice, isFromHistory } = useLocalSearchParams();
+  const {role} = useRole();
+  const isWorker = role === ROLE.WORKER;
   
   // State quản lý dữ liệu và loading
   const [jobDetail, setJobDetail] = useState<JobRequest | null>(null);
@@ -93,6 +95,15 @@ export default function CancelledJobDetailScreen() {
           currentTab: currentTab,
         },
       });
+    } else if (prevPath === 'customer-activity' && currentTab) {
+      router.replace({
+        pathname: '/(tabs-customer)/activity',
+        params: {
+          currentTab: currentTab,
+        },
+      });
+    } else if (prevPath === 'customer-activity') {
+      router.replace('/(tabs-customer)/activity');
     } else {
       router.replace('/(tabs-worker)/activity');
     }
@@ -116,7 +127,7 @@ export default function CancelledJobDetailScreen() {
   if (!jobDetail) {
     return (
       <View style={styles.errorContainer}>
-        <Ionicons name="alert-circle-outline" size={64} color="#FF5722" />
+        <MaterialCommunityIcons name="alert-circle-outline" size={64} color="#FF5722" />
         <Text style={styles.errorTitle}>Không tìm thấy thông tin</Text>
         <Text style={styles.errorMessage}>
           Không thể tải thông tin công việc đã hủy
@@ -129,62 +140,59 @@ export default function CancelledJobDetailScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header với nút back */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {isFromHistory === 'true' ? 'Lịch sử công việc đã hủy' : 'Chi tiết công việc đã hủy'}
-        </Text>
-      </View>
+    <View style={styles.container}>
+      {/* Header với Appbar component */}
+      <Appbar 
+        title={isFromHistory === 'true' ? 'Lịch sử công việc đã hủy' : 'Chi tiết công việc đã hủy'}
+        onBackPress={handleGoBack}
+      />
+      
+      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
 
-      {/* Status card - hiển thị trạng thái đã hủy */}
-      <Card style={styles.statusCard}>
-        <Card.Content style={styles.statusContent}>
-          <View style={styles.statusIcon}>
-            <Ionicons name="close-circle" size={40} color="#F44336" />
+        {/* Status section - hiển thị trạng thái đã hủy */}
+        <View style={styles.statusSection}>
+          <View style={styles.statusContent}>
+            <View style={styles.statusIcon}>
+              <MaterialCommunityIcons name="cancel" size={40} color="#F44336" />
+            </View>
+            <View style={styles.statusInfo}>
+              <Text style={styles.statusTitle}>Công việc đã bị hủy</Text>
+              <Text style={styles.jobCode}>#{jobDetail.jobRequestCode}</Text>
+            </View>
           </View>
-          <View style={styles.statusInfo}>
-            <Text style={styles.statusTitle}>Công việc đã bị hủy</Text>
-            <Text style={styles.jobCode}>#{jobDetail.jobRequestCode}</Text>
-          </View>
-        </Card.Content>
-      </Card>
+        </View>
 
-      {/* Thông tin cancellation */}
-      <Card style={styles.card}>
-        <Card.Content>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="information-circle" size={20} color="#F44336" />
-            <Text style={styles.sectionTitle}>Thông tin hủy</Text>
-          </View>
+        {/* Thông tin cancellation */}
+        <View style={styles.infoSection}>
+          <Text style={getSectionTitleStyle(role)}>
+            <MaterialCommunityIcons name="information" size={20} color="#F44336" />
+            {'  '}Thông tin hủy
+          </Text>
           
           {cancellationInfo ? (
             <>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Người hủy:</Text>
-                <Text style={styles.infoValue}>
-                  {cancellationInfo.cancelledBy === 'CUSTOMER' ? 'Khách hàng' : 
-                   cancellationInfo.cancelledBy === 'WORKER' ? 'Thợ' : 'Hệ thống'}
-                </Text>
-              </View>
+              <InfoRow 
+                icon={<MaterialCommunityIcons name="account" size={18} color={Colors.primary} />}
+                label="Người hủy"
+                value={cancellationInfo.cancelledBy === 'CUSTOMER' ? 'Khách hàng' : 
+                       cancellationInfo.cancelledBy === 'WORKER' ? 'Thợ' : 'Hệ thống'}
+              />
               
               {cancellationInfo.cancelledAt && (
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Thời gian hủy:</Text>
-                  <Text style={styles.infoValue}>
-                    {displayDateVN(new Date(cancellationInfo.cancelledAt))}
-                  </Text>
-                </View>
+                <InfoRow 
+                  icon={<MaterialCommunityIcons name="clock" size={18} color={Colors.primary} />}
+                  label="Thời gian hủy"
+                  value={displayDateVN(new Date(cancellationInfo.cancelledAt))}
+                />
               )}
               
               {cancellationInfo.reason && (
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Lý do:</Text>
-                  <Text style={styles.infoValue}>{cancellationInfo.reason}</Text>
-                </View>
+                <InfoRow 
+                  icon={<MaterialCommunityIcons name="message-text" size={18} color={Colors.primary} />}
+                  label="Lý do"
+                  value={cancellationInfo.reason}
+                  multiline
+                />
               )}
             </>
           ) : (
@@ -194,125 +202,134 @@ export default function CancelledJobDetailScreen() {
               </Text>
             </View>
           )}
-        </Card.Content>
-      </Card>
+        </View>
 
-      {/* Thông tin dịch vụ */}
-      <Card style={styles.card}>
-        <Card.Content>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="construct" size={20} color="#2196F3" />
-            <Text style={styles.sectionTitle}>Thông tin dịch vụ</Text>
-          </View>
+        {/* Thông tin dịch vụ */}
+        <View style={styles.infoSection}>
+          <Text style={getSectionTitleStyle(role)}>
+            <FontAwesome5 name="tools" size={18} color="#2196F3" />
+            {'  '}Thông tin dịch vụ
+          </Text>
           
           <Text style={styles.serviceTitle}>{jobDetail.service.serviceName}</Text>
           
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Ngày hẹn:</Text>
-            <Text style={styles.infoValue}>
-              {displayDateVN(new Date(jobDetail.bookingDate))}
-            </Text>
-          </View>
+          <InfoRow 
+            icon={<MaterialCommunityIcons name="calendar-clock" size={18} color={Colors.primary} />}
+            label="Ngày hẹn"
+            value={displayDateVN(new Date(jobDetail.bookingDate))}
+          />
           
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Ước tính giá:</Text>
-            <Text style={styles.infoValue}>
-              {formatPrice(jobDetail.estimatedPriceLower)} - {formatPrice(jobDetail.estimatedPriceHigher)} đ
-            </Text>
-          </View>
+          <InfoRow 
+            icon={<MaterialCommunityIcons name="cash" size={18} color={Colors.primary} />}
+            label="Ước tính giá"
+            value={`${formatPrice(jobDetail.estimatedPriceLower)} - ${formatPrice(jobDetail.estimatedPriceHigher)} đ`}
+          />
           
           {quotedPrice && quotedPrice !== '0' && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Giá đã báo:</Text>
-              <Text style={[styles.infoValue, styles.quotedPriceText]}>
-                {formatPrice(parseInt(quotedPrice))} đ
-              </Text>
-            </View>
+            <InfoRow 
+              icon={<MaterialCommunityIcons name="tag" size={18} color={Colors.primary} />}
+              label="Giá đã báo"
+              value={`${formatPrice(parseInt(quotedPrice as string))} đ`}
+              valueStyle={styles.quotedPriceText}
+            />
           )}
           
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Thời gian ước tính:</Text>
-            <Text style={styles.infoValue}>{jobDetail.estimatedDurationMinutes} phút</Text>
-          </View>
+          {/* <InfoRow 
+            icon={<MaterialCommunityIcons name="clock" size={18} color={Colors.primary} />}
+            label="Thời gian ước tính"
+            value={`${jobDetail.estimatedDurationMinutes} phút`}
+          /> */}
           
           {jobDetail.description && (
-            <>
-              <Text style={styles.infoLabel}>Mô tả:</Text>
-              <Text style={styles.description}>{jobDetail.description}</Text>
-            </>
+            <InfoRow 
+              icon={<MaterialCommunityIcons name="text" size={18} color={Colors.primary} />}
+              label="Mô tả"
+              value={jobDetail.description}
+              multiline
+            />
           )}
-        </Card.Content>
-      </Card>
+        </View>
 
-      {/* Thông tin địa chỉ */}
-      <Card style={styles.card}>
-        <Card.Content>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="location" size={20} color="#4CAF50" />
-            <Text style={styles.sectionTitle}>Địa chỉ làm việc</Text>
-          </View>
+        {/* Thông tin địa chỉ */}
+        <View style={styles.infoSection}>
+          <Text style={getSectionTitleStyle(role)}>
+            <MaterialIcons name="place" size={20} color={role === ROLE.WORKER ? Colors.primary : Colors.secondary} />
+            {'  '}Địa chỉ làm việc
+          </Text>
           
-          <Text style={styles.address}>{jobDetail.bookingAddress}</Text>
+          <InfoRow 
+            icon={<MaterialIcons name="location-on" size={18} color={role === ROLE.WORKER ? Colors.primary : Colors.secondary} />}
+            label="Địa chỉ"
+            value={jobDetail.bookingAddress}
+            multiline
+          />
           
-          <View style={styles.coordinatesContainer}>
-            <Chip icon="crosshairs-gps" compact>
-              {jobDetail.latitude.toFixed(6)}, {jobDetail.longitude.toFixed(6)}
-            </Chip>
-          </View>
-        </Card.Content>
-      </Card>
+          {/* <InfoRow 
+            icon={<MaterialIcons name="gps-fixed" size={18} color={Colors.primary} />}
+            label="Tọa độ"
+            value={`${jobDetail.latitude.toFixed(6)}, ${jobDetail.longitude.toFixed(6)}`}
+          /> */}
+        </View>
 
-      {/* Thông tin khách hàng */}
-      <Card style={styles.card}>
-        <Card.Content>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="person" size={20} color="#FF9800" />
-            <Text style={styles.sectionTitle}>Thông tin khách hàng</Text>
-          </View>
+        {/* Thông tin khách hàng */}
+        <View style={styles.infoSection}>
+          <Text style={getSectionTitleStyle(role)}>
+            <MaterialCommunityIcons name="account" size={20} color="#FF9800" />
+            {'  '}Thông tin khách hàng
+          </Text>
           
           <View style={styles.customerInfo}>
-            <Avatar.Text 
-              size={40} 
-              label={jobDetail.user.fullName.charAt(0).toUpperCase()}
-              style={styles.avatar}
+            <AvatarWrapper 
+              size={48} 
+              url={jobDetail.user.avatarUrl}
+              role="WORKER"
             />
             <View style={styles.customerDetails}>
               <Text style={styles.customerName}>{jobDetail.user.fullName}</Text>
               <Text style={styles.customerPhone}>{jobDetail.user.phone}</Text>
             </View>
           </View>
-        </Card.Content>
-      </Card>
+        </View>
 
-      {/* Files đính kèm nếu có */}
-      {jobDetail.files && jobDetail.files.length > 0 && (
-        <Card style={styles.card}>
-          <Card.Content>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="attach" size={20} color="#9C27B0" />
-              <Text style={styles.sectionTitle}>File đính kèm</Text>
-            </View>
+        {/* Files đính kèm nếu có */}
+        {/* {jobDetail.files && jobDetail.files.length > 0 && (
+          <View style={styles.infoSection}>
+            <Text style={styles.sectionTitle}>
+              <MaterialCommunityIcons name="attachment" size={20} color="#9C27B0" />
+              {'  '}File đính kèm
+            </Text>
             
             {jobDetail.files.map((file, index) => (
-              <View key={index} style={styles.fileItem}>
-                <Ionicons name="document" size={16} color="#666" />
-                <Text style={styles.fileName}>{file.fileName}</Text>
-              </View>
+              <InfoRow 
+                key={index}
+                icon={<MaterialCommunityIcons name="file-document" size={18} color={Colors.primary} />}
+                label="File"
+                value={file.fileName}
+              />
             ))}
-          </Card.Content>
-        </Card>
-      )}
+          </View>
+        )} */}
 
-      {/* Bottom spacing */}
-      <View style={styles.bottomSpacing} />
-    </ScrollView>
+        {/* Bottom spacing */}
+        <View style={styles.bottomSpacing} />
+      </ScrollView>
+    </View>
   );
 }
+
+// Function to get dynamic section title style based on role
+const getSectionTitleStyle = (role: string) => ({
+  ...styles.sectionTitle,
+  borderLeftColor: role === ROLE.WORKER ? Colors.primary : Colors.secondary,
+});
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  scrollContainer: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,
@@ -356,29 +373,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  backButton: {
-    marginRight: 16,
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  statusCard: {
-    margin: 16,
-    marginBottom: 12,
+  statusSection: {
     backgroundColor: '#FFF5F5',
-    borderColor: '#FFCDD2',
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 12,
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
+    borderColor: '#FFCDD2',
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   statusContent: {
     flexDirection: 'row',
@@ -392,7 +399,7 @@ const styles = StyleSheet.create({
   },
   statusTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#F44336',
     marginBottom: 4,
   },
@@ -401,72 +408,41 @@ const styles = StyleSheet.create({
     color: '#666',
     fontWeight: '500',
   },
-  card: {
-    margin: 16,
-    marginTop: 0,
-    marginBottom: 12,
+  infoSection: {
     backgroundColor: '#fff',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 16,
     marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginLeft: 8,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    alignItems: 'flex-start',
-  },
-  infoLabel: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-    width: 100,
-    flexShrink: 0,
-  },
-  infoValue: {
-    fontSize: 14,
-    color: '#333',
-    flex: 1,
-    fontWeight: '500',
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    paddingLeft: 10,
+    lineHeight: 24,
   },
   serviceTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#333',
     marginBottom: 16,
-  },
-  description: {
-    fontSize: 14,
-    color: '#333',
-    lineHeight: 20,
-    marginTop: 4,
-  },
-  address: {
-    fontSize: 14,
-    color: '#333',
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  coordinatesContainer: {
-    alignItems: 'flex-start',
+    textAlign: 'center',
   },
   customerInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  avatar: {
-    backgroundColor: Colors.primary,
-    marginRight: 12,
+    paddingVertical: 8,
   },
   customerDetails: {
     flex: 1,
+    marginLeft: 12,
   },
   customerName: {
     fontSize: 16,
@@ -477,16 +453,6 @@ const styles = StyleSheet.create({
   customerPhone: {
     fontSize: 14,
     color: '#666',
-  },
-  fileItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  fileName: {
-    fontSize: 14,
-    color: '#333',
-    marginLeft: 8,
   },
   bottomSpacing: {
     height: 20,
@@ -507,3 +473,45 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+// InfoRow component to match app design patterns
+interface InfoRowProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  valueStyle?: any;
+  multiline?: boolean;
+}
+
+const InfoRow: React.FC<InfoRowProps> = ({ icon, label, value, valueStyle, multiline = false }) => (
+  <View style={{
+    flexDirection: multiline ? 'column' : 'row',
+    alignItems: multiline ? 'flex-start' : 'center',
+    paddingVertical: 8,
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+  }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: multiline ? 6 : 0 }}>
+      {icon}
+      <Text style={{
+        marginLeft: 8,
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#666',
+        minWidth: multiline ? 0 : 100,
+      }}>
+        {label}:
+      </Text>
+    </View>
+    <Text style={[{
+      marginLeft: multiline ? 0 : 8,
+      fontSize: 14,
+      color: '#333',
+      flex: multiline ? 0 : 1,
+      fontWeight: '500',
+      lineHeight: 20,
+    }, valueStyle]}>
+      {value}
+    </Text>
+  </View>
+);

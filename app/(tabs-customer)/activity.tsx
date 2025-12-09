@@ -95,6 +95,17 @@ export default function ActivityScreen() {
           jobRequestCode: item.jobRequestCode,
         },
       });
+    } else if (item.status === STATUS.CANCELLED) {
+      // Navigation đến màn hình chi tiết job đã hủy cho khách hàng
+      router.replace({
+        pathname: '/booking/cancelled-job-detail',
+        params: {
+          currentTab: activeTab,
+          jobRequestCode: item.jobRequestCode,
+          prevPath: 'customer-activity',
+          isFromHistory: 'false',
+        },
+      });
     }
   };
 
@@ -188,13 +199,27 @@ export default function ActivityScreen() {
             renderHistoryCard({
               item,
               onPress: () => {
-                router.push({
-                  pathname: '/tracking',
-                  params: {
-                    currentTab: activeTab,
-                    jobRequestCode: item.code,
-                  },
-                });
+                if (item.status === 'CANCELLED') {
+                  // Navigation đến màn hình chi tiết job đã hủy cho lịch sử
+                  router.replace({
+                    pathname: '/booking/cancelled-job-detail',
+                    params: {
+                      currentTab: activeTab,
+                      jobRequestCode: item.code,
+                      prevPath: 'customer-activity',
+                      isFromHistory: 'true',
+                    },
+                  });
+                } else {
+                  // Navigation bình thường cho các job hoàn thành
+                  router.push({
+                    pathname: '/tracking',
+                    params: {
+                      currentTab: activeTab,
+                      jobRequestCode: item.code,
+                    },
+                  });
+                }
               },
             })
           }

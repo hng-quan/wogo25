@@ -303,6 +303,13 @@ const _handleError = (error: any) => {
       alert('Bạn đã gửi báo giá cho yêu cầu công việc này.');
     }
   }
+  if (error.response?.data?.code === 5013) {
+    Toast.show({
+      type: 'error',
+      text1: 'Lỗi',
+      text2: error.response?.data?.message,
+    });
+  }
 };
 
 export const formPostAPI = async (
