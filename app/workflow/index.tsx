@@ -114,7 +114,7 @@ export default function WorkFlow() {
    * @returns Customer name or fallback text
    */
   const getCustomerName = (): string => {
-    return bookingDetail?.user?.fullName || bookingDetail?.customer?.fullName || 'Khách hàng';
+    return bookingDetail?.worker?.user?.fullName || 'Khách hàng';
   };
 
   // Danh sách lý do hủy đặt cho thợ
@@ -282,10 +282,16 @@ export default function WorkFlow() {
   const fetchBookingDetail = async () => {
     try {
       const res = await jsonGettAPI('/bookings/getByCode/' + jobRequestCode);
-      // console.log('booking detail res', res);
+      console.log('booking detail res', res);
       if (res?.result) {
         setBookingDetail(res.result);
         setBookingStatus(res.result.bookingStatus);
+        // "bookingPayment": {"amount": 2000, "id": 4, "notes": null, "paidAt": null, "paymentMethod": "BANK_TRANSFER",
+        if (res.result.bookingPayment?.paymentMethod === 'BANK_TRANSFER') {
+          setMethod('qr');
+        } else {
+          setMethod('cash');
+        }
         if (res.result.bookingStatus !== 'NEGOTIATING') {
           // setIsPriceConfirmed(false);
         }

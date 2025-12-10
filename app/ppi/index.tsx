@@ -1,5 +1,6 @@
 import ButtonCustom from '@/components/button/ButtonCustom';
 import Appbar from '@/components/layout/Appbar';
+import { useRole } from '@/context/RoleContext';
 import { Professional } from '@/interfaces/interfaces';
 import { jsonGettAPI } from '@/lib/apiService';
 import { Colors } from '@/lib/common';
@@ -13,6 +14,7 @@ export default function Index() {
   const {t} = useTranslation();
   const [myProfessional, setMyProfessional] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(false);
+  const {setUser, user} = useRole();
 
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
@@ -32,7 +34,7 @@ export default function Index() {
         duration: 1000,
         easing: Easing.linear,
         useNativeDriver: true,
-      })
+      }),
     ).start();
   };
 
@@ -45,8 +47,13 @@ export default function Index() {
     fetchMyProfessional();
   }, []);
 
-  const onSuccess = (data: any) => {
+  const onSuccess = async (data: any) => {
+    console.log('my professional data', data);
     setMyProfessional(data.result);
+    // console.log('user profile before fetch', await getItem('user'));
+    const response = await jsonGettAPI('/users/my-profile');
+    // await setItem('user', response.result);
+    setUser(response.result);
   };
   const fetchMyProfessional = async () => {
     await jsonGettAPI('/workers/services-of-worker', {}, onSuccess, setLoading);
@@ -69,9 +76,14 @@ export default function Index() {
           <Text variant='titleMedium' className='!font-bold'>
             {t('Nghiệp vụ của bạn')}
           </Text>
+          {/* <Button onPress={async() => {
+            console.log('store: ',await getItem('user'))
+          }}>
+            Lấy lại
+          </Button> */}
           {/* IconButton được bọc bởi Animated.View */}
-          <Animated.View style={{ transform: [{ rotate: spin }] }}>
-            <IconButton icon="reload" onPress={fetchMyProfessional} disabled={loading} />
+          <Animated.View style={{transform: [{rotate: spin}]}}>
+            <IconButton icon='reload' onPress={fetchMyProfessional} disabled={loading} />
           </Animated.View>
         </View>
         <FlatList
@@ -86,11 +98,11 @@ export default function Index() {
   );
 }
 
-const CardCustom = ({ item }: { item: Professional }) => {
+const CardCustom = ({item}: {item: Professional}) => {
   return (
-    <View className="bg-white rounded p-4 mb-3 border border-gray-200">
+    <View className='bg-white rounded p-4 mb-3 border border-gray-200'>
       {/* Tên nghiệp vụ */}
-      <Text variant="titleMedium" className="!font-bold text-gray-900">
+      <Text variant='titleMedium' className='!font-bold text-gray-900'>
         {item.service.parentService.serviceName}
       </Text>
 

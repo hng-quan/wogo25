@@ -2,6 +2,7 @@ import ButtonCustom from '@/components/button/ButtonCustom';
 import Appbar from '@/components/layout/Appbar';
 import { formPostAPI } from '@/lib/apiService';
 import { Colors } from '@/lib/common';
+import { getItem } from '@/lib/storage';
 import { generateDocumentName } from '@/lib/utils';
 import * as DocumentPicker from 'expo-document-picker';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -45,7 +46,9 @@ export default function Index() {
     const formData = new FormData();
     formData.append('serviceId', String(service_id));
     formData.append('documentType', 'WORKER_LICENSE');
-    formData.append('documentName', generateDocumentName(String(serviceName)));
+    const user = await getItem<any>('user');
+    const prefix = user ? `WORKER_LICENSE_${user.fullName}_${user.id}_${user.phone}` : 'WORKER_LICENSE';
+    formData.append('documentName', generateDocumentName(String(serviceName), prefix));
 
     files.forEach(file => {
       formData.append('files', {
